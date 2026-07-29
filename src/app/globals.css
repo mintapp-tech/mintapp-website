@@ -1,26 +1,106 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-canvas: #f7f8f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #eef2ee;
+  --color-ink: #0a0d0c;
+  --color-ink-soft: #4f5955;
+  --color-ink-faint: #818a86;
+  --color-line: #dce2de;
+  --color-line-soft: #e8ece9;
+  --color-dark: #071b16;
+  --color-mint-deep: #0a6b50;
+  --color-mint: #32e6a6;
+  --color-mint-soft: #ddf9ed;
+  --color-accent: #6c63f5;
+  --color-nura: #ff6f61;
+  --color-nura-2: #c7b8ff;
+  --color-nura-bg: #f6ecea;
+  --color-axis: #315cff;
+  --color-axis-2: #cde6ff;
+  --color-axis-bg: #eef3ff;
+  --color-kora: #ffb36a;
+  --color-kora-2: #78e0bc;
+  --color-kora-bg: #fff1e4;
+
+  --font-manrope: var(--font-manrope-google), system-ui, sans-serif;
+  --font-alexandria: var(--font-alexandria-google), system-ui, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --font-body: var(--font-manrope);
+    color-scheme: light;
+  }
+
+  html[lang="ar"] {
+    --font-body: var(--font-alexandria);
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    background: var(--color-canvas);
+    overflow-x: hidden;
+  }
+
+  body {
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  a {
+    color: var(--color-mint-deep);
+    text-decoration: none;
+  }
+  a:hover {
+    color: var(--color-dark);
+  }
+
+  ::selection {
+    background: var(--color-mint-soft);
+    color: var(--color-dark);
+  }
+
+  input,
+  textarea,
+  button {
+    font: inherit;
+    color: inherit;
+  }
+
+  input:focus-visible,
+  textarea:focus-visible,
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid var(--color-mint-deep);
+    outline-offset: 3px;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes floaty {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }

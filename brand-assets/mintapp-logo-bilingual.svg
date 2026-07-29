@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="590" height="165" viewBox="0 0 590 165">
+
+
+  <g transform="translate(20,18) scale(0.9)">
+    
+  <polygon points="20,10 80,60 80,95 20,45" fill="#32E6A6"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#32E6A6"/>
+  <polygon points="80,60 105,80 80,95" fill="#0A6B50"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#071B16"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#32E6A6"/>
+
+  </g>
+  <text x="185" y="88"
+        font-family="Manrope, Arial, Helvetica, sans-serif"
+        font-size="62" font-weight="600"
+        letter-spacing="-2" fill="#0A0D0C">Mintapp</text>
+  <text x="185" y="132"
+        font-family="Alexandria, 'Noto Sans Arabic', Arial, sans-serif"
+        font-size="24" font-weight="500"
+        direction="rtl" unicode-bidi="bidi-override"
+        fill="#4F5955">استوديو منتجات رقمية</text>
+
+</svg>

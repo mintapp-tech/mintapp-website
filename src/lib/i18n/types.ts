@@ -1,0 +1,69 @@
+export type Lang = "ar" | "en";
+
+export interface HomeContent {
+  tagline: string;
+  nav: {
+    home: string;
+    work: string;
+    services: string;
+    about: string;
+    insights: string;
+    start: string;
+    lang: string;
+  };
+  hero: {
+    eyebrow: string;
+    title: string;
+    sub: string;
+    cta1: string;
+    cta2: string;
+    marks: string[];
+  };
+  work: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    cta: string;
+    p1: { name: string; category: string; desc: string; tags: string[] };
+    p2: { name: string; category: string; desc: string; tags: string[] };
+    p3: { name: string; category: string; desc: string; tags: string[] };
+  };
+  svc: {
+    eyebrow: string;
+    title: string;
+    more: string;
+    s1: { title: string; desc: string; items: string[] };
+    s2: { title: string; desc: string; items: string[] };
+    stripLabel: string;
+    strip: string[];
+  };
+  proc: {
+    eyebrow: string;
+    title: string;
+    steps: { n: string; title: string; desc: string }[];
+  };
+  diff: {
+    eyebrow: string;
+    title: string;
+    copy: string;
+    cta: string;
+    note: string;
+    steps: { n: string; title: string; desc: string }[];
+  };
+  ins: {
+    title: string;
+    all: string;
+    read: string;
+    items: { cat: string; title: string; blurb: string }[];
+  };
+  final: { title: string; sub: string; cta: string };
+  footer: {
+    pitch: string;
+    explore: string;
+    contact: string;
+    region: string;
+    langBtn: string;
+    rights: string;
+    privacy: string;
+  };
+}

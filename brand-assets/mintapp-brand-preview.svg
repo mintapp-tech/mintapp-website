@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1000" viewBox="0 0 1600 1000">
+
+
+  <rect width="1600" height="1000" fill="#F7F8F4"/>
+  <text x="80" y="90" font-family="Arial, sans-serif" font-size="26" letter-spacing="4" fill="#4F5955">MINTAPP — BRAND ASSETS</text>
+  <g transform="translate(100,145)">
+    <g transform="scale(1.1)">
+  <polygon points="20,10 80,60 80,95 20,45" fill="#32E6A6"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#32E6A6"/>
+  <polygon points="80,60 105,80 80,95" fill="#0A6B50"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#071B16"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#32E6A6"/>
+</g>
+    <text x="210" y="110" font-family="Manrope, Arial, sans-serif" font-size="90" font-weight="600" letter-spacing="-3" fill="#0A0D0C">Mintapp</text>
+  </g>
+  <line x1="80" y1="360" x2="1520" y2="360" stroke="#DCE2DE" />
+  <g transform="translate(100,430) scale(1.2)">
+  <polygon points="20,10 80,60 80,95 20,45" fill="#32E6A6"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#32E6A6"/>
+  <polygon points="80,60 105,80 80,95" fill="#0A6B50"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#071B16"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#32E6A6"/>
+</g>
+  <g transform="translate(450,430) scale(1.2)">
+  <polygon points="20,10 80,60 80,95 20,45" fill="#071B16"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#071B16"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#071B16"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#071B16"/>
+</g>
+  <rect x="780" y="410" width="300" height="240" rx="36" fill="#071B16"/>
+  <g transform="translate(850,450) scale(1.25)">
+  <polygon points="20,10 80,60 80,95 20,45" fill="#FFFFFF"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#FFFFFF"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#FFFFFF"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#FFFFFF"/>
+</g>
+  <rect x="1190" y="410" width="240" height="240" rx="54" fill="#071B16"/>
+  <g transform="translate(1230,450) scale(1.25)">
+  <polygon points="20,10 80,60 80,95 20,45" fill="#32E6A6"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#32E6A6"/>
+  <polygon points="80,60 105,80 80,95" fill="#0A6B50"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#071B16"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#32E6A6"/>
+</g>
+  <text x="100" y="800" font-family="Arial, sans-serif" font-size="30" fill="#4F5955">#32E6A6</text>
+  <rect x="100" y="830" width="150" height="70" rx="12" fill="#32E6A6"/>
+  <text x="310" y="800" font-family="Arial, sans-serif" font-size="30" fill="#4F5955">#0A6B50</text>
+  <rect x="310" y="830" width="150" height="70" rx="12" fill="#0A6B50"/>
+  <text x="520" y="800" font-family="Arial, sans-serif" font-size="30" fill="#4F5955">#071B16</text>
+  <rect x="520" y="830" width="150" height="70" rx="12" fill="#071B16"/>
+  <text x="730" y="800" font-family="Arial, sans-serif" font-size="30" fill="#4F5955">#F7F8F4</text>
+  <rect x="730" y="830" width="150" height="70" rx="12" fill="#F7F8F4" stroke="#DCE2DE"/>
+  <text x="940" y="800" font-family="Arial, sans-serif" font-size="30" fill="#4F5955">#6C63F5</text>
+  <rect x="940" y="830" width="150" height="70" rx="12" fill="#6C63F5"/>
+
+</svg>

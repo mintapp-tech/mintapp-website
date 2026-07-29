@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="560" height="170" viewBox="0 0 560 170">
+
+
+  <g transform="translate(24,18) scale(0.95)">
+    
+  <polygon points="20,10 80,60 80,95 20,45" fill="#32E6A6"/>
+  <polygon points="140,10 80,60 80,95 140,45" fill="#32E6A6"/>
+  <polygon points="80,60 105,80 80,95" fill="#0A6B50"/>
+  <polygon points="20,56 55,85 55,135 20,135" fill="#071B16"/>
+  <polygon points="105,85 140,56 140,135 105,135" fill="#32E6A6"/>
+
+  </g>
+  <text x="198" y="105"
+        font-family="Manrope, Arial, Helvetica, sans-serif"
+        font-size="74" font-weight="600"
+        letter-spacing="-2.5" fill="#0A0D0C">Mintapp</text>
+
+</svg>
