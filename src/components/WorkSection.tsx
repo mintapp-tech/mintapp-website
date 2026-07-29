@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
+import { SplitReveal } from "./motion/SplitReveal";
 
 export default function WorkSection() {
   const { t, arrow } = useLanguage();
@@ -13,9 +14,11 @@ export default function WorkSection() {
           <div className="mb-3.5 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
             {t.work.eyebrow}
           </div>
-          <h2 className="m-0 max-w-[22ch] text-[clamp(29px,3.7vw,50px)] leading-[1.2] font-semibold tracking-[-0.02em] text-balance">
-            {t.work.title}
-          </h2>
+          <SplitReveal
+            as="h2"
+            text={t.work.title}
+            className="m-0 max-w-[22ch] text-[clamp(29px,3.7vw,50px)] leading-[1.2] font-semibold tracking-[-0.02em] text-balance"
+          />
         </div>
         <p className="m-0 max-w-[38ch] text-base leading-[1.8] text-ink-soft">{t.work.intro}</p>
       </Reveal>

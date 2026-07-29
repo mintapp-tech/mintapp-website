@@ -6,8 +6,8 @@ import type { ReactNode } from "react";
 const easeOut = [0.2, 0.7, 0.2, 1] as const;
 
 export const revealVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: easeOut } },
+  hidden: { opacity: 0, y: 28, scale: 0.97 },
+  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.75, ease: easeOut } },
 };
 
 export const staggerContainer: Variants = {

@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { scrollToSection, scrollToTop } from "@/lib/scroll";
 import { LogoMark, Wordmark } from "./Logo";
+import { Magnetic } from "./motion/Magnetic";
 
 const navLink =
   "cursor-pointer border-0 bg-transparent px-0.5 py-1.5 text-[15px] font-medium text-ink-soft transition-colors hover:text-ink";
@@ -43,12 +44,14 @@ export default function Header() {
             >
               {t.nav.lang}
             </button>
-            <button
-              onClick={() => go("differentiator")}
-              className="cursor-pointer rounded-full border-0 bg-ink px-[22px] py-3 text-[15px] font-semibold text-white transition-all hover:-translate-y-px hover:bg-mint hover:text-dark"
-            >
-              {t.nav.start}
-            </button>
+            <Magnetic strength={0.25} className="inline-block">
+              <button
+                onClick={() => go("differentiator")}
+                className="cursor-pointer rounded-full border-0 bg-ink px-[22px] py-3 text-[15px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+              >
+                {t.nav.start}
+              </button>
+            </Magnetic>
           </nav>
 
           <div className="ms-auto flex items-center gap-2.5 md:hidden">

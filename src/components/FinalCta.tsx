@@ -2,6 +2,8 @@
 
 import { useLanguage } from "@/lib/language-context";
 import { Reveal } from "./Reveal";
+import { SplitReveal } from "./motion/SplitReveal";
+import { Magnetic } from "./motion/Magnetic";
 import { scrollToSection } from "@/lib/scroll";
 
 export default function FinalCta() {
@@ -13,19 +15,23 @@ export default function FinalCta() {
         <span className="absolute -end-[90px] -top-[90px] block h-[320px] w-[320px] rounded-full bg-mint/10" />
         <span className="absolute end-[24%] -bottom-10 block h-[120px] w-[120px] rounded-[30px] border-[1.5px] border-mint/35" />
         <div className="relative max-w-[22ch]">
-          <h2 className="m-0 text-[clamp(32px,4.6vw,64px)] leading-[1.14] font-semibold tracking-[-0.025em] text-canvas text-balance">
-            {t.final.title}
-          </h2>
+          <SplitReveal
+            as="h2"
+            text={t.final.title}
+            className="m-0 text-[clamp(32px,4.6vw,64px)] leading-[1.14] font-semibold tracking-[-0.025em] text-canvas text-balance"
+          />
           <p className="mt-[22px] mb-[34px] max-w-[40ch] text-[clamp(16.5px,1.4vw,19px)] leading-[1.85] text-canvas/72">
             {t.final.sub}
           </p>
           <div className="flex flex-wrap gap-3">
-            <button
-              onClick={() => scrollToSection("differentiator")}
-              className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[17px] text-[16.5px] font-bold text-dark transition-all hover:-translate-y-0.5 hover:bg-mint-soft"
-            >
-              {t.final.cta}
-            </button>
+            <Magnetic className="inline-block">
+              <button
+                onClick={() => scrollToSection("differentiator")}
+                className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[17px] text-[16.5px] font-bold text-dark transition-colors hover:bg-mint-soft"
+              >
+                {t.final.cta}
+              </button>
+            </Magnetic>
             <a
               href="mailto:hello@mintapp.tech"
               className="rounded-full border border-canvas/28 px-8 py-[17px] text-[16.5px] font-semibold text-canvas transition-colors hover:border-mint hover:bg-canvas/[.06]"

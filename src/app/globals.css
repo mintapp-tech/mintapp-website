@@ -26,6 +26,17 @@
 
   --font-manrope: var(--font-manrope-google), system-ui, sans-serif;
   --font-alexandria: var(--font-alexandria-google), system-ui, sans-serif;
+
+  --animate-marquee: marquee 26s linear infinite;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
 }
 
 @layer base {

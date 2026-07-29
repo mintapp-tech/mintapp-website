@@ -3,6 +3,7 @@ import { Alexandria, Manrope } from "next/font/google";
 import "./globals.css";
 import { LanguageProvider } from "@/lib/language-context";
 import SmoothScroll from "@/components/SmoothScroll";
+import CustomCursor from "@/components/CustomCursor";
 
 const alexandria = Alexandria({
   variable: "--font-alexandria-google",
@@ -36,6 +37,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col bg-canvas text-ink">
         <LanguageProvider>
           <SmoothScroll>{children}</SmoothScroll>
+          <CustomCursor />
         </LanguageProvider>
       </body>
     </html>

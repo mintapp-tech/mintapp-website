@@ -2,6 +2,7 @@
 
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
+import { SplitReveal } from "./motion/SplitReveal";
 
 function ServiceCard({
   icon,
@@ -44,12 +45,11 @@ export default function ServicesSection() {
       <Reveal className="mb-3.5 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
         {t.svc.eyebrow}
       </Reveal>
-      <Reveal
+      <SplitReveal
         as="h2"
+        text={t.svc.title}
         className="mb-[clamp(30px,4vw,52px)] max-w-[24ch] text-[clamp(29px,3.7vw,50px)] leading-[1.2] font-semibold tracking-[-0.02em] text-balance"
-      >
-        {t.svc.title}
-      </Reveal>
+      />
 
       <RevealGroup className="grid grid-cols-1 gap-[clamp(18px,2.4vw,26px)] sm:grid-cols-2">
         <ServiceCard
@@ -69,15 +69,18 @@ export default function ServicesSection() {
       </RevealGroup>
 
       <Reveal className="mt-[clamp(20px,2.6vw,28px)] flex flex-wrap items-center gap-[clamp(14px,2vw,22px)] rounded-[20px] border border-ink/[.09] p-[clamp(24px,3vw,34px)]">
-        <div className="max-w-[20ch] text-[14.5px] leading-[1.7] text-ink-soft">{t.svc.stripLabel}</div>
-        <div className="flex min-w-[min(100%,420px)] flex-1 flex-wrap items-center gap-2.5">
-          {t.svc.strip.map((s, i) => (
-            <div key={s} className="flex items-center gap-2.5">
-              <span className="block rounded-full bg-canvas px-4 py-2.5 text-[14.5px] font-medium text-ink">{s}</span>
-              {i < t.svc.strip.length - 1 && <span className="block text-[13px] text-ink/[.28]">{arrow}</span>}
-            </div>
-          ))}
-          <span className="block h-2.5 w-2.5 rounded-full bg-mint" />
+        <div className="max-w-[20ch] shrink-0 text-[14.5px] leading-[1.7] text-ink-soft">{t.svc.stripLabel}</div>
+        <div className="group relative min-w-0 flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
+          <div className="flex w-max items-center gap-2.5 animate-marquee group-hover:[animation-play-state:paused]">
+            {[...t.svc.strip, ...t.svc.strip].map((s, i) => (
+              <div key={i} className="flex items-center gap-2.5">
+                <span className="block whitespace-nowrap rounded-full bg-canvas px-4 py-2.5 text-[14.5px] font-medium text-ink">
+                  {s}
+                </span>
+                <span className="block text-[13px] text-ink/[.28]">{arrow}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </Reveal>
     </section>

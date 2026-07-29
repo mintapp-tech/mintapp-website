@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useScroll, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { scrollToSection } from "@/lib/scroll";
+import { SplitReveal } from "./motion/SplitReveal";
+import { Magnetic } from "./motion/Magnetic";
 
 const easeOut = [0.2, 0.7, 0.2, 1] as const;
 
@@ -42,8 +44,13 @@ function ParallaxLayer({
 
 export default function Hero() {
   const { t } = useLanguage();
+  const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
+
+  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
+  const exitOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.35]);
+  const exitY = useTransform(scrollYProgress, [0, 1], [0, 70]);
 
   const mvX = useMotionValue(0);
   const mvY = useMotionValue(0);
@@ -65,7 +72,14 @@ export default function Hero() {
   };
 
   return (
-    <section className="mx-auto grid max-w-[1280px] grid-cols-1 items-center gap-10 px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(44px,6vw,86px)] sm:px-6 lg:grid-cols-2 lg:gap-16">
+    <section
+      ref={sectionRef}
+      className="mx-auto max-w-[1280px] px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(44px,6vw,86px)] sm:px-6"
+    >
+    <motion.div
+      style={{ opacity: exitOpacity, y: exitY }}
+      className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16"
+    >
       <div>
         <motion.div
           custom={0}
@@ -78,15 +92,12 @@ export default function Hero() {
           {t.hero.eyebrow}
         </motion.div>
 
-        <motion.h1
-          custom={0.08}
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
+        <SplitReveal
+          as="h1"
+          text={t.hero.title}
+          delay={0.1}
           className="m-0 text-[clamp(38px,5.4vw,74px)] leading-[1.12] font-semibold tracking-[-0.02em] text-balance text-ink"
-        >
-          {t.hero.title}
-        </motion.h1>
+        />
 
         <motion.p
           custom={0.16}
@@ -105,12 +116,14 @@ export default function Hero() {
           variants={fadeUp}
           className="mt-[clamp(28px,3.4vw,40px)] flex flex-wrap gap-3"
         >
-          <button
-            onClick={() => scrollToSection("differentiator")}
-            className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-mint hover:text-dark"
-          >
-            {t.hero.cta1}
-          </button>
+          <Magnetic className="inline-block">
+            <button
+              onClick={() => scrollToSection("differentiator")}
+              className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors duration-300 hover:bg-mint hover:text-dark"
+            >
+              {t.hero.cta1}
+            </button>
+          </Magnetic>
           <button
             onClick={() => scrollToSection("work")}
             className="cursor-pointer rounded-full border border-ink/20 bg-transparent px-[30px] py-[17px] text-[16.5px] font-semibold text-ink transition-colors duration-300 hover:border-dark hover:bg-surface"
@@ -224,6 +237,7 @@ export default function Hero() {
           <span />
         </ParallaxLayer>
       </motion.div>
+    </motion.div>
     </section>
   );
 }

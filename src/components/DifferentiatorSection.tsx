@@ -2,6 +2,8 @@
 
 import { useLanguage } from "@/lib/language-context";
 import { Reveal } from "./Reveal";
+import { SplitReveal } from "./motion/SplitReveal";
+import { Magnetic } from "./motion/Magnetic";
 
 export default function DifferentiatorSection() {
   const { t } = useLanguage();
@@ -16,13 +18,17 @@ export default function DifferentiatorSection() {
           <div className="mb-4 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
             {t.diff.eyebrow}
           </div>
-          <h2 className="m-0 max-w-[20ch] text-[clamp(27px,3.4vw,45px)] leading-[1.22] font-semibold tracking-[-0.02em] text-balance">
-            {t.diff.title}
-          </h2>
+          <SplitReveal
+            as="h2"
+            text={t.diff.title}
+            className="m-0 max-w-[20ch] text-[clamp(27px,3.4vw,45px)] leading-[1.22] font-semibold tracking-[-0.02em] text-balance"
+          />
           <p className="mt-5 mb-[30px] max-w-[44ch] text-[17px] leading-[1.85] text-ink-soft">{t.diff.copy}</p>
-          <button className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-all hover:-translate-y-0.5 hover:bg-mint hover:text-dark">
-            {t.diff.cta}
-          </button>
+          <Magnetic className="inline-block">
+            <button className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark">
+              {t.diff.cta}
+            </button>
+          </Magnetic>
         </div>
         <div className="flex flex-col gap-3">
           {t.diff.steps.map((step) => (
