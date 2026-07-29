@@ -7,14 +7,14 @@ import CustomCursor from "@/components/CustomCursor";
 
 const alexandria = Alexandria({
   variable: "--font-alexandria-google",
-  subsets: ["arabic", "latin"],
-  weight: ["200", "300", "400", "500", "600", "700"],
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700"],
 });
 
 const manrope = Manrope({
   variable: "--font-manrope-google",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
