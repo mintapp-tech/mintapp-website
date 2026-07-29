@@ -11,7 +11,7 @@ export function scrollToSection(id: string) {
   const el = document.getElementById(id);
   if (!el) return;
   if (typeof window !== "undefined" && window.__lenis) {
-    window.__lenis.scrollTo(el, { offset: -88, duration: 1.2 });
+    window.__lenis.scrollTo(el, { offset: -88, duration: 0.8 });
   } else {
     el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
@@ -20,7 +20,7 @@ export function scrollToSection(id: string) {
 export function scrollToTop() {
   if (typeof window === "undefined") return;
   if (window.__lenis) {
-    window.__lenis.scrollTo(0, { duration: 1.2 });
+    window.__lenis.scrollTo(0, { duration: 0.8 });
   } else {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
