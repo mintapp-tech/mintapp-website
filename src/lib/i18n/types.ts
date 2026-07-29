@@ -99,4 +99,28 @@ export interface HomeContent {
     home: string;
     note: string;
   };
+  cs: {
+    eyebrow: string;
+    name: string;
+    category: string;
+    title: string;
+    sub: string;
+    meta: { k: string; v: string }[];
+    challengeTitle: string;
+    challengeCopy: string;
+    approachTitle: string;
+    approachCopy: string;
+    approachPoints: { t: string; d: string }[];
+    uxTitle: string;
+    uxPoints: { t: string; d: string }[];
+    screensTitle: string;
+    screensCopy: string;
+    dsTitle: string;
+    dsCopy: string;
+    outcomeTitle: string;
+    outcomeCopy: string;
+    outcomePoints: string[];
+    relatedTitle: string;
+    back: string;
+  };
 }

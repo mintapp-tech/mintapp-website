@@ -1,11 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 
 export default function WorkSection() {
   const { t, arrow } = useLanguage();
+  const router = useRouter();
+  const goToNuraCaseStudy = () => router.push("/work/nura");
 
   return (
     <section id="work" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
@@ -43,7 +46,7 @@ export default function WorkSection() {
               </span>
             ))}
           </div>
-          <button className="group flex items-center gap-2.5 self-start border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-base font-semibold text-dark transition-all hover:gap-4 hover:text-mint-deep">
+          <button onClick={goToNuraCaseStudy} className="group flex items-center gap-2.5 self-start border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-base font-semibold text-dark transition-all hover:gap-4 hover:text-mint-deep">
             {t.work.cta} <span className="block">{arrow}</span>
           </button>
         </div>
@@ -123,7 +126,7 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <button onClick={goToNuraCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
               {t.work.cta} <span className="block">{arrow}</span>
             </button>
           </div>
@@ -164,7 +167,7 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <button onClick={goToNuraCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
               {t.work.cta} <span className="block">{arrow}</span>
             </button>
           </div>

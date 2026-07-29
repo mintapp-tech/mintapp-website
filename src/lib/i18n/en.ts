@@ -112,4 +112,44 @@ export const en: HomeContent = {
     home: "Back to home",
     note: "Need to move the meeting? Write to hello@mintapp.tech",
   },
+  cs: {
+    eyebrow: "Case study",
+    name: "Nura",
+    category: "Mobile commerce experience",
+    title: "Shopping that feels simple, even at the hardest moment",
+    sub: "A commerce app rebuilt around one moment: going from discovery to checkout without extra thinking.",
+    meta: [
+      { k: "Field", v: "Mobile commerce" },
+      { k: "Scope", v: "Strategy · Design · Development" },
+      { k: "Platform", v: "iOS & Android" },
+      { k: "Language", v: "Arabic-first (RTL)" },
+    ],
+    challengeTitle: "The challenge",
+    challengeCopy:
+      "Buying was spread across too many disconnected steps, and the Arabic interface was a mirrored version of an English design rather than a native RTL one. The result: long browsing sessions and carts abandoned halfway.",
+    approachTitle: "Our approach",
+    approachCopy:
+      "We restructured the journey before touching any screen, then built an Arabic-first visual system that holds up equally well in English.",
+    approachPoints: [
+      { t: "One journey", d: "Discovery, detail and cart merged into a continuous flow." },
+      { t: "Arabic-first", d: "Native RTL layout: reading direction, numerals and motion." },
+      { t: "A system that scales", d: "Shared components so new sections don't need a redesign." },
+    ],
+    uxTitle: "Experience direction",
+    uxPoints: [
+      { t: "One decision per screen", d: "Fewer questions asked of the user at each step." },
+      { t: "Cart always present", d: "Purchase state stays visible without interrupting browsing." },
+      { t: "Short checkout", d: "Fewer fields and a clear confirmation after each step." },
+    ],
+    screensTitle: "Product screens",
+    screensCopy: "Compositions from the core mobile interface and the web operations view.",
+    dsTitle: "Design system",
+    dsCopy: "A small, disciplined foundation: two core colours, one type scale, repeatable components.",
+    outcomeTitle: "Outcome",
+    outcomeCopy:
+      "The project left the team with a clear system: a shorter purchase journey, a genuinely Arabic interface, and a design foundation that supports continuous work without rebuilding.",
+    outcomePoints: ["A shorter, clearer purchase journey", "One shared design system for the team", "Ready to expand across the region"],
+    relatedTitle: "Related project",
+    back: "Back",
+  },
 };
