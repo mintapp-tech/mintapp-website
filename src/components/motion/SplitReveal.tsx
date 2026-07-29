@@ -42,7 +42,13 @@ export function SplitReveal({
   });
 
   return (
-    <MotionTag className={className} initial="hidden" whileInView="show" viewport={{ once: true, margin: "0px 0px -10% 0px" }}>
+    <MotionTag
+      key={text}
+      className={className}
+      initial="hidden"
+      whileInView="show"
+      viewport={{ once: true, margin: "0px 0px -10% 0px" }}
+    >
       {nodes}
     </MotionTag>
   );
