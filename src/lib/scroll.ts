@@ -25,3 +25,16 @@ export function scrollToTop() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 }
+
+/**
+ * Section anchors (#work, #services, ...) only exist on the homepage. From any
+ * other page, navigate there first and let HashScrollHandler finish the scroll
+ * once the homepage has mounted.
+ */
+export function goToSection(router: { push: (href: string) => void }, pathname: string, id: string) {
+  if (pathname === "/") {
+    scrollToSection(id);
+  } else {
+    router.push(`/#${id}`);
+  }
+}

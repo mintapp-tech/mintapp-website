@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
-import { scrollToSection, scrollToTop } from "@/lib/scroll";
+import { goToSection, scrollToTop } from "@/lib/scroll";
 import { LogoMark, Wordmark } from "./Logo";
 import { Magnetic } from "./motion/Magnetic";
 
@@ -13,17 +14,30 @@ const navLink =
 export default function Header() {
   const { t, toggleLang } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   const go = (id: string) => {
     setMenuOpen(false);
-    scrollToSection(id);
+    goToSection(router, pathname, id);
+  };
+
+  const goHome = () => {
+    setMenuOpen(false);
+    if (pathname === "/") scrollToTop();
+    else router.push("/");
+  };
+
+  const goStart = () => {
+    setMenuOpen(false);
+    router.push("/start");
   };
 
   return (
     <>
       <header className="sticky top-0 z-[60] border-b border-ink/[.07] bg-canvas/[.86] backdrop-blur-md">
         <div className="mx-auto flex h-[74px] max-w-[1280px] items-center gap-4 px-5 sm:px-6 md:gap-8">
-          <Wordmark onClick={scrollToTop} />
+          <Wordmark onClick={goHome} />
 
           <nav className="ms-auto hidden items-center gap-3.5 md:flex md:gap-6 lg:gap-7">
             <button className={navLink} onClick={() => go("work")}>
@@ -46,7 +60,7 @@ export default function Header() {
             </button>
             <Magnetic strength={0.25} className="inline-block">
               <button
-                onClick={() => go("differentiator")}
+                onClick={goStart}
                 className="cursor-pointer rounded-full border-0 bg-ink px-[22px] py-3 text-[15px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
               >
                 {t.nav.start}
@@ -97,13 +111,7 @@ export default function Header() {
             </div>
             <nav className="my-auto flex flex-col gap-1.5">
               {[
-                {
-                  label: t.nav.home,
-                  onClick: () => {
-                    setMenuOpen(false);
-                    scrollToTop();
-                  },
-                },
+                { label: t.nav.home, onClick: goHome },
                 { label: t.nav.work, onClick: () => go("work") },
                 { label: t.nav.services, onClick: () => go("services") },
                 { label: t.nav.about, onClick: () => go("process") },
@@ -119,7 +127,7 @@ export default function Header() {
               ))}
             </nav>
             <button
-              onClick={() => go("differentiator")}
+              onClick={goStart}
               className="w-full cursor-pointer rounded-full border-0 bg-mint px-6 py-[17px] text-[17px] font-bold text-dark"
             >
               {t.nav.start}

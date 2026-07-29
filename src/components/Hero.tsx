@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useSpring, useTransform, useScroll, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { scrollToSection } from "@/lib/scroll";
@@ -44,6 +45,7 @@ function ParallaxLayer({
 
 export default function Hero() {
   const { t } = useLanguage();
+  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
@@ -118,7 +120,7 @@ export default function Hero() {
         >
           <Magnetic className="inline-block">
             <button
-              onClick={() => scrollToSection("differentiator")}
+              onClick={() => router.push("/start")}
               className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors duration-300 hover:bg-mint hover:text-dark"
             >
               {t.hero.cta1}

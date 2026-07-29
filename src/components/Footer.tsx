@@ -1,18 +1,20 @@
 "use client";
 
+import { useRouter, usePathname } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { LogoMark } from "./Logo";
-import { scrollToSection } from "@/lib/scroll";
+import { goToSection } from "@/lib/scroll";
 
 export default function Footer() {
   const { t, toggleLang } = useLanguage();
+  const router = useRouter();
+  const pathname = usePathname();
 
   const links = [
     { label: t.nav.work, id: "work" },
     { label: t.nav.services, id: "services" },
     { label: t.nav.about, id: "process" },
     { label: t.nav.insights, id: "insights" },
-    { label: t.nav.start, id: "differentiator" },
   ];
 
   return (
@@ -34,12 +36,18 @@ export default function Footer() {
             {links.map((link) => (
               <button
                 key={link.label}
-                onClick={() => scrollToSection(link.id)}
+                onClick={() => goToSection(router, pathname, link.id)}
                 className="cursor-pointer border-0 bg-transparent p-0 text-start text-[15px] text-canvas/85 transition-colors hover:text-mint"
               >
                 {link.label}
               </button>
             ))}
+            <button
+              onClick={() => router.push("/start")}
+              className="cursor-pointer border-0 bg-transparent p-0 text-start text-[15px] text-canvas/85 transition-colors hover:text-mint"
+            >
+              {t.nav.start}
+            </button>
           </div>
 
           <div className="flex flex-col gap-2.5">

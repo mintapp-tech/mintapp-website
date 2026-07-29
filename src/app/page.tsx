@@ -1,4 +1,5 @@
 import Header from "@/components/Header";
+import HashScrollHandler from "@/components/HashScrollHandler";
 import Hero from "@/components/Hero";
 import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
@@ -11,6 +12,7 @@ import Footer from "@/components/Footer";
 export default function Home() {
   return (
     <>
+      <HashScrollHandler />
       <Header />
       <main>
         <Hero />

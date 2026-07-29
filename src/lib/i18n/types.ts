@@ -66,4 +66,37 @@ export interface HomeContent {
     rights: string;
     privacy: string;
   };
+  start: {
+    title: string;
+    sub: string;
+    optional: string;
+    fName: string;
+    fCompany: string;
+    fEmail: string;
+    fPhone: string;
+    fDesc: string;
+    fDescHelp: string;
+    fDescPh: string;
+    fFile: string;
+    fFileHint: string;
+    fDate: string;
+    fTime: string;
+    cta: string;
+    privacy: string;
+    sideTitle: string;
+    sidePoints: { t: string; d: string }[];
+    sideNote: string;
+    pickDate: string;
+    pickTime: string;
+  };
+  success: {
+    badge: string;
+    title: string;
+    copy: string;
+    meeting: string;
+    nextTitle: string;
+    next: string[];
+    home: string;
+    note: string;
+  };
 }

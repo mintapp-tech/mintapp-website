@@ -1,13 +1,14 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 import { Magnetic } from "./motion/Magnetic";
-import { scrollToSection } from "@/lib/scroll";
 
 export default function FinalCta() {
   const { t } = useLanguage();
+  const router = useRouter();
 
   return (
     <section className="px-5 pt-[clamp(60px,8vw,120px)] sm:px-6">
@@ -26,7 +27,7 @@ export default function FinalCta() {
           <div className="flex flex-wrap gap-3">
             <Magnetic className="inline-block">
               <button
-                onClick={() => scrollToSection("differentiator")}
+                onClick={() => router.push("/start")}
                 className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[17px] text-[16.5px] font-bold text-dark transition-colors hover:bg-mint-soft"
               >
                 {t.final.cta}
