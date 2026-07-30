@@ -14,8 +14,9 @@ export const en: HomeContent = {
   work: {
     eyebrow: "Selected work",
     title: "Products built to be used every day",
-    intro: "Three sample projects that show how we think, design and build.",
+    intro: "Work from the studio: a platform we designed and built end to end, alongside sample projects that show how we think.",
     cta: "View case study",
+    featured: { name: "Arrentio", category: "Car rental marketplace & agency platform", desc: "A verified marketplace that moves car rental out of chat threads into a system built on trust — with a branded storefront for every agency.", tags: ["Web Platform", "UI/UX", "Development"] },
     p1: { name: "Nura", category: "Mobile commerce experience", desc: "A shopping app that turns discovery and checkout into one calm journey, designed RTL-first from the very first screen.", tags: ["Mobile App", "UI/UX", "Development"] },
     p2: { name: "Axis", category: "Business operations platform", desc: "A single workspace for orders, teams and reporting — scattered spreadsheets turned into a clear system.", tags: ["Website", "UI/UX", "Development"] },
     p3: { name: "Kora", category: "Community & events application", desc: "A place to organise and follow events, with an experience that holds up equally on mobile and web.", tags: ["Mobile App", "Website", "UI/UX"] },
@@ -149,6 +150,46 @@ export const en: HomeContent = {
     outcomeCopy:
       "The project left the team with a clear system: a shorter purchase journey, a genuinely Arabic interface, and a design foundation that supports continuous work without rebuilding.",
     outcomePoints: ["A shorter, clearer purchase journey", "One shared design system for the team", "Ready to expand across the region"],
+    relatedTitle: "Related project",
+    back: "Back",
+  },
+  csArrentio: {
+    eyebrow: "Case study",
+    name: "Arrentio",
+    category: "Car rental marketplace & agency platform",
+    title: "Car rental, taken out of the chat thread",
+    sub: "A verified marketplace and operating platform that gives independent rental agencies searchable inventory, a trust layer and a storefront of their own.",
+    meta: [
+      { k: "Field", v: "Mobility marketplace" },
+      { k: "Scope", v: "Strategy · Design · Development" },
+      { k: "Platform", v: "Web · Marketplace, provider & admin" },
+      { k: "Markets", v: "Indonesia & the Gulf" },
+    ],
+    challengeTitle: "The challenge",
+    challengeCopy:
+      "Independent rental agencies run their entire business in WhatsApp and Instagram chats: no searchable inventory, no live availability and no trust layer — customers send deposits over chat with no verification and no recourse. Commission marketplaces, meanwhile, are priced for hotel-scale fleets and take the customer relationship with them.",
+    approachTitle: "Our approach",
+    approachCopy:
+      "We built both sides of the market as one system: a verified marketplace for renters, and a no-code dashboard plus a branded storefront for every agency — live in minutes, not a development project.",
+    approachPoints: [
+      { t: "Verified supply only", d: "Every listed car belongs to a verified agency; documents are reviewed before anything goes live." },
+      { t: "A storefront per agency", d: "Each agency gets its own branded subdomain site, keeping its direct customer relationship." },
+      { t: "Trust as infrastructure", d: "Identity checks, e-signed rental agreements and an admin review layer built into the flow." },
+    ],
+    uxTitle: "Experience direction",
+    uxPoints: [
+      { t: "Search that matches reality", d: "City, dates, category, transmission, seats and price — filtered against live inventory." },
+      { t: "Live in minutes", d: "A six-step listing wizard with resumable drafts takes agencies from sign-up to a published fleet." },
+      { t: "Requests, not phone calls", d: "Booking requests, messaging and status updates stay on the platform end to end." },
+    ],
+    screensTitle: "Product screens",
+    screensCopy: "Compositions from the renter marketplace, the provider dashboard and the admin console.",
+    dsTitle: "Design system",
+    dsCopy: "A light-only interface with one signal colour: a single red reserved for primary actions, set on a quiet neutral foundation.",
+    outcomeTitle: "Outcome",
+    outcomeCopy:
+      "The result is production architecture, not a prototype: a row-level-secured multi-role database, wildcard multi-tenancy with cross-subdomain sessions, transactional email and a content pipeline that publishes in four languages — ready for launch in Jakarta, with Gulf expansion built in.",
+    outcomePoints: ["Verified marketplace ready for launch", "Multi-tenant storefronts for every agency", "Localised in 4 languages · 10 currencies"],
     relatedTitle: "Related project",
     back: "Back",
   },

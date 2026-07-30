@@ -23,6 +23,10 @@
   --color-kora: #ffb36a;
   --color-kora-2: #78e0bc;
   --color-kora-bg: #fff1e4;
+  --color-arrentio: #e0242d;
+  --color-arrentio-2: #f4b8ba;
+  --color-arrentio-bg: #fbecec;
+  --color-arrentio-ink: #0b1420;
 
   --font-manrope: var(--font-manrope-google), system-ui, sans-serif;
   --font-alexandria: var(--font-alexandria-google), system-ui, sans-serif;
