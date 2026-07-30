@@ -17,16 +17,22 @@
   --color-nura: #ff6f61;
   --color-nura-2: #c7b8ff;
   --color-nura-bg: #f6ecea;
-  --color-axis: #315cff;
-  --color-axis-2: #cde6ff;
-  --color-axis-bg: #eef3ff;
-  --color-kora: #ffb36a;
-  --color-kora-2: #78e0bc;
-  --color-kora-bg: #fff1e4;
+  --color-jameel: #315cff;
+  --color-jameel-2: #cde6ff;
+  --color-jameel-bg: #eef3ff;
+  --color-nazarih: #ffb36a;
+  --color-nazarih-2: #78e0bc;
+  --color-nazarih-bg: #fff1e4;
   --color-arrentio: #e0242d;
   --color-arrentio-2: #f4b8ba;
   --color-arrentio-bg: #fbecec;
   --color-arrentio-ink: #0b1420;
+  --color-taskaty: #16a394;
+  --color-taskaty-2: #b9ede6;
+  --color-taskaty-bg: #eaf7f5;
+  --color-tanglevibe: #ff4d8d;
+  --color-tanglevibe-2: #ffc1d9;
+  --color-tanglevibe-bg: #fff0f5;
 
   --font-manrope: var(--font-manrope-google), system-ui, sans-serif;
   --font-alexandria: var(--font-alexandria-google), system-ui, sans-serif;

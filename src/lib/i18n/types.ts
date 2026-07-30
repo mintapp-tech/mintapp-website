@@ -53,6 +53,8 @@ export interface HomeContent {
     p1: { name: string; category: string; desc: string; tags: string[] };
     p2: { name: string; category: string; desc: string; tags: string[] };
     p3: { name: string; category: string; desc: string; tags: string[] };
+    p4: { name: string; category: string; desc: string; tags: string[] };
+    p5: { name: string; category: string; desc: string; tags: string[] };
   };
   svc: {
     eyebrow: string;
@@ -127,4 +129,8 @@ export interface HomeContent {
   };
   cs: CaseStudyContent;
   csArrentio: CaseStudyContent;
+  csJameel: CaseStudyContent;
+  csNazarih: CaseStudyContent;
+  csTaskaty: CaseStudyContent;
+  csTangleVibe: CaseStudyContent;
 }

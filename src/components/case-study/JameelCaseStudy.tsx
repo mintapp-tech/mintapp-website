@@ -7,10 +7,10 @@ import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { scrollToSection } from "@/lib/scroll";
 
-export default function NuraCaseStudy() {
+export default function JameelCaseStudy() {
   const { t, arrow, backArrow } = useLanguage();
   const router = useRouter();
-  const cs = t.cs;
+  const cs = t.csJameel;
 
   const goWork = () => {
     if (window.location.pathname === "/") scrollToSection("work");
@@ -60,61 +60,58 @@ export default function NuraCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(50px,7vw,90px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="relative overflow-hidden rounded-[24px] bg-nura-bg p-[clamp(24px,5vw,60px)]">
-          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-nura/[.16]" />
-          <div className="relative flex flex-wrap items-center justify-center gap-6 py-[clamp(20px,4vw,50px)]">
+        <Reveal className="relative overflow-hidden rounded-[24px] bg-jameel-bg p-[clamp(24px,5vw,60px)]">
+          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-jameel/[.14]" />
+          <div className="relative flex flex-wrap items-center justify-center gap-[clamp(18px,3vw,34px)] py-[clamp(20px,4vw,50px)]">
             <div
-              className="w-[min(30%,190px)] -translate-y-3 -rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.6)]"
+              className="w-[min(38%,220px)] -rotate-3 rounded-[30px] bg-dark p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.55)]"
               style={{ aspectRatio: "9 / 18.6" }}
             >
               <div className="flex h-full flex-col gap-2.5 rounded-[22px] bg-canvas p-3.5">
                 <span className="mx-auto block h-1 w-8 rounded-full bg-ink/[.18]" />
                 <span className="block h-2.5 w-[55%] rounded bg-dark" />
-                <div className="h-[90px] rounded-[14px] bg-nura-2" />
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="h-[60px] rounded-xl bg-surface" />
-                  <div className="h-[60px] rounded-xl bg-surface" />
+                <div className="h-[70px] rounded-[14px] bg-jameel-2" />
+                <div className="flex flex-col gap-2">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-lg bg-surface p-2">
+                      <span className={`block h-4 w-4 rounded-full ${i === 0 ? "bg-jameel" : "bg-ink/[.14]"}`} />
+                      <span className="block h-1.5 flex-1 rounded-sm bg-ink/[.16]" />
+                    </div>
+                  ))}
                 </div>
-                <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-              </div>
-            </div>
-            <div
-              className="w-[min(34%,214px)] translate-y-4 rounded-[32px] bg-[#0A0D0C] p-2 shadow-[0_44px_80px_-30px_rgba(0,0,0,.65)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col overflow-hidden rounded-[24px] bg-nura">
-                <div className="flex flex-col gap-2 px-3.5 pb-2 pt-4">
-                  <span className="block h-2.5 w-[45%] rounded bg-white/90" />
-                  <span className="block h-1.5 w-[70%] rounded bg-white/40" />
-                </div>
-                <div className="flex-1 rounded-t-2xl bg-canvas/95 p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="h-[70px] rounded-xl bg-surface" />
-                    <div className="h-[70px] rounded-xl bg-nura-2" />
-                  </div>
-                  <span className="mt-2 block h-1.5 w-[80%] rounded bg-ink/[.12]" />
-                </div>
-                <div className="p-3.5">
-                  <div className="flex h-9 items-center justify-center rounded-full bg-white">
-                    <span className="block h-1.5 w-[38%] rounded-sm bg-nura" />
-                  </div>
+                <div className="mt-auto flex h-9 items-center justify-center rounded-full bg-jameel">
+                  <span className="block h-1.5 w-[40%] rounded-sm bg-white/90" />
                 </div>
               </div>
             </div>
-            <div
-              className="w-[min(30%,190px)] -translate-y-2 rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.6)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col gap-2.5 rounded-[22px] bg-canvas p-3.5">
-                <span className="mx-auto block h-1 w-8 rounded-full bg-ink/[.18]" />
-                <span className="block h-2.5 w-[45%] rounded bg-dark" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="h-11 rounded-xl border border-ink/[.08] bg-surface" />
-                  <div className="h-11 rounded-xl bg-mint-soft" />
-                  <div className="h-11 rounded-xl border border-ink/[.08] bg-surface" />
+            <div className="w-[min(100%,470px)] rotate-1 overflow-hidden rounded-[18px] border border-ink/[.08] bg-canvas shadow-[0_40px_70px_-30px_rgba(11,20,32,.35)]">
+              <div className="flex h-[34px] items-center gap-1.5 bg-dark px-3.5">
+                <span className="block h-2 w-2 rounded-full bg-white/90" />
+                <span className="block h-2 w-2 rounded-full bg-white/30" />
+                <span className="ms-2 block h-[7px] w-[104px] rounded-full bg-white/25" />
+              </div>
+              <div className="grid min-h-[220px] grid-cols-[64px_1fr]">
+                <div className="flex flex-col gap-2.5 border-e border-ink/[.07] bg-surface p-3">
+                  <span className="block h-1.5 rounded-sm bg-jameel" />
+                  <span className="block h-1.5 rounded-sm bg-ink/[.16]" />
+                  <span className="block h-1.5 rounded-sm bg-ink/[.12]" />
+                  <span className="block h-1.5 rounded-sm bg-ink/[.12]" />
                 </div>
-                <div className="flex h-9 items-center justify-center rounded-full bg-dark">
-                  <span className="block h-1.5 w-[40%] rounded-sm bg-mint" />
+                <div className="flex flex-col gap-2.5 p-4">
+                  <span className="block h-[7px] w-[40%] rounded-sm bg-dark" />
+                  <div className="grid grid-cols-3 gap-2.5">
+                    {[0, 1, 2].map((i) => (
+                      <div key={i} className="flex flex-col gap-1.5">
+                        <div className={`h-[54px] rounded-[10px] ${i === 1 ? "bg-jameel-2" : "bg-surface"}`} />
+                        <span className="block h-1.5 w-[80%] rounded bg-ink/[.18]" />
+                        <span className="block h-1.5 w-[45%] rounded bg-jameel" />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex h-9 items-center justify-between rounded-full bg-surface ps-4 pe-1.5">
+                    <span className="block h-1.5 w-[40%] rounded bg-ink/[.16]" />
+                    <span className="block h-[26px] w-[72px] rounded-full bg-jameel" />
+                  </div>
                 </div>
               </div>
             </div>
@@ -173,10 +170,10 @@ export default function NuraCaseStudy() {
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { bg: "bg-nura-bg", accent: "bg-nura" },
+            { bg: "bg-jameel-bg", accent: "bg-jameel" },
             { bg: "bg-canvas", accent: "bg-dark" },
-            { bg: "bg-nura-bg", accent: "bg-nura-2" },
-            { bg: "bg-canvas", accent: "bg-mint" },
+            { bg: "bg-jameel-bg", accent: "bg-jameel-2" },
+            { bg: "bg-canvas", accent: "bg-jameel" },
           ].map((screen, i) => (
             <RevealItem
               key={i}
@@ -202,8 +199,8 @@ export default function NuraCaseStudy() {
             <p className="m-0 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{cs.dsCopy}</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="block h-14 w-14 rounded-2xl bg-nura" />
-            <span className="block h-14 w-14 rounded-2xl bg-nura-2" />
+            <span className="block h-14 w-14 rounded-2xl bg-jameel" />
+            <span className="block h-14 w-14 rounded-2xl bg-jameel-2" />
             <span className="block h-14 w-14 rounded-2xl bg-dark" />
             <div className="flex flex-1 flex-col gap-2">
               <span className="block h-3 w-[70%] rounded bg-dark" />
@@ -239,15 +236,15 @@ export default function NuraCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <button
-            onClick={() => router.push("/work/jameel")}
+            onClick={() => router.push("/work/nazarih")}
             className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
-                <span className="text-[20px] font-semibold">{t.work.p2.name}</span>
-                <span className="text-[14px] text-ink-soft">{t.work.p2.category}</span>
+                <span className="text-[20px] font-semibold">{t.work.p3.name}</span>
+                <span className="text-[14px] text-ink-soft">{t.work.p3.category}</span>
               </div>
-              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p2.desc}</p>
+              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p3.desc}</p>
             </div>
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>
