@@ -206,15 +206,15 @@ export default function TangleVibeCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <button
-            onClick={() => router.push("/work/arrentio")}
+            onClick={() => router.push("/work/kwayes")}
             className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
-                <span className="text-[20px] font-semibold">{t.work.featured.name}</span>
-                <span className="text-[14px] text-ink-soft">{t.work.featured.category}</span>
+                <span className="text-[20px] font-semibold">{t.work.p6.name}</span>
+                <span className="text-[14px] text-ink-soft">{t.work.p6.category}</span>
               </div>
-              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.featured.desc}</p>
+              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p6.desc}</p>
             </div>
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>

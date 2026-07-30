@@ -7,10 +7,10 @@ import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { scrollToSection } from "@/lib/scroll";
 
-export default function ArrentioCaseStudy() {
+export default function KwayesCaseStudy() {
   const { t, arrow, backArrow } = useLanguage();
   const router = useRouter();
-  const cs = t.csArrentio;
+  const cs = t.csKwayes;
 
   const goWork = () => {
     if (window.location.pathname === "/") scrollToSection("work");
@@ -60,60 +60,33 @@ export default function ArrentioCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(50px,7vw,90px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="relative overflow-hidden rounded-[24px] bg-arrentio-bg p-[clamp(24px,5vw,60px)]">
-          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-arrentio/[.12]" />
-          <div className="relative flex flex-wrap items-center justify-center gap-[clamp(18px,3vw,34px)] py-[clamp(20px,4vw,50px)]">
-            <div className="w-[min(100%,470px)] -rotate-2 overflow-hidden rounded-[18px] border border-ink/[.08] bg-canvas shadow-[0_40px_70px_-30px_rgba(11,20,32,.35)]">
-              <div className="flex h-[34px] items-center gap-1.5 bg-arrentio-ink px-3.5">
-                <span className="block h-2 w-2 rounded-full bg-white/90" />
-                <span className="block h-2 w-2 rounded-full bg-white/30" />
-                <span className="ms-2 block h-[7px] w-[104px] rounded-full bg-white/25" />
-              </div>
-              <div className="flex flex-col gap-3 p-[clamp(14px,2.4vw,22px)]">
-                <div className="flex h-[38px] items-center justify-between rounded-full bg-surface ps-4 pe-1.5">
-                  <span className="block h-1.5 w-[46%] rounded bg-ink/[.16]" />
-                  <span className="block h-[26px] w-[72px] rounded-full bg-arrentio" />
+        <Reveal className="relative overflow-hidden rounded-[24px] bg-kwayes-bg p-[clamp(24px,5vw,60px)]">
+          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-kwayes/[.16]" />
+          <div className="relative flex items-center justify-center py-[clamp(20px,4vw,50px)]">
+            <div
+              className="w-[min(48%,270px)] rounded-[32px] bg-[#0A0D0C] p-2.5 shadow-[0_46px_80px_-30px_rgba(0,0,0,.6)]"
+              style={{ aspectRatio: "9 / 18.6" }}
+            >
+              <div className="flex h-full flex-col gap-2.5 rounded-[24px] bg-canvas p-3.5">
+                <span className="mx-auto block h-1 w-10 rounded-full bg-ink/[.18]" />
+                <div className="flex items-center justify-between">
+                  <span className="block h-2.5 w-[45%] rounded bg-dark" />
+                  <span className="block h-6 w-6 rounded-full bg-kwayes-2" />
                 </div>
-                <div className="flex gap-1.5">
-                  <span className="block h-[22px] w-[64px] rounded-full bg-arrentio-bg" />
-                  <span className="block h-[22px] w-[52px] rounded-full bg-surface" />
-                  <span className="block h-[22px] w-[58px] rounded-full bg-surface" />
-                </div>
-                <div className="grid grid-cols-3 gap-2.5">
-                  {[0, 1, 2].map((i) => (
-                    <div key={i} className="flex flex-col gap-1.5">
-                      <div className={`h-[64px] rounded-[10px] ${i === 1 ? "bg-arrentio-2" : "bg-surface"}`} />
-                      <span className="block h-1.5 w-[80%] rounded bg-ink/[.18]" />
-                      <span className="block h-1.5 w-[45%] rounded bg-arrentio" />
+                <div className="grid flex-1 grid-cols-2 gap-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className="flex flex-col gap-1.5 rounded-xl bg-surface p-1.5">
+                      <div className={`h-[52px] rounded-lg ${i % 2 === 0 ? "bg-kwayes-2" : "bg-ink/[.1]"}`} />
+                      <span className="block h-1.5 w-[75%] rounded-sm bg-ink/[.16]" />
                     </div>
                   ))}
                 </div>
-              </div>
-            </div>
-            <div className="w-[min(76%,300px)] rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_36px_64px_-30px_rgba(11,20,32,.4)]">
-              <div className="flex h-[28px] items-center gap-1.5 bg-arrentio-ink px-3">
-                <span className="block h-1.5 w-1.5 rounded-full bg-white" />
-                <span className="block h-[5px] w-14 rounded-sm bg-white/40" />
-              </div>
-              <div className="grid min-h-[170px] grid-cols-[52px_1fr]">
-                <div className="flex flex-col gap-2 border-e border-ink/[.07] bg-surface p-2.5">
-                  <span className="block h-1.5 rounded-sm bg-arrentio" />
-                  <span className="block h-1.5 rounded-sm bg-ink/[.16]" />
-                  <span className="block h-1.5 rounded-sm bg-ink/[.12]" />
-                  <span className="block h-1.5 rounded-sm bg-ink/[.12]" />
-                </div>
-                <div className="flex flex-col gap-2 p-3">
-                  <span className="block h-[7px] w-[44%] rounded-sm bg-dark" />
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <div className="h-[32px] rounded-[7px] bg-surface" />
-                    <div className="h-[32px] rounded-[7px] bg-arrentio-2" />
-                  </div>
-                  <div className="flex h-[54px] items-end gap-1 rounded-lg bg-surface p-2">
-                    <span className="block h-[34%] flex-1 rounded-sm bg-ink/[.14]" />
-                    <span className="block h-[58%] flex-1 rounded-sm bg-ink/[.14]" />
-                    <span className="block h-[44%] flex-1 rounded-sm bg-ink/[.14]" />
-                    <span className="block h-[88%] flex-1 rounded-sm bg-arrentio" />
-                  </div>
+                <div className="relative flex h-11 items-center justify-around rounded-full bg-surface px-2">
+                  <span className="block h-3 w-3 rounded-sm bg-kwayes" />
+                  <span className="block h-3 w-3 rounded-full border border-ink/[.2]" />
+                  <span className="absolute start-1/2 top-1/2 block h-9 w-9 -translate-x-1/2 -translate-y-1/2 rounded-full bg-kwayes" />
+                  <span className="block h-3 w-3 rounded-full border border-ink/[.2]" />
+                  <span className="block h-3 w-3 rounded-full border border-ink/[.2]" />
                 </div>
               </div>
             </div>
@@ -172,10 +145,10 @@ export default function ArrentioCaseStudy() {
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { bg: "bg-arrentio-bg", accent: "bg-arrentio" },
-            { bg: "bg-canvas", accent: "bg-arrentio-ink" },
-            { bg: "bg-arrentio-bg", accent: "bg-arrentio-2" },
-            { bg: "bg-canvas", accent: "bg-arrentio" },
+            { bg: "bg-kwayes-bg", accent: "bg-kwayes" },
+            { bg: "bg-canvas", accent: "bg-dark" },
+            { bg: "bg-kwayes-bg", accent: "bg-kwayes-2" },
+            { bg: "bg-canvas", accent: "bg-kwayes" },
           ].map((screen, i) => (
             <RevealItem
               key={i}
@@ -201,9 +174,9 @@ export default function ArrentioCaseStudy() {
             <p className="m-0 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{cs.dsCopy}</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="block h-14 w-14 rounded-2xl bg-arrentio" />
-            <span className="block h-14 w-14 rounded-2xl bg-arrentio-2" />
-            <span className="block h-14 w-14 rounded-2xl bg-arrentio-ink" />
+            <span className="block h-14 w-14 rounded-2xl bg-kwayes" />
+            <span className="block h-14 w-14 rounded-2xl bg-kwayes-2" />
+            <span className="block h-14 w-14 rounded-2xl bg-dark" />
             <div className="flex flex-1 flex-col gap-2">
               <span className="block h-3 w-[70%] rounded bg-dark" />
               <span className="block h-2 w-[50%] rounded bg-ink/[.14]" />
@@ -238,15 +211,15 @@ export default function ArrentioCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <button
-            onClick={() => router.push("/work/rentop")}
+            onClick={() => router.push("/work/arrentio")}
             className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
-                <span className="text-[20px] font-semibold">{t.work.p1.name}</span>
-                <span className="text-[14px] text-ink-soft">{t.work.p1.category}</span>
+                <span className="text-[20px] font-semibold">{t.work.featured.name}</span>
+                <span className="text-[14px] text-ink-soft">{t.work.featured.category}</span>
               </div>
-              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p1.desc}</p>
+              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.featured.desc}</p>
             </div>
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>

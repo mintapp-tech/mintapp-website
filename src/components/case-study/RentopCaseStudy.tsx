@@ -7,10 +7,10 @@ import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { scrollToSection } from "@/lib/scroll";
 
-export default function NuraCaseStudy() {
+export default function RentopCaseStudy() {
   const { t, arrow, backArrow } = useLanguage();
   const router = useRouter();
-  const cs = t.cs;
+  const cs = t.csRentop;
 
   const goWork = () => {
     if (window.location.pathname === "/") scrollToSection("work");
@@ -60,61 +60,37 @@ export default function NuraCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(50px,7vw,90px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="relative overflow-hidden rounded-[24px] bg-nura-bg p-[clamp(24px,5vw,60px)]">
-          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-nura/[.16]" />
-          <div className="relative flex flex-wrap items-center justify-center gap-6 py-[clamp(20px,4vw,50px)]">
+        <Reveal className="relative overflow-hidden rounded-[24px] bg-rentop-bg p-[clamp(24px,5vw,60px)]">
+          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-rentop/[.16]" />
+          <div className="relative flex items-center justify-center py-[clamp(20px,4vw,50px)]">
             <div
-              className="w-[min(30%,190px)] -translate-y-3 -rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.6)]"
+              className="w-[min(48%,270px)] rounded-[32px] bg-[#0A0D0C] p-2.5 shadow-[0_46px_80px_-30px_rgba(0,0,0,.6)]"
               style={{ aspectRatio: "9 / 18.6" }}
             >
-              <div className="flex h-full flex-col gap-2.5 rounded-[22px] bg-canvas p-3.5">
-                <span className="mx-auto block h-1 w-8 rounded-full bg-ink/[.18]" />
+              <div className="flex h-full flex-col gap-3 rounded-[24px] bg-canvas p-4">
+                <span className="mx-auto block h-1 w-10 rounded-full bg-ink/[.18]" />
                 <span className="block h-2.5 w-[55%] rounded bg-dark" />
-                <div className="h-[90px] rounded-[14px] bg-nura-2" />
+                <div className="flex justify-between gap-2">
+                  {[0, 1, 2, 3].map((i) => (
+                    <span
+                      key={i}
+                      className={`block h-9 w-9 rounded-full border ${i === 0 ? "border-rentop bg-rentop-bg" : "border-ink/[.1] bg-surface"}`}
+                    />
+                  ))}
+                </div>
                 <div className="grid grid-cols-2 gap-2">
-                  <div className="h-[60px] rounded-xl bg-surface" />
-                  <div className="h-[60px] rounded-xl bg-surface" />
+                  <div className="h-14 rounded-xl bg-rentop-2" />
+                  <div className="h-14 rounded-xl bg-surface" />
                 </div>
-                <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-              </div>
-            </div>
-            <div
-              className="w-[min(34%,214px)] translate-y-4 rounded-[32px] bg-[#0A0D0C] p-2 shadow-[0_44px_80px_-30px_rgba(0,0,0,.65)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col overflow-hidden rounded-[24px] bg-nura">
-                <div className="flex flex-col gap-2 px-3.5 pb-2 pt-4">
-                  <span className="block h-2.5 w-[45%] rounded bg-white/90" />
-                  <span className="block h-1.5 w-[70%] rounded bg-white/40" />
-                </div>
-                <div className="flex-1 rounded-t-2xl bg-canvas/95 p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="h-[70px] rounded-xl bg-surface" />
-                    <div className="h-[70px] rounded-xl bg-nura-2" />
+                <div className="mt-1 flex-1 overflow-hidden rounded-2xl bg-surface">
+                  <div className="h-[60%] bg-rentop-2" />
+                  <div className="flex flex-col gap-1.5 p-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="block h-2 w-[40%] rounded-sm bg-dark" />
+                      <span className="block h-2 w-[16%] rounded-sm bg-rentop" />
+                    </div>
+                    <span className="block h-1.5 w-[65%] rounded-sm bg-ink/[.14]" />
                   </div>
-                  <span className="mt-2 block h-1.5 w-[80%] rounded bg-ink/[.12]" />
-                </div>
-                <div className="p-3.5">
-                  <div className="flex h-9 items-center justify-center rounded-full bg-white">
-                    <span className="block h-1.5 w-[38%] rounded-sm bg-nura" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div
-              className="w-[min(30%,190px)] -translate-y-2 rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.6)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col gap-2.5 rounded-[22px] bg-canvas p-3.5">
-                <span className="mx-auto block h-1 w-8 rounded-full bg-ink/[.18]" />
-                <span className="block h-2.5 w-[45%] rounded bg-dark" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="h-11 rounded-xl border border-ink/[.08] bg-surface" />
-                  <div className="h-11 rounded-xl bg-mint-soft" />
-                  <div className="h-11 rounded-xl border border-ink/[.08] bg-surface" />
-                </div>
-                <div className="flex h-9 items-center justify-center rounded-full bg-dark">
-                  <span className="block h-1.5 w-[40%] rounded-sm bg-mint" />
                 </div>
               </div>
             </div>
@@ -173,10 +149,10 @@ export default function NuraCaseStudy() {
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { bg: "bg-nura-bg", accent: "bg-nura" },
+            { bg: "bg-rentop-bg", accent: "bg-rentop" },
             { bg: "bg-canvas", accent: "bg-dark" },
-            { bg: "bg-nura-bg", accent: "bg-nura-2" },
-            { bg: "bg-canvas", accent: "bg-mint" },
+            { bg: "bg-rentop-bg", accent: "bg-rentop-2" },
+            { bg: "bg-canvas", accent: "bg-rentop" },
           ].map((screen, i) => (
             <RevealItem
               key={i}
@@ -202,8 +178,8 @@ export default function NuraCaseStudy() {
             <p className="m-0 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{cs.dsCopy}</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="block h-14 w-14 rounded-2xl bg-nura" />
-            <span className="block h-14 w-14 rounded-2xl bg-nura-2" />
+            <span className="block h-14 w-14 rounded-2xl bg-rentop" />
+            <span className="block h-14 w-14 rounded-2xl bg-rentop-2" />
             <span className="block h-14 w-14 rounded-2xl bg-dark" />
             <div className="flex flex-1 flex-col gap-2">
               <span className="block h-3 w-[70%] rounded bg-dark" />

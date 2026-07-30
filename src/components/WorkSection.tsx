@@ -9,11 +9,12 @@ export default function WorkSection() {
   const { t, arrow } = useLanguage();
   const router = useRouter();
   const goToArrentioCaseStudy = () => router.push("/work/arrentio");
-  const goToNuraCaseStudy = () => router.push("/work/nura");
+  const goToRentopCaseStudy = () => router.push("/work/rentop");
   const goToJameelCaseStudy = () => router.push("/work/jameel");
   const goToNazarihCaseStudy = () => router.push("/work/nazarih");
   const goToTaskatyCaseStudy = () => router.push("/work/taskaty");
   const goToTangleVibeCaseStudy = () => router.push("/work/tanglevibe");
+  const goToKwayesCaseStudy = () => router.push("/work/kwayes");
 
   return (
     <section id="work" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
@@ -89,26 +90,24 @@ export default function WorkSection() {
 
       <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2 lg:grid-cols-3">
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
-          <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-nura-bg p-7">
-            <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-nura/[.16]" />
-            <div className="relative flex items-center gap-3.5">
-              <div className="w-[92px] -rotate-6 rounded-[18px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
-                <div className="flex h-full flex-col gap-1.5 rounded-[13px] bg-canvas p-2.5">
-                  <span className="block h-1.5 w-[52%] rounded bg-dark" />
-                  <div className="h-[34px] rounded-lg bg-nura-2" />
-                  <div className="grid grid-cols-2 gap-1.5">
-                    <div className="h-[24px] rounded-md bg-surface" />
-                    <div className="h-[24px] rounded-md bg-surface" />
-                  </div>
-                  <span className="block h-1 w-[70%] rounded bg-ink/[.14]" />
+          <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-rentop-bg p-7">
+            <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-rentop/[.16]" />
+            <div className="w-[132px] rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
+              <div className="flex h-full flex-col gap-1.5 rounded-[16px] bg-canvas p-2.5">
+                <span className="block h-1.5 w-[50%] rounded-sm bg-dark" />
+                <div className="flex justify-between gap-1">
+                  {[0, 1, 2, 3].map((i) => (
+                    <span
+                      key={i}
+                      className={`block h-4 w-4 rounded-full border ${i === 0 ? "border-rentop bg-rentop-bg" : "border-ink/[.1] bg-surface"}`}
+                    />
+                  ))}
                 </div>
-              </div>
-              <div className="w-[92px] translate-y-2 rotate-6 rounded-[18px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
-                <div className="flex h-full flex-col gap-1.5 rounded-[13px] bg-nura p-2.5">
-                  <span className="block h-1.5 w-[40%] rounded bg-white/85" />
-                  <div className="flex-1 rounded-md bg-canvas/10" />
-                  <div className="flex h-[20px] items-center justify-center rounded-full bg-white">
-                    <span className="block h-1 w-[40%] rounded-sm bg-nura" />
+                <div className="flex-1 overflow-hidden rounded-lg bg-surface">
+                  <div className="h-[62%] bg-rentop-2" />
+                  <div className="flex flex-col gap-1 p-1.5">
+                    <span className="block h-1 w-[55%] rounded-sm bg-dark" />
+                    <span className="block h-1 w-[35%] rounded-sm bg-rentop" />
                   </div>
                 </div>
               </div>
@@ -127,7 +126,7 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToNuraCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <button onClick={goToRentopCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
               {t.work.cta} <span className="block">{arrow}</span>
             </button>
           </div>
@@ -291,6 +290,43 @@ export default function WorkSection() {
               ))}
             </div>
             <button onClick={goToTangleVibeCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+              {t.work.cta} <span className="block">{arrow}</span>
+            </button>
+          </div>
+        </RevealItem>
+
+        <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
+          <div className="flex min-h-[250px] items-center justify-center border-b border-ink/[.07] bg-kwayes-bg p-7">
+            <div className="w-[132px] rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
+              <div className="flex h-full flex-col gap-1.5 rounded-[16px] bg-canvas p-2">
+                <span className="block h-1.5 w-[45%] rounded-sm bg-dark" />
+                <div className="grid flex-1 grid-cols-2 gap-1.5">
+                  {[0, 1, 2, 3].map((i) => (
+                    <div key={i} className={`rounded-md ${i % 2 === 0 ? "bg-kwayes-2" : "bg-surface"}`} />
+                  ))}
+                </div>
+                <div className="relative flex h-7 items-center justify-around rounded-full bg-surface px-1.5">
+                  <span className="block h-2 w-2 rounded-full border border-ink/[.16]" />
+                  <span className="absolute start-1/2 top-1/2 block h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-kwayes" />
+                  <span className="block h-2 w-2 rounded-full border border-ink/[.16]" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="p-[clamp(24px,2.6vw,32px)]">
+            <div className="flex items-baseline gap-2.5">
+              <h3 className="m-0 text-[26px] font-semibold tracking-[-0.02em]">{t.work.p6.name}</h3>
+              <span className="text-[13.5px] text-ink-soft">{t.work.p6.category}</span>
+            </div>
+            <p className="mt-3 text-[15.5px] leading-[1.8] text-ink-soft">{t.work.p6.desc}</p>
+            <div className="my-5 flex flex-wrap gap-1.5">
+              {t.work.p6.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-ink/[.15] px-3 py-1 text-xs text-ink">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <button onClick={goToKwayesCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
               {t.work.cta} <span className="block">{arrow}</span>
             </button>
           </div>
