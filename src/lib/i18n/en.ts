@@ -185,13 +185,56 @@ export const en: HomeContent = {
       { t: "Requests, not phone calls", d: "Booking requests, messaging and status updates stay on the platform end to end." },
     ],
     screensTitle: "Product screens",
-    screensCopy: "Compositions from the renter marketplace, the provider dashboard and the admin console.",
+    screensCopy: "Real screens from the live product: the homepage with Ask AI, the explore view with verified inventory, provider onboarding and the booking page.",
     dsTitle: "Design system",
     dsCopy: "A light-only interface with one signal colour: a single red reserved for primary actions, set on a quiet neutral foundation.",
     outcomeTitle: "Outcome",
     outcomeCopy:
       "The result is production architecture, not a prototype: a row-level-secured multi-role database, wildcard multi-tenancy with cross-subdomain sessions, transactional email and a content pipeline that publishes in four languages — ready for launch in Jakarta, with Gulf expansion built in.",
     outcomePoints: ["Verified marketplace ready for launch", "Multi-tenant storefronts for every agency", "Localised in 4 languages · 10 currencies"],
+    featuresTitle: "Inside the platform",
+    featureGroups: [
+      {
+        t: "For renters",
+        items: [
+          "Verified cars only — every listing belongs to a reviewed agency",
+          "Filters for city, dates, category, transmission, seats and price",
+          "Booking requests with add-ons like chauffeur and airport pickup",
+          "Identity document upload with verification tracking",
+          "Messaging, notifications and passkey sign-in",
+        ],
+      },
+      {
+        t: "For agencies",
+        items: [
+          "Six-step listing wizard with resumable drafts",
+          "Fleet and photo management with AI crop & enhance",
+          "Booking approvals, team members and invitations",
+          "A branded storefront on their own subdomain or custom domain",
+          "AI-assisted listing details for faster onboarding",
+        ],
+      },
+      {
+        t: "Trust & operations",
+        items: [
+          "Agency onboarding with KYB document review",
+          "Car approval pipeline before anything goes live",
+          "Customer identity verification via Didit webhooks",
+          "E-signed rental agreements via DocuSeal",
+          "Bookings, payouts, disputes and a full audit log",
+        ],
+      },
+      {
+        t: "AI & automation",
+        items: [
+          "Ask AI: natural-language search parsed into structured filters",
+          "AI photo crop and enhancement for listing galleries",
+          "Content engine publishing localised blog and social posts",
+          "Transactional email for every booking and verification event",
+          "Live exchange rates across 10 currencies",
+        ],
+      },
+    ],
     relatedTitle: "Related project",
     back: "Back",
   },

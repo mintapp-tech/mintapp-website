@@ -21,6 +21,8 @@ export interface CaseStudyContent {
   outcomeTitle: string;
   outcomeCopy: string;
   outcomePoints: string[];
+  featuresTitle?: string;
+  featureGroups?: { t: string; items: string[] }[];
   relatedTitle: string;
   back: string;
 }
