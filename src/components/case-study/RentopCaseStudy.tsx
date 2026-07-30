@@ -1,11 +1,25 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { scrollToSection } from "@/lib/scroll";
+
+function PhoneFrame({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) {
+  return (
+    <div
+      className="w-full overflow-hidden rounded-[28px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.55)]"
+      style={{ aspectRatio: "1290 / 2796" }}
+    >
+      <div className="relative h-full w-full overflow-hidden rounded-[20px]">
+        <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 25vw, 45vw" className="object-cover" priority={priority} />
+      </div>
+    </div>
+  );
+}
 
 export default function RentopCaseStudy() {
   const { t, arrow, backArrow } = useLanguage();
@@ -62,37 +76,12 @@ export default function RentopCaseStudy() {
       <section className="mx-auto mt-[clamp(50px,7vw,90px)] max-w-[1280px] px-5 sm:px-6">
         <Reveal className="relative overflow-hidden rounded-[24px] bg-rentop-bg p-[clamp(24px,5vw,60px)]">
           <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-rentop/[.16]" />
-          <div className="relative flex items-center justify-center py-[clamp(20px,4vw,50px)]">
-            <div
-              className="w-[min(48%,270px)] rounded-[32px] bg-[#0A0D0C] p-2.5 shadow-[0_46px_80px_-30px_rgba(0,0,0,.6)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col gap-3 rounded-[24px] bg-canvas p-4">
-                <span className="mx-auto block h-1 w-10 rounded-full bg-ink/[.18]" />
-                <span className="block h-2.5 w-[55%] rounded bg-dark" />
-                <div className="flex justify-between gap-2">
-                  {[0, 1, 2, 3].map((i) => (
-                    <span
-                      key={i}
-                      className={`block h-9 w-9 rounded-full border ${i === 0 ? "border-rentop bg-rentop-bg" : "border-ink/[.1] bg-surface"}`}
-                    />
-                  ))}
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="h-14 rounded-xl bg-rentop-2" />
-                  <div className="h-14 rounded-xl bg-surface" />
-                </div>
-                <div className="mt-1 flex-1 overflow-hidden rounded-2xl bg-surface">
-                  <div className="h-[60%] bg-rentop-2" />
-                  <div className="flex flex-col gap-1.5 p-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="block h-2 w-[40%] rounded-sm bg-dark" />
-                      <span className="block h-2 w-[16%] rounded-sm bg-rentop" />
-                    </div>
-                    <span className="block h-1.5 w-[65%] rounded-sm bg-ink/[.14]" />
-                  </div>
-                </div>
-              </div>
+          <div className="relative flex items-end justify-center gap-[clamp(16px,3vw,28px)] py-[clamp(20px,4vw,50px)]">
+            <div className="w-[min(38%,220px)] -rotate-3">
+              <PhoneFrame src="/work/rentop/home.jpg" alt="Rentop home screen with brand and category browsing" priority />
+            </div>
+            <div className="w-[min(42%,240px)] translate-y-2 rotate-2">
+              <PhoneFrame src="/work/rentop/car-detail.jpg" alt="Rentop car detail page with specs, host and booking" />
             </div>
           </div>
         </Reveal>
@@ -148,24 +137,18 @@ export default function RentopCaseStudy() {
           {cs.screensCopy}
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { bg: "bg-rentop-bg", accent: "bg-rentop" },
-            { bg: "bg-canvas", accent: "bg-dark" },
-            { bg: "bg-rentop-bg", accent: "bg-rentop-2" },
-            { bg: "bg-canvas", accent: "bg-rentop" },
-          ].map((screen, i) => (
-            <RevealItem
-              key={i}
-              className={`flex aspect-[3/4] items-center justify-center rounded-2xl border border-ink/[.08] ${screen.bg} p-6`}
-            >
-              <div className="flex w-full flex-col gap-2.5">
-                <span className="block h-2 w-[50%] rounded bg-dark/80" />
-                <div className={`h-16 rounded-lg ${screen.accent}`} />
-                <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-                <span className="block h-1.5 w-[40%] rounded bg-ink/[.14]" />
-              </div>
-            </RevealItem>
-          ))}
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/home.jpg" alt="Rentop home screen" />
+          </RevealItem>
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/explore.jpg" alt="Rentop explore feed with listings" />
+          </RevealItem>
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/car-detail.jpg" alt="Rentop car detail and host page" />
+          </RevealItem>
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/booking.jpg" alt="Rentop calendar booking and price breakdown" />
+          </RevealItem>
         </RevealGroup>
       </section>
 

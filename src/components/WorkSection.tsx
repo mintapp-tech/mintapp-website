@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
@@ -92,24 +93,9 @@ export default function WorkSection() {
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-rentop-bg p-7">
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-rentop/[.16]" />
-            <div className="w-[132px] rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
-              <div className="flex h-full flex-col gap-1.5 rounded-[16px] bg-canvas p-2.5">
-                <span className="block h-1.5 w-[50%] rounded-sm bg-dark" />
-                <div className="flex justify-between gap-1">
-                  {[0, 1, 2, 3].map((i) => (
-                    <span
-                      key={i}
-                      className={`block h-4 w-4 rounded-full border ${i === 0 ? "border-rentop bg-rentop-bg" : "border-ink/[.1] bg-surface"}`}
-                    />
-                  ))}
-                </div>
-                <div className="flex-1 overflow-hidden rounded-lg bg-surface">
-                  <div className="h-[62%] bg-rentop-2" />
-                  <div className="flex flex-col gap-1 p-1.5">
-                    <span className="block h-1 w-[55%] rounded-sm bg-dark" />
-                    <span className="block h-1 w-[35%] rounded-sm bg-rentop" />
-                  </div>
-                </div>
+            <div className="relative w-[132px] overflow-hidden rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "1290 / 2796" }}>
+              <div className="relative h-full w-full overflow-hidden rounded-[16px]">
+                <Image src="/work/rentop/home.jpg" alt="Rentop home screen" fill sizes="132px" className="object-cover" />
               </div>
             </div>
           </div>
