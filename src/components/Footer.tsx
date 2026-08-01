@@ -14,7 +14,7 @@ export default function Footer() {
     { label: t.nav.work, onClick: () => goToSection(router, pathname, "work") },
     { label: t.nav.services, onClick: () => router.push("/services") },
     { label: t.nav.about, onClick: () => goToSection(router, pathname, "process") },
-    { label: t.nav.insights, onClick: () => goToSection(router, pathname, "insights") },
+    { label: t.nav.insights, onClick: () => router.push("/insights") },
   ];
 
   return (

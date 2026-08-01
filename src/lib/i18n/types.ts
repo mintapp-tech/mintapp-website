@@ -158,4 +158,18 @@ export interface HomeContent {
     }[];
     note: string;
   };
+  insp: {
+    title: string;
+    sub: string;
+    filters: string[];
+    featuredLabel: string;
+    read: string;
+    featured: { cat: string; title: string; blurb: string };
+    items: { cat: string; title: string; blurb: string }[];
+    ctaTitle: string;
+    ctaCopy: string;
+    ctaBtn: string;
+    emailPh: string;
+    subscribed: string;
+  };
 }
