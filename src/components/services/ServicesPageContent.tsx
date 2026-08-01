@@ -11,6 +11,8 @@ const iconIndex = [
   <span key="b" className="block h-[19px] w-3 rounded-[4px] border-2 border-mint" />,
 ];
 
+const relatedSlugs = ["arrentio", "rentop"];
+
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
     <div>
@@ -115,7 +117,7 @@ export default function ServicesPageContent() {
                 </div>
               </div>
               <button
-                onClick={() => router.push("/work/nura")}
+                onClick={() => router.push(`/work/${relatedSlugs[i]}`)}
                 className="flex-none cursor-pointer text-[14px] font-semibold text-dark underline decoration-mint decoration-[1.5px] underline-offset-4"
               >
                 {t.work.cta}

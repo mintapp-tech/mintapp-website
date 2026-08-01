@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
@@ -7,10 +8,23 @@ import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { scrollToSection } from "@/lib/scroll";
 
-export default function NuraCaseStudy() {
+function PhoneFrame({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) {
+  return (
+    <div
+      className="w-full overflow-hidden rounded-[28px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.55)]"
+      style={{ aspectRatio: "1290 / 2796" }}
+    >
+      <div className="relative h-full w-full overflow-hidden rounded-[20px]">
+        <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 25vw, 45vw" className="object-cover" priority={priority} />
+      </div>
+    </div>
+  );
+}
+
+export default function RentopCaseStudy() {
   const { t, arrow, backArrow } = useLanguage();
   const router = useRouter();
-  const cs = t.cs;
+  const cs = t.csRentop;
 
   const goWork = () => {
     if (window.location.pathname === "/") scrollToSection("work");
@@ -60,63 +74,14 @@ export default function NuraCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(50px,7vw,90px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="relative overflow-hidden rounded-[24px] bg-nura-bg p-[clamp(24px,5vw,60px)]">
-          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-nura/[.16]" />
-          <div className="relative flex flex-wrap items-center justify-center gap-6 py-[clamp(20px,4vw,50px)]">
-            <div
-              className="w-[min(30%,190px)] -translate-y-3 -rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.6)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col gap-2.5 rounded-[22px] bg-canvas p-3.5">
-                <span className="mx-auto block h-1 w-8 rounded-full bg-ink/[.18]" />
-                <span className="block h-2.5 w-[55%] rounded bg-dark" />
-                <div className="h-[90px] rounded-[14px] bg-nura-2" />
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="h-[60px] rounded-xl bg-surface" />
-                  <div className="h-[60px] rounded-xl bg-surface" />
-                </div>
-                <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-              </div>
+        <Reveal className="relative overflow-hidden rounded-[24px] bg-rentop-bg p-[clamp(24px,5vw,60px)]">
+          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-rentop/[.16]" />
+          <div className="relative flex items-end justify-center gap-[clamp(16px,3vw,28px)] py-[clamp(20px,4vw,50px)]">
+            <div className="w-[min(38%,220px)] -rotate-3">
+              <PhoneFrame src="/work/rentop/home.jpg" alt="Rentop home screen with brand and category browsing" priority />
             </div>
-            <div
-              className="w-[min(34%,214px)] translate-y-4 rounded-[32px] bg-[#0A0D0C] p-2 shadow-[0_44px_80px_-30px_rgba(0,0,0,.65)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col overflow-hidden rounded-[24px] bg-nura">
-                <div className="flex flex-col gap-2 px-3.5 pb-2 pt-4">
-                  <span className="block h-2.5 w-[45%] rounded bg-white/90" />
-                  <span className="block h-1.5 w-[70%] rounded bg-white/40" />
-                </div>
-                <div className="flex-1 rounded-t-2xl bg-canvas/95 p-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="h-[70px] rounded-xl bg-surface" />
-                    <div className="h-[70px] rounded-xl bg-nura-2" />
-                  </div>
-                  <span className="mt-2 block h-1.5 w-[80%] rounded bg-ink/[.12]" />
-                </div>
-                <div className="p-3.5">
-                  <div className="flex h-9 items-center justify-center rounded-full bg-white">
-                    <span className="block h-1.5 w-[38%] rounded-sm bg-nura" />
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div
-              className="w-[min(30%,190px)] -translate-y-2 rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.6)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col gap-2.5 rounded-[22px] bg-canvas p-3.5">
-                <span className="mx-auto block h-1 w-8 rounded-full bg-ink/[.18]" />
-                <span className="block h-2.5 w-[45%] rounded bg-dark" />
-                <div className="flex flex-1 flex-col gap-2">
-                  <div className="h-11 rounded-xl border border-ink/[.08] bg-surface" />
-                  <div className="h-11 rounded-xl bg-mint-soft" />
-                  <div className="h-11 rounded-xl border border-ink/[.08] bg-surface" />
-                </div>
-                <div className="flex h-9 items-center justify-center rounded-full bg-dark">
-                  <span className="block h-1.5 w-[40%] rounded-sm bg-mint" />
-                </div>
-              </div>
+            <div className="w-[min(42%,240px)] translate-y-2 rotate-2">
+              <PhoneFrame src="/work/rentop/car-detail.jpg" alt="Rentop car detail page with specs, host and booking" />
             </div>
           </div>
         </Reveal>
@@ -172,24 +137,18 @@ export default function NuraCaseStudy() {
           {cs.screensCopy}
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { bg: "bg-nura-bg", accent: "bg-nura" },
-            { bg: "bg-canvas", accent: "bg-dark" },
-            { bg: "bg-nura-bg", accent: "bg-nura-2" },
-            { bg: "bg-canvas", accent: "bg-mint" },
-          ].map((screen, i) => (
-            <RevealItem
-              key={i}
-              className={`flex aspect-[3/4] items-center justify-center rounded-2xl border border-ink/[.08] ${screen.bg} p-6`}
-            >
-              <div className="flex w-full flex-col gap-2.5">
-                <span className="block h-2 w-[50%] rounded bg-dark/80" />
-                <div className={`h-16 rounded-lg ${screen.accent}`} />
-                <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-                <span className="block h-1.5 w-[40%] rounded bg-ink/[.14]" />
-              </div>
-            </RevealItem>
-          ))}
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/home.jpg" alt="Rentop home screen" />
+          </RevealItem>
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/explore.jpg" alt="Rentop explore feed with listings" />
+          </RevealItem>
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/car-detail.jpg" alt="Rentop car detail and host page" />
+          </RevealItem>
+          <RevealItem>
+            <PhoneFrame src="/work/rentop/booking.jpg" alt="Rentop calendar booking and price breakdown" />
+          </RevealItem>
         </RevealGroup>
       </section>
 
@@ -202,8 +161,8 @@ export default function NuraCaseStudy() {
             <p className="m-0 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{cs.dsCopy}</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="block h-14 w-14 rounded-2xl bg-nura" />
-            <span className="block h-14 w-14 rounded-2xl bg-nura-2" />
+            <span className="block h-14 w-14 rounded-2xl bg-rentop" />
+            <span className="block h-14 w-14 rounded-2xl bg-rentop-2" />
             <span className="block h-14 w-14 rounded-2xl bg-dark" />
             <div className="flex flex-1 flex-col gap-2">
               <span className="block h-3 w-[70%] rounded bg-dark" />
@@ -239,7 +198,7 @@ export default function NuraCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <button
-            onClick={goWork}
+            onClick={() => router.push("/work/jameel")}
             className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
