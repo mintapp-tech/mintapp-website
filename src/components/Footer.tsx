@@ -13,7 +13,7 @@ export default function Footer() {
   const links = [
     { label: t.nav.work, onClick: () => goToSection(router, pathname, "work") },
     { label: t.nav.services, onClick: () => router.push("/services") },
-    { label: t.nav.about, onClick: () => goToSection(router, pathname, "process") },
+    { label: t.nav.about, onClick: () => router.push("/about") },
     { label: t.nav.insights, onClick: () => router.push("/insights") },
   ];
 

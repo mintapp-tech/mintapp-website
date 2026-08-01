@@ -172,4 +172,20 @@ export interface HomeContent {
     emailPh: string;
     subscribed: string;
   };
+  about: {
+    title: string;
+    sub: string;
+    purposeTitle: string;
+    purposeCopy: string;
+    approachTitle: string;
+    approachCopy: string;
+    valuesTitle: string;
+    values: { t: string; d: string }[];
+    modelTitle: string;
+    model: { t: string; d: string }[];
+    regionTitle: string;
+    regionCopy: string;
+    ctaTitle: string;
+    ctaBtn: string;
+  };
 }

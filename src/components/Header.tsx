@@ -43,6 +43,11 @@ export default function Header() {
     router.push("/insights");
   };
 
+  const goAbout = () => {
+    setMenuOpen(false);
+    router.push("/about");
+  };
+
   return (
     <>
       <header className="sticky top-0 z-[60] border-b border-ink/[.07] bg-canvas/[.86] backdrop-blur-md">
@@ -56,7 +61,7 @@ export default function Header() {
             <button className={navLink} onClick={goServices}>
               {t.nav.services}
             </button>
-            <button className={navLink} onClick={() => go("process")}>
+            <button className={navLink} onClick={goAbout}>
               {t.nav.about}
             </button>
             <button className={navLink} onClick={goInsights}>
@@ -124,7 +129,7 @@ export default function Header() {
                 { label: t.nav.home, onClick: goHome },
                 { label: t.nav.work, onClick: () => go("work") },
                 { label: t.nav.services, onClick: goServices },
-                { label: t.nav.about, onClick: () => go("process") },
+                { label: t.nav.about, onClick: goAbout },
                 { label: t.nav.insights, onClick: goInsights },
               ].map((item) => (
                 <button
