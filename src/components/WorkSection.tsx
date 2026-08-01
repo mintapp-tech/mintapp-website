@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
@@ -57,33 +58,27 @@ export default function WorkSection() {
         </div>
         <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden bg-arrentio-bg p-9 sm:min-h-[420px]">
           <span className="absolute -end-[60px] -top-[60px] block h-[220px] w-[220px] rounded-full bg-arrentio/[.12]" />
-          <div className="relative w-[min(92%,400px)] -rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_30px_50px_-26px_rgba(11,20,32,.4)]">
+          <div className="relative w-[min(94%,430px)] -rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_30px_50px_-26px_rgba(11,20,32,.4)]">
             <div className="flex h-[30px] items-center gap-1.5 bg-arrentio-ink px-3">
               <span className="block h-1.5 w-1.5 rounded-full bg-white/90" />
               <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
               <span className="ms-2 block h-[6px] w-[88px] rounded-full bg-white/25" />
             </div>
-            <div className="flex flex-col gap-2.5 p-4">
-              <div className="flex h-[32px] items-center justify-between rounded-full bg-surface ps-3.5 pe-1.5">
-                <span className="block h-1.5 w-[46%] rounded bg-ink/[.16]" />
-                <span className="block h-[22px] w-[60px] rounded-full bg-arrentio" />
-              </div>
-              <div className="flex gap-1.5">
-                <span className="block h-[18px] w-[52px] rounded-full bg-arrentio-bg" />
-                <span className="block h-[18px] w-[44px] rounded-full bg-surface" />
-                <span className="block h-[18px] w-[48px] rounded-full bg-surface" />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex flex-col gap-1.5">
-                    <div className={`h-[52px] rounded-[9px] ${i === 1 ? "bg-arrentio-2" : "bg-surface"}`} />
-                    <span className="block h-1.5 w-[80%] rounded bg-ink/[.18]" />
-                    <span className="block h-1.5 w-[45%] rounded bg-arrentio" />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <Image
+              src="/work/arrentio/home.jpg"
+              alt="Arrentio marketplace homepage"
+              width={1600}
+              height={1084}
+              className="h-auto w-full"
+            />
           </div>
+          <Image
+            src="/work/arrentio/logo.png"
+            alt="Arrentio logo"
+            width={64}
+            height={52}
+            className="absolute bottom-7 start-7 rotate-3 rounded-[16px] shadow-[0_18px_36px_-16px_rgba(11,20,32,.5)]"
+          />
         </div>
       </Reveal>
 
