@@ -188,4 +188,36 @@ export interface HomeContent {
     ctaTitle: string;
     ctaBtn: string;
   };
+  intern: {
+    label: string;
+    warn: string;
+    lead: string;
+    meta: { k: string; v: string }[];
+    s: {
+      summary: string;
+      assumptions: string;
+      users: string;
+      platform: string;
+      features: string;
+      flow: string;
+      visual: string;
+      screens: string;
+      phases: string;
+      questions: string;
+      risks: string;
+      tech: string;
+    };
+    summary: string;
+    assumptions: string[];
+    users: string[];
+    platform: string;
+    features: string[];
+    flow: string[];
+    visual: string;
+    screens: string[];
+    phases: { t: string; d: string }[];
+    questions: string[];
+    risks: string[];
+    tech: string[];
+  };
 }
