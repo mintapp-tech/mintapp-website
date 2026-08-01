@@ -11,10 +11,10 @@ export default function Footer() {
   const pathname = usePathname();
 
   const links = [
-    { label: t.nav.work, id: "work" },
-    { label: t.nav.services, id: "services" },
-    { label: t.nav.about, id: "process" },
-    { label: t.nav.insights, id: "insights" },
+    { label: t.nav.work, onClick: () => goToSection(router, pathname, "work") },
+    { label: t.nav.services, onClick: () => router.push("/services") },
+    { label: t.nav.about, onClick: () => goToSection(router, pathname, "process") },
+    { label: t.nav.insights, onClick: () => goToSection(router, pathname, "insights") },
   ];
 
   return (
@@ -36,7 +36,7 @@ export default function Footer() {
             {links.map((link) => (
               <button
                 key={link.label}
-                onClick={() => goToSection(router, pathname, link.id)}
+                onClick={link.onClick}
                 className="cursor-pointer border-0 bg-transparent p-0 text-start text-[15px] text-canvas/85 transition-colors hover:text-mint"
               >
                 {link.label}

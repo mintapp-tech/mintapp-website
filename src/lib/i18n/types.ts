@@ -123,4 +123,25 @@ export interface HomeContent {
     relatedTitle: string;
     back: string;
   };
+  svcp: {
+    title: string;
+    sub: string;
+    fitTitle: string;
+    delivTitle: string;
+    capsTitle: string;
+    procTitle: string;
+    relatedLabel: string;
+    cta: string;
+    cats: {
+      name: string;
+      desc: string;
+      fit: string[];
+      deliv: string[];
+      caps: string[];
+      proc: string[];
+      relatedName: string;
+      relatedCat: string;
+    }[];
+    note: string;
+  };
 }
