@@ -274,7 +274,7 @@ export default function ArrentioCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <button
-            onClick={() => router.push("/work/nura")}
+            onClick={() => router.push("/work/rentop")}
             className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
