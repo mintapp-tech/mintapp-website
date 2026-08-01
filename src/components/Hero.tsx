@@ -160,30 +160,40 @@ export default function Hero() {
         className="relative min-h-[clamp(360px,42vw,530px)]"
         style={{ perspective: 1200 }}
       >
+        <div
+          aria-hidden
+          className="absolute end-[6%] top-[4%] h-[280px] w-[280px] rounded-full bg-mint/25 blur-[90px]"
+        />
+        <div
+          aria-hidden
+          className="absolute bottom-[6%] start-[2%] h-[220px] w-[220px] rounded-full bg-accent/20 blur-[80px]"
+        />
+
         <ParallaxLayer
           mvX={springX}
           mvY={springY}
           depth={6}
-          className="absolute start-0 top-[8%] w-[min(78%,470px)] overflow-hidden rounded-[18px] border border-ink/[.08] bg-surface shadow-[0_30px_70px_-40px_rgba(7,27,22,.45)]"
+          className="absolute start-0 top-[8%] w-[min(78%,470px)] overflow-hidden rounded-[18px] border border-ink/[.08] bg-surface/90 shadow-[0_10px_30px_-18px_rgba(7,27,22,.35),0_50px_90px_-40px_rgba(7,27,22,.5)] backdrop-blur-xl"
         >
-          <div className="flex h-[38px] items-center gap-1.5 border-b border-ink/[.07] bg-canvas/70 px-3.5">
+          <div className="flex h-[38px] items-center gap-1.5 border-b border-ink/[.07] bg-gradient-to-b from-canvas/90 to-canvas/60 px-3.5">
             <span className="block h-2 w-2 rounded-full bg-ink/[.16]" />
             <span className="block h-2 w-2 rounded-full bg-ink/[.16]" />
-            <span className="block h-2 w-2 rounded-full bg-mint" />
+            <span className="block h-2 w-2 rounded-full bg-mint shadow-[0_0_8px_1px_theme(colors.mint/60%)]" />
             <span className="ms-3 block h-4 max-w-[150px] flex-1 rounded-[6px] bg-ink/[.06]" />
           </div>
           <div className="grid gap-3.5 p-[22px]">
-            <div className="h-[11px] w-[42%] rounded-[5px] bg-dark" />
+            <div className="h-[11px] w-[42%] rounded-[5px] bg-gradient-to-r from-dark to-dark/80" />
             <div className="h-2 w-[74%] rounded bg-ink/[.13]" />
             <div className="mt-1 grid grid-cols-2 gap-3">
-              <div className="relative h-[78px] overflow-hidden rounded-xl bg-dark">
-                <span className="absolute bottom-3.5 start-3.5 block h-1.5 w-[46px] rounded-[3px] bg-mint" />
+              <div className="relative h-[78px] overflow-hidden rounded-xl bg-gradient-to-br from-dark to-[#0d2a22]">
+                <span className="absolute inset-0 bg-gradient-to-t from-mint/10 via-transparent to-transparent" />
+                <span className="absolute bottom-3.5 start-3.5 block h-1.5 w-[46px] rounded-[3px] bg-mint shadow-[0_0_10px_1px_theme(colors.mint/50%)]" />
                 <span className="absolute bottom-[26px] start-3.5 block h-1.5 w-[26px] rounded-[3px] bg-canvas/35" />
               </div>
               <div className="flex h-[78px] items-end gap-1.5 rounded-xl border border-ink/[.09] bg-canvas p-3">
                 <span className="block h-[24%] flex-1 rounded-sm bg-ink/[.12]" />
                 <span className="block h-[52%] flex-1 rounded-sm bg-ink/[.12]" />
-                <span className="block h-[78%] flex-1 rounded-sm bg-mint" />
+                <span className="block h-[78%] flex-1 rounded-sm bg-gradient-to-t from-mint to-mint/70" />
                 <span className="block h-[40%] flex-1 rounded-sm bg-ink/[.12]" />
               </div>
             </div>
@@ -195,14 +205,15 @@ export default function Hero() {
           mvX={springX}
           mvY={springY}
           depth={10}
-          className="absolute end-[2%] bottom-[2%] w-[min(46%,214px)] rounded-[30px] bg-dark p-[9px] shadow-[0_40px_80px_-34px_rgba(7,27,22,.6)]"
+          className="absolute end-[2%] bottom-[2%] w-[min(46%,214px)] rounded-[30px] bg-gradient-to-b from-dark to-[#0a1f19] p-[9px] shadow-[0_10px_24px_-14px_rgba(7,27,22,.5),0_60px_100px_-34px_rgba(7,27,22,.65)] ring-1 ring-white/[.06]"
           style={{ aspectRatio: "9 / 18.6" }}
         >
           <motion.div
             animate={reducedMotion ? undefined : { y: [0, -10, 0] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-            className="flex h-full flex-col overflow-hidden rounded-[23px] bg-canvas"
+            className="relative flex h-full flex-col overflow-hidden rounded-[23px] bg-canvas"
           >
+            <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[.05] to-transparent" />
             <div className="flex flex-col gap-2.5 px-3.5 pb-2.5 pt-4">
               <span className="mx-auto block h-1 w-[34px] rounded-full bg-ink/[.18]" />
               <span className="block h-[9px] w-[58%] rounded bg-dark" />
@@ -210,11 +221,11 @@ export default function Hero() {
             </div>
             <div className="flex flex-1 flex-col gap-2 px-3.5 py-1.5">
               <div className="h-11 rounded-[11px] border border-ink/[.06] bg-surface" />
-              <div className="h-11 rounded-[11px] bg-mint-soft" />
+              <div className="h-11 rounded-[11px] bg-mint-soft shadow-[0_4px_14px_-6px_theme(colors.mint/70%)]" />
               <div className="h-11 rounded-[11px] border border-ink/[.06] bg-surface" />
             </div>
             <div className="px-3.5 pb-4 pt-3">
-              <div className="flex h-[38px] items-center justify-center rounded-full bg-dark">
+              <div className="flex h-[38px] items-center justify-center rounded-full bg-gradient-to-b from-dark to-[#0a1f19] shadow-[0_6px_16px_-8px_rgba(7,27,22,.6)]">
                 <span className="block h-1.5 w-[44%] rounded-sm bg-mint" />
               </div>
             </div>
@@ -224,17 +235,8 @@ export default function Hero() {
         <ParallaxLayer
           mvX={springX}
           mvY={springY}
-          depth={16}
-          className="absolute end-[16%] top-0 block h-[78px] w-[78px] rounded-[22px] border-[1.5px] border-accent"
-        >
-          <span />
-        </ParallaxLayer>
-
-        <ParallaxLayer
-          mvX={springX}
-          mvY={springY}
           depth={9}
-          className="absolute bottom-[12%] start-[8%] block h-14 w-14 rounded-full bg-mint-soft"
+          className="absolute bottom-[12%] start-[8%] block h-14 w-14 rounded-full bg-gradient-to-br from-mint-soft to-mint/40 shadow-[0_8px_20px_-8px_theme(colors.mint/60%)]"
         >
           <span />
         </ParallaxLayer>
