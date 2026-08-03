@@ -7,15 +7,15 @@ import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 
 export default function WorkSection() {
-  const { t, arrow } = useLanguage();
+  const { t, lang, arrow } = useLanguage();
   const router = useRouter();
-  const goToArrentioCaseStudy = () => router.push("/work/arrentio");
-  const goToRentopCaseStudy = () => router.push("/work/rentop");
-  const goToJameelCaseStudy = () => router.push("/work/jameel");
-  const goToNazarihCaseStudy = () => router.push("/work/nazarih");
-  const goToTaskatyCaseStudy = () => router.push("/work/taskaty");
-  const goToTangleVibeCaseStudy = () => router.push("/work/tanglevibe");
-  const goToKwayesCaseStudy = () => router.push("/work/kwayes");
+  const goToArrentioCaseStudy = () => router.push(`/${lang}/work/arrentio`);
+  const goToRentopCaseStudy = () => router.push(`/${lang}/work/rentop`);
+  const goToJameelCaseStudy = () => router.push(`/${lang}/work/jameel`);
+  const goToNazarihCaseStudy = () => router.push(`/${lang}/work/nazarih`);
+  const goToTaskatyCaseStudy = () => router.push(`/${lang}/work/taskaty`);
+  const goToTangleVibeCaseStudy = () => router.push(`/${lang}/work/tanglevibe`);
+  const goToKwayesCaseStudy = () => router.push(`/${lang}/work/kwayes`);
 
   return (
     <section id="work" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">

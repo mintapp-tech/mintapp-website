@@ -1,7 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useLanguage } from "@/lib/language-context";
+import { ar } from "@/lib/i18n/ar";
+import { en } from "@/lib/i18n/en";
+import type { Lang } from "@/lib/i18n/types";
 import { LogoMark } from "@/components/Logo";
 
 function Block({ title, children }: { title: string; children: React.ReactNode }) {
@@ -30,8 +33,41 @@ function ListBlock({ title, items }: { title: string; items: string[] }) {
   );
 }
 
+const STORAGE_KEY = "mintapp.internal.lang";
+
 export default function ConceptPack() {
-  const { t, toggleLang } = useLanguage();
+  // Deliberately independent of the public site's URL-based locale system —
+  // this route lives outside /[locale] on purpose (see src/app/internal/layout.tsx).
+  const [lang, setLang] = useState<Lang>("ar");
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      if (stored === "ar" || stored === "en") setLang(stored);
+    } catch {
+      // localStorage unavailable
+    }
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+    document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  }, [lang]);
+
+  const toggleLang = () => {
+    setLang((prev) => {
+      const next: Lang = prev === "ar" ? "en" : "ar";
+      try {
+        localStorage.setItem(STORAGE_KEY, next);
+      } catch {
+        // localStorage unavailable
+      }
+      return next;
+    });
+  };
+
+  const t = lang === "ar" ? ar : en;
   const intern = t.intern;
 
   return (

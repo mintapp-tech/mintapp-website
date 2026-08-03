@@ -12,40 +12,40 @@ const navLink =
   "cursor-pointer border-0 bg-transparent px-0.5 py-1.5 text-[15px] font-medium text-ink-soft transition-colors hover:text-ink";
 
 export default function Header() {
-  const { t, toggleLang } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   const go = (id: string) => {
     setMenuOpen(false);
-    goToSection(router, pathname, id);
+    goToSection(router, pathname, lang, id);
   };
 
   const goHome = () => {
     setMenuOpen(false);
-    if (pathname === "/") scrollToTop();
-    else router.push("/");
+    if (pathname === `/${lang}`) scrollToTop();
+    else router.push(`/${lang}`);
   };
 
   const goStart = () => {
     setMenuOpen(false);
-    router.push("/start");
+    router.push(`/${lang}/start`);
   };
 
   const goServices = () => {
     setMenuOpen(false);
-    router.push("/services");
+    router.push(`/${lang}/services`);
   };
 
   const goInsights = () => {
     setMenuOpen(false);
-    router.push("/insights");
+    router.push(`/${lang}/insights`);
   };
 
   const goAbout = () => {
     setMenuOpen(false);
-    router.push("/about");
+    router.push(`/${lang}/about`);
   };
 
   return (

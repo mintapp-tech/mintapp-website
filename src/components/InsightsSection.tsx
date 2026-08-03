@@ -7,7 +7,7 @@ import { SplitReveal } from "./motion/SplitReveal";
 import { TiltCard } from "./motion/TiltCard";
 
 export default function InsightsSection() {
-  const { t, arrow } = useLanguage();
+  const { t, lang, arrow } = useLanguage();
   const router = useRouter();
 
   return (
@@ -19,7 +19,7 @@ export default function InsightsSection() {
           className="m-0 text-[clamp(27px,3.4vw,44px)] leading-[1.2] font-semibold tracking-[-0.02em]"
         />
         <button
-          onClick={() => router.push("/insights")}
+          onClick={() => router.push(`/${lang}/insights`)}
           className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5"
         >
           {t.ins.all} <span className="block">{arrow}</span>

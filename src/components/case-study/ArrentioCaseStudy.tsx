@@ -19,13 +19,13 @@ function ChromeBar() {
 }
 
 export default function ArrentioCaseStudy() {
-  const { t, arrow, backArrow } = useLanguage();
+  const { t, lang, arrow, backArrow } = useLanguage();
   const router = useRouter();
   const cs = t.csArrentio;
 
   const goWork = () => {
-    if (window.location.pathname === "/") scrollToSection("work");
-    else router.push("/#work");
+    if (window.location.pathname === `/${lang}`) scrollToSection("work");
+    else router.push(`/${lang}#work`);
   };
 
   return (
@@ -274,7 +274,7 @@ export default function ArrentioCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <button
-            onClick={() => router.push("/work/rentop")}
+            onClick={() => router.push(`/${lang}/work/rentop`)}
             className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
@@ -300,7 +300,7 @@ export default function ArrentioCaseStudy() {
           <div className="relative mt-6 flex justify-center">
             <Magnetic className="inline-block">
               <button
-                onClick={() => router.push("/start")}
+                onClick={() => router.push(`/${lang}/start`)}
                 className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[16px] text-[16px] font-bold text-dark transition-colors hover:bg-mint-soft"
               >
                 {t.final.cta}

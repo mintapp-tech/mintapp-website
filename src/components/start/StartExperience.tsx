@@ -143,7 +143,7 @@ export default function StartExperience() {
 
             <Magnetic className="mx-auto mt-9 inline-block">
               <button
-                onClick={() => router.push("/")}
+                onClick={() => router.push(`/${lang}`)}
                 className="cursor-pointer rounded-full border-0 bg-ink px-8 py-[15px] text-[15.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
               >
                 {t.success.home}

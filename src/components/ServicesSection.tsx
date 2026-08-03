@@ -44,9 +44,9 @@ function ServiceCard({
 }
 
 export default function ServicesSection() {
-  const { t, arrow } = useLanguage();
+  const { t, lang, arrow } = useLanguage();
   const router = useRouter();
-  const goToServices = () => router.push("/services");
+  const goToServices = () => router.push(`/${lang}/services`);
 
   return (
     <section id="services" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">

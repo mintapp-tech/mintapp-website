@@ -7,7 +7,7 @@ import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 
 export default function AboutPageContent() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const about = t.about;
 
@@ -106,7 +106,7 @@ export default function AboutPageContent() {
           <div className="relative mt-6 flex justify-center">
             <Magnetic className="inline-block">
               <button
-                onClick={() => router.push("/start")}
+                onClick={() => router.push(`/${lang}/start`)}
                 className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[16px] text-[16px] font-bold text-dark transition-colors hover:bg-mint-soft"
               >
                 {about.ctaBtn}

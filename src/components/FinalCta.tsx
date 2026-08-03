@@ -7,7 +7,7 @@ import { SplitReveal } from "./motion/SplitReveal";
 import { Magnetic } from "./motion/Magnetic";
 
 export default function FinalCta() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
 
   return (
@@ -27,7 +27,7 @@ export default function FinalCta() {
           <div className="flex flex-wrap gap-3">
             <Magnetic className="inline-block">
               <button
-                onClick={() => router.push("/start")}
+                onClick={() => router.push(`/${lang}/start`)}
                 className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[17px] text-[16.5px] font-bold text-dark transition-colors hover:bg-mint-soft"
               >
                 {t.final.cta}

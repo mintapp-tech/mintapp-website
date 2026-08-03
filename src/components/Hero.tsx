@@ -44,7 +44,7 @@ function ParallaxLayer({
 }
 
 export default function Hero() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -120,7 +120,7 @@ export default function Hero() {
         >
           <Magnetic className="inline-block">
             <button
-              onClick={() => router.push("/start")}
+              onClick={() => router.push(`/${lang}/start`)}
               className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors duration-300 hover:bg-mint hover:text-dark"
             >
               {t.hero.cta1}

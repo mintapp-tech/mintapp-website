@@ -6,15 +6,15 @@ import { LogoMark } from "./Logo";
 import { goToSection } from "@/lib/scroll";
 
 export default function Footer() {
-  const { t, toggleLang } = useLanguage();
+  const { t, lang, toggleLang } = useLanguage();
   const router = useRouter();
   const pathname = usePathname();
 
   const links = [
-    { label: t.nav.work, onClick: () => goToSection(router, pathname, "work") },
-    { label: t.nav.services, onClick: () => router.push("/services") },
-    { label: t.nav.about, onClick: () => router.push("/about") },
-    { label: t.nav.insights, onClick: () => router.push("/insights") },
+    { label: t.nav.work, onClick: () => goToSection(router, pathname, lang, "work") },
+    { label: t.nav.services, onClick: () => router.push(`/${lang}/services`) },
+    { label: t.nav.about, onClick: () => router.push(`/${lang}/about`) },
+    { label: t.nav.insights, onClick: () => router.push(`/${lang}/insights`) },
   ];
 
   return (
@@ -43,7 +43,7 @@ export default function Footer() {
               </button>
             ))}
             <button
-              onClick={() => router.push("/start")}
+              onClick={() => router.push(`/${lang}/start`)}
               className="cursor-pointer border-0 bg-transparent p-0 text-start text-[15px] text-canvas/85 transition-colors hover:text-mint"
             >
               {t.nav.start}

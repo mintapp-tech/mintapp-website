@@ -7,7 +7,7 @@ import { SplitReveal } from "./motion/SplitReveal";
 import { Magnetic } from "./motion/Magnetic";
 
 export default function DifferentiatorSection() {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const router = useRouter();
 
   return (
@@ -28,7 +28,7 @@ export default function DifferentiatorSection() {
           <p className="mt-5 mb-[30px] max-w-[44ch] text-[17px] leading-[1.85] text-ink-soft">{t.diff.copy}</p>
           <Magnetic className="inline-block">
             <button
-              onClick={() => router.push("/start")}
+              onClick={() => router.push(`/${lang}/start`)}
               className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
             >
               {t.diff.cta}
