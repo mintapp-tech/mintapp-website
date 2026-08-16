@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal } from "@/components/Reveal";
@@ -32,10 +33,9 @@ interface FormState {
   email: string;
   phone: string;
   desc: string;
-  fileName: string;
 }
 
-const emptyForm: FormState = { name: "", company: "", email: "", phone: "", desc: "", fileName: "" };
+const emptyForm: FormState = { name: "", company: "", email: "", phone: "", desc: "" };
 
 const inputClass =
   "w-full rounded-[14px] border border-ink/[.14] bg-canvas px-4 py-3 text-[15.5px] text-ink placeholder:text-ink-faint transition-colors focus:border-mint-deep focus:outline-none";
@@ -49,6 +49,8 @@ export default function StartExperience() {
   const [dates, setDates] = useState<MeetingDate[]>([]);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [consent, setConsent] = useState(false);
+  const [consentTouched, setConsentTouched] = useState(false);
   const [submitted, setSubmitted] = useState<{ name: string; dateLabel: string; time: string } | null>(null);
 
   useEffect(() => {
@@ -83,19 +85,19 @@ export default function StartExperience() {
   );
 
   const canSubmit = Boolean(
-    form.name.trim() && form.email.trim() && form.desc.trim() && selectedDate && selectedTime,
+    form.name.trim() && form.email.trim() && form.desc.trim() && selectedDate && selectedTime && consent,
   );
 
   const updateField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
   };
 
-  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, fileName: e.target.files?.[0]?.name ?? "" }));
-  };
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
+    if (!consent) {
+      setConsentTouched(true);
+      return;
+    }
     if (!canSubmit || !selectedTime) return;
     setSubmitted({ name: form.name.trim(), dateLabel: selectedDateLabel, time: selectedTime });
   };
@@ -208,13 +210,18 @@ export default function StartExperience() {
                     />
                   </label>
 
-                  <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
-                    {t.start.fFile} <span className="font-normal text-ink-faint">({t.start.optional})</span>
-                    <span className="flex cursor-pointer items-center justify-center rounded-[14px] border border-dashed border-ink/[.22] bg-canvas px-4 py-5 text-center text-[14px] text-ink-soft transition-colors hover:border-mint-deep">
-                      {form.fileName || t.start.fFileHint}
-                      <input type="file" accept=".pdf,image/*" onChange={handleFile} className="hidden" />
-                    </span>
-                  </label>
+                  <div className="rounded-[14px] border border-ink/[.1] bg-canvas px-4 py-3.5">
+                    <div className="mb-2 text-[13px] font-semibold text-ink">{t.start.confidentialTitle}</div>
+                    <div className="flex flex-col gap-1.5">
+                      {t.start.confidentialItems.map((item) => (
+                        <div key={item} className="flex items-start gap-2 text-[13px] leading-[1.6] text-ink-soft">
+                          <span className="mt-[7px] block h-[4px] w-[4px] flex-none rounded-full bg-ink-faint" />
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                    <p className="m-0 mt-2.5 text-[12.5px] leading-[1.6] text-ink-faint">{t.start.confidentialNote}</p>
+                  </div>
 
                   <div className="flex flex-col gap-2.5">
                     <div className="text-[14px] font-medium text-ink">{t.start.fDate}</div>
@@ -256,6 +263,40 @@ export default function StartExperience() {
                     </div>
                   </div>
 
+                  <div className="flex flex-col gap-2">
+                    <label className="flex cursor-pointer items-start gap-3 text-[13.5px] leading-[1.65] text-ink">
+                      <input
+                        type="checkbox"
+                        required
+                        checked={consent}
+                        onChange={(e) => {
+                          setConsent(e.target.checked);
+                          setConsentTouched(true);
+                        }}
+                        aria-invalid={consentTouched && !consent}
+                        aria-describedby={consentTouched && !consent ? "consent-error" : undefined}
+                        className="mt-[3px] h-[18px] w-[18px] flex-none cursor-pointer rounded-[5px] border border-ink/[.3] bg-canvas text-mint-deep accent-mint-deep focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mint-deep"
+                      />
+                      <span>
+                        {t.start.consentPrefix}
+                        <Link
+                          href={`/${lang}/privacy`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-semibold text-dark underline decoration-mint decoration-[1.5px] underline-offset-4 transition-colors hover:text-mint-deep"
+                        >
+                          {t.start.consentLinkText}
+                        </Link>
+                        {t.start.consentSuffix}
+                      </span>
+                    </label>
+                    {consentTouched && !consent && (
+                      <p id="consent-error" role="alert" className="text-[13px] font-medium text-red-600">
+                        {t.start.consentError}
+                      </p>
+                    )}
+                  </div>
+
                   <Magnetic className={canSubmit ? "self-start" : "pointer-events-none self-start"}>
                     <button
                       type="submit"
@@ -289,7 +330,8 @@ export default function StartExperience() {
                       </div>
                     ))}
                   </div>
-                  <p className="mt-5 border-t border-ink/[.08] pt-4 text-[13px] text-ink-soft">{t.start.sideNote}</p>
+                  <p className="mt-5 border-t border-ink/[.08] pt-4 text-[13.5px] leading-[1.7] text-ink-soft">{t.start.prepClarify}</p>
+                  <p className="mt-3 text-[13px] text-ink-soft">{t.start.sideNote}</p>
                 </div>
               </Reveal>
             </div>

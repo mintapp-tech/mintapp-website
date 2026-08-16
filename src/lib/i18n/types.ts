@@ -108,14 +108,20 @@ export interface HomeContent {
     fDesc: string;
     fDescHelp: string;
     fDescPh: string;
-    fFile: string;
-    fFileHint: string;
+    confidentialTitle: string;
+    confidentialItems: string[];
+    confidentialNote: string;
     fDate: string;
     fTime: string;
+    consentPrefix: string;
+    consentLinkText: string;
+    consentSuffix: string;
+    consentError: string;
     cta: string;
     privacy: string;
     sideTitle: string;
     sidePoints: { t: string; d: string }[];
+    prepClarify: string;
     sideNote: string;
     pickDate: string;
     pickTime: string;
@@ -187,6 +193,18 @@ export interface HomeContent {
     regionCopy: string;
     ctaTitle: string;
     ctaBtn: string;
+  };
+  privacy: {
+    title: string;
+    sub: string;
+    updated: string;
+    sections: { title: string; body: string; list?: string[] }[];
+    processorsTitle: string;
+    processors: { name: string; role: string }[];
+    contactTitle: string;
+    contactCopy: string;
+    contactEmail: string;
+    disclaimer: string;
   };
   intern: {
     label: string;

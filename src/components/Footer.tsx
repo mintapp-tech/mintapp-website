@@ -71,7 +71,12 @@ export default function Footer() {
         <div className="flex flex-wrap justify-between gap-3.5 pt-[22px] text-[13.5px] text-canvas/50">
           <span>{t.footer.rights}</span>
           <span className="flex gap-5">
-            <span>{t.footer.privacy}</span>
+            <button
+              onClick={() => router.push(`/${lang}/privacy`)}
+              className="cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-canvas/50 underline decoration-canvas/30 decoration-[1.5px] underline-offset-4 transition-colors hover:text-mint hover:decoration-mint"
+            >
+              {t.footer.privacy}
+            </button>
             <span>{t.tagline}</span>
           </span>
         </div>
