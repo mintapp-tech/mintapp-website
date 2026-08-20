@@ -113,33 +113,11 @@ export default function WorkSection() {
         </RevealItem>
 
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
-          <div className="flex min-h-[250px] items-center justify-center border-b border-ink/[.07] bg-jameel-bg p-7">
-            <div className="w-full max-w-[330px] overflow-hidden rounded-[14px] border border-ink/[.09] bg-canvas shadow-[0_20px_40px_-34px_rgba(7,27,22,.5)]">
-              <div className="flex h-[30px] items-center gap-1.5 bg-jameel px-3">
-                <span className="block h-1.5 w-1.5 rounded-full bg-white" />
-                <span className="block h-[5px] w-14 rounded-sm bg-white/40" />
-              </div>
-              <div className="grid min-h-[150px] grid-cols-[56px_1fr]">
-                <div className="flex flex-col gap-2 border-e border-ink/[.07] bg-surface p-3">
-                  <span className="block h-1.5 rounded-sm bg-ink/[.16]" />
-                  <span className="block h-1.5 rounded-sm bg-jameel" />
-                  <span className="block h-1.5 rounded-sm bg-ink/[.12]" />
-                  <span className="block h-1.5 rounded-sm bg-ink/[.12]" />
-                </div>
-                <div className="flex flex-col gap-2 p-3">
-                  <span className="block h-[7px] w-[44%] rounded-sm bg-dark" />
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className="h-[34px] rounded-[7px] bg-surface" />
-                    <div className="h-[34px] rounded-[7px] bg-surface" />
-                    <div className="h-[34px] rounded-[7px] bg-jameel-2" />
-                  </div>
-                  <div className="flex h-[46px] items-end gap-1 rounded-lg bg-surface p-2">
-                    <span className="block h-[30%] flex-1 rounded-sm bg-ink/[.14]" />
-                    <span className="block h-[64%] flex-1 rounded-sm bg-ink/[.14]" />
-                    <span className="block h-[46%] flex-1 rounded-sm bg-ink/[.14]" />
-                    <span className="block h-[86%] flex-1 rounded-sm bg-jameel" />
-                  </div>
-                </div>
+          <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-jameel-bg p-7">
+            <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-jameel/[.16]" />
+            <div className="relative w-[132px] overflow-hidden rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "375 / 812" }}>
+              <div className="relative h-full w-full overflow-hidden rounded-[16px]">
+                <Image src="/work/jameel/home.png" alt="Jameel home screen" fill sizes="132px" className="object-cover" />
               </div>
             </div>
           </div>
