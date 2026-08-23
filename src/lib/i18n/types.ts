@@ -215,6 +215,8 @@ export interface HomeContent {
     sections: { title: string; body: string; list?: string[] }[];
     processorsTitle: string;
     processors: { name: string; role: string }[];
+    processorsNote: string;
+    turnstileLinkText: string;
     contactTitle: string;
     contactCopy: string;
     contactEmail: string;

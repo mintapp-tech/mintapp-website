@@ -70,6 +70,18 @@ export default function PrivacyPageContent() {
               </RevealItem>
             ))}
           </RevealGroup>
+          <p className="m-0 mt-3 max-w-[68ch] text-[13px] leading-[1.8] text-ink-faint">
+            {p.processorsNote}{" "}
+            <a
+              href="https://www.cloudflare.com/turnstile-privacy-policy/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-ink-soft underline decoration-ink-faint decoration-[1.5px] underline-offset-4 transition-colors hover:text-ink"
+            >
+              {p.turnstileLinkText}
+            </a>
+            .
+          </p>
         </Reveal>
 
         <div className="mt-[clamp(20px,2.6vw,28px)] rounded-[24px] border border-ink/[.08] bg-surface px-[clamp(22px,4vw,44px)]">
