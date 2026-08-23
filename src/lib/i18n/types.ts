@@ -130,6 +130,10 @@ export interface HomeContent {
       invalid_value: string;
       invalid: string;
     };
+    turnstileFailed: string;
+    turnstileUnavailable: string;
+    turnstileScriptError: string;
+    turnstileRetry: string;
     privacy: string;
     sideTitle: string;
     sidePoints: { t: string; d: string }[];

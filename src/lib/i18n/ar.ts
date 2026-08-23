@@ -114,6 +114,10 @@ export const ar: HomeContent = {
       invalid_value: "يرجى مراجعة هذا الحقل.",
       invalid: "يرجى مراجعة هذا الحقل.",
     },
+    turnstileFailed: "فشل التحقق. يرجى المحاولة مرة أخرى.",
+    turnstileUnavailable: "يرجى المحاولة مرة أخرى بعد قليل.",
+    turnstileScriptError: "تعذّر تحميل فحص الأمان لدينا. يرجى المحاولة مرة أخرى.",
+    turnstileRetry: "أعد المحاولة",
     privacy: "نستخدم بياناتك لمراجعة طلبك والتواصل معك فقط.",
     sideTitle: "ما يحدث بعد الإرسال",
     sidePoints: [

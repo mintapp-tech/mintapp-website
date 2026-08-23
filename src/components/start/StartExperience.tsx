@@ -8,6 +8,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
+import TurnstileWidget, { type TurnstileWidgetHandle } from "./TurnstileWidget";
 
 const easeOut = [0.2, 0.7, 0.2, 1] as const;
 
@@ -49,6 +50,8 @@ export default function StartExperience() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState<{ name: string } | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   // Generated once per form session — stable across retries of the same
   // submission (so a duplicate POST is recognized server-side as the same
@@ -98,7 +101,7 @@ export default function StartExperience() {
     }
   }, [fieldErrors]);
 
-  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.desc.trim() && consent);
+  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.desc.trim() && consent && turnstileToken);
 
   const updateField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -119,13 +122,21 @@ export default function StartExperience() {
     return (messages as Record<string, string>)[code] ?? messages.invalid;
   }
 
+  // A rejected or uncertain attempt must not let the client retry with a
+  // stale/already-consumed token — reset the widget so a fresh one is
+  // acquired before the next attempt can even be enabled again.
+  function resetTurnstile() {
+    setTurnstileToken(null);
+    turnstileRef.current?.reset();
+  }
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!consent) {
       setConsentTouched(true);
       return;
     }
-    if (!canSubmit || submitting) return;
+    if (!canSubmit || submitting || !turnstileToken) return;
 
     setSubmitting(true);
     setSubmitError(null);
@@ -146,6 +157,7 @@ export default function StartExperience() {
           submissionToken: submissionTokenRef.current,
           formStartedAt: formStartedAtRef.current,
           honeypot,
+          turnstileToken,
           ...utmRef.current,
         }),
       });
@@ -157,20 +169,33 @@ export default function StartExperience() {
         return;
       }
 
-      let body: { error?: string; fields?: Record<string, string> } | null = null;
+      let body: { error?: string; code?: string; fields?: Record<string, string> } | null = null;
       try {
         body = await res.json();
       } catch {
         // Non-JSON error body — fall through to the generic message below.
       }
 
-      if (body?.fields && Object.keys(body.fields).length > 0) {
+      if (body?.code === "turnstile_failed") {
+        setSubmitError(t.start.turnstileFailed);
+        resetTurnstile();
+      } else if (body?.code === "turnstile_unavailable") {
+        setSubmitError(t.start.turnstileUnavailable);
+        resetTurnstile();
+      } else if (body?.fields && Object.keys(body.fields).length > 0) {
+        // A field-validation rejection never reaches Turnstile server-side
+        // (see route.ts's order), so the current token is still fresh —
+        // no reset needed here.
         setFieldErrors(body.fields);
       } else {
         setSubmitError(t.start.submitError);
+        resetTurnstile();
       }
     } catch {
+      // Network failure of unknown extent — safer to assume the token may
+      // have been consumed and require a fresh one.
       setSubmitError(t.start.submitError);
+      resetTurnstile();
     } finally {
       setSubmitting(false);
     }
@@ -418,6 +443,23 @@ export default function StartExperience() {
                       </p>
                     )}
                   </div>
+
+                  {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                    <TurnstileWidget
+                      ref={turnstileRef}
+                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+                      lang={lang}
+                      retryLabel={t.start.turnstileRetry}
+                      onToken={(token) => setTurnstileToken(token)}
+                      onError={() => {
+                        setTurnstileToken(null);
+                        setSubmitError(t.start.turnstileFailed);
+                      }}
+                      onExpired={() => setTurnstileToken(null)}
+                      onTimeout={() => setTurnstileToken(null)}
+                      onScriptError={() => setSubmitError(t.start.turnstileScriptError)}
+                    />
+                  )}
 
                   <Magnetic className={canSubmit && !submitting ? "self-start" : "pointer-events-none self-start"}>
                     <button

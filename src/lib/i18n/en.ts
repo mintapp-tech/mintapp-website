@@ -114,6 +114,10 @@ export const en: HomeContent = {
       invalid_value: "Please check this field.",
       invalid: "Please check this field.",
     },
+    turnstileFailed: "Verification failed. Please try again.",
+    turnstileUnavailable: "Please try again shortly.",
+    turnstileScriptError: "We couldn't load our security check. Please try again.",
+    turnstileRetry: "Try again",
     privacy: "We use your details only to review your inquiry and get in touch.",
     sideTitle: "What happens after you send",
     sidePoints: [
