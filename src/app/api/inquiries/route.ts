@@ -2,12 +2,17 @@ import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { createRealResendSender, sendInquiryNotification } from "@/lib/send-inquiry-notification";
 import { insertInquiry } from "@/lib/insert-inquiry";
+import { findInquiryIdByToken } from "@/lib/find-inquiry-by-token";
+import { verifyTurnstileToken } from "@/lib/verify-turnstile";
+import { getTurnstileSecretKey, getAllowedTurnstileHostnames } from "@/lib/turnstile-config";
 import { inquirySchema } from "@/lib/inquiry-schema";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 import type { z } from "zod";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const TURNSTILE_ACTION = "start_project";
 
 // Comfortably larger than the largest realistic legitimate payload (a
 // 5,000-character Arabic description alone can be ~10KB in UTF-8, since
@@ -110,31 +115,29 @@ function fieldErrors(error: z.ZodError): Record<string, string> {
 }
 
 export async function POST(request: NextRequest) {
+  // 1–4: method (framework-level), content-type, size, parse.
   const read = await readJsonWithLimit(request);
   if (!read.ok) {
     return jsonResponse({ error: read.error }, read.status);
   }
 
-  const raw = read.data;
-
-  // Honeypot check happens before schema validation and before any DB call,
-  // on the raw payload, so a bot never learns anything about what else was
-  // wrong with its submission.
-  if (raw && typeof raw === "object" && "honeypot" in raw) {
-    const honeypotValue = (raw as Record<string, unknown>).honeypot;
-    if (typeof honeypotValue === "string" && honeypotValue.length > 0) {
-      return fakeSuccessResponse();
-    }
-  }
-
-  const parsed = inquirySchema.safeParse(raw);
+  // 5: structural/Zod validation, before any business logic runs at all —
+  // including the honeypot, whose "must be empty" rule is a business-logic
+  // check applied to the already-typed value below, never a schema failure
+  // (see inquiry-schema.ts for why).
+  const parsed = inquirySchema.safeParse(read.data);
   if (!parsed.success) {
     return jsonResponse({ error: "Invalid submission.", fields: fieldErrors(parsed.error) }, 400);
   }
 
   const body = parsed.data;
 
-  // Timing check: too fast is a bot signal (silent fake success, same
+  // 6: honeypot.
+  if (body.honeypot.length > 0) {
+    return fakeSuccessResponse();
+  }
+
+  // 7: timing. Too fast is a bot signal (silent fake success, same
   // reasoning as the honeypot). Too stale is a legitimate UX case — the tab
   // sat open for hours — so that gets an honest, actionable error instead.
   const startedAt = Date.parse(body.formStartedAt);
@@ -149,7 +152,39 @@ export async function POST(request: NextRequest) {
     return jsonResponse({ error: "This form has expired. Please refresh the page and try again." }, 400);
   }
 
+  // 8: Turnstile — verified before any Supabase call, on every request
+  // including retries of an already-stored submissionToken. A retry must
+  // carry a fresh, valid token; an old/spent one does not get to skip this
+  // step just because the token happens to be a known submissionToken.
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  const turnstileResult = await verifyTurnstileToken(body.turnstileToken, {
+    secretKey: getTurnstileSecretKey(),
+    expectedAction: TURNSTILE_ACTION,
+    allowedHostnames: getAllowedTurnstileHostnames(),
+    remoteIp: forwardedFor?.split(",")[0]?.trim(),
+  });
+
+  if (!turnstileResult.ok) {
+    if (turnstileResult.reason === "invalid") {
+      // Collapses "Cloudflare said no," "wrong hostname," and "wrong
+      // action" into one identical response — no oracle for which
+      // specific check failed.
+      return jsonResponse({ error: "Verification failed. Please try again.", code: "turnstile_failed" }, 403);
+    }
+    return jsonResponse({ error: "Please try again shortly.", code: "turnstile_unavailable" }, 503);
+  }
+
   const supabase = getSupabaseServerClient();
+
+  // 9: idempotency lookup — only after Turnstile has passed.
+  const existingId = await findInquiryIdByToken(supabase, body.submissionToken);
+  if (existingId) {
+    return jsonResponse({ id: existingId, alreadyReceived: true }, 200);
+  }
+
+  // 10: insert, with its own reactive unique-conflict handling for the rare
+  // case where two requests both reach this point for the same token before
+  // either has inserted (each must have independently passed Turnstile).
   const result = await insertInquiry(supabase, body);
 
   if (result.status === "failed") {
@@ -167,11 +202,10 @@ export async function POST(request: NextRequest) {
   const apiKey = process.env.RESEND_API_KEY;
   const sender = apiKey ? createRealResendSender(apiKey) : null;
 
-  // The inquiry is already durably stored — the client's submission is a
-  // success from here on. Email notification is best-effort and must never
-  // block or fail the response. `after()` guarantees this still runs to
-  // completion on Vercel even though the response has already been sent
-  // (a bare fire-and-forget call here could get frozen mid-flight).
+  // 11: the inquiry is already durably stored — the client's submission is
+  // a success from here on. Email notification is best-effort and must
+  // never block or fail the response. `after()` guarantees this still runs
+  // to completion on Vercel even though the response has already been sent.
   after(() =>
     sendInquiryNotification(supabase, sender, {
       inquiryId,
@@ -184,5 +218,6 @@ export async function POST(request: NextRequest) {
     }),
   );
 
+  // 12: success response.
   return jsonResponse({ id: inquiryId }, 201);
 }

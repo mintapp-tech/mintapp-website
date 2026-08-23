@@ -1,6 +1,7 @@
 import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { InquiryInput } from "./inquiry-schema";
+import { findInquiryIdByToken } from "./find-inquiry-by-token";
 
 export type InsertInquiryResult =
   | { status: "inserted"; id: string }
@@ -42,14 +43,9 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
       // already stored (a retry/double-post of the same client attempt).
       // Look up the existing row rather than erroring or inserting a
       // duplicate — the caller must not send a second notification either.
-      const { data: existing } = await supabase
-        .from("project_inquiries")
-        .select("id")
-        .eq("submission_token", body.submissionToken)
-        .single();
-
-      if (existing) {
-        return { status: "duplicate", id: existing.id as string };
+      const existingId = await findInquiryIdByToken(supabase, body.submissionToken);
+      if (existingId) {
+        return { status: "duplicate", id: existingId };
       }
     }
 
