@@ -23,11 +23,12 @@ function resolveTargetLocale(request: NextRequest): SupportedLocale {
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  // Never touch: Next internals, the hidden internal tool, SEO files, or any
-  // request for a file (has an extension) such as favicon.ico/icon.svg.
+  // Never touch: Next internals, the hidden internal tool, API routes, SEO
+  // files, or any request for a file (has an extension) such as favicon.ico/icon.svg.
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/internal") ||
+    pathname.startsWith("/api") ||
     pathname === "/robots.txt" ||
     pathname === "/sitemap.xml" ||
     /\.[a-zA-Z0-9]+$/.test(pathname)
