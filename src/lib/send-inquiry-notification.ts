@@ -2,6 +2,7 @@ import "server-only";
 import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getNotificationConfig } from "./inquiry-notification-config";
+import { resolveEmailSendingMode } from "./email-sending-mode";
 
 export interface InquiryNotificationInput {
   inquiryId: string;
@@ -59,14 +60,38 @@ function buildEmailBody(input: InquiryNotificationInput): string {
  *     fails, e.g. a transient Supabase blip).
  *
  * Returns a result object rather than throwing, so callers (and tests) can
- * assert on exactly which of the three states occurred without needing to
+ * assert on exactly which of the four states occurred without needing to
  * inspect logs.
  */
 export async function sendInquiryNotification(
   supabase: SupabaseClient,
   sender: EmailSender | null,
   input: InquiryNotificationInput,
-): Promise<"sent" | "send_failed" | "sent_but_bookkeeping_failed"> {
+): Promise<"sent" | "send_failed" | "sent_but_bookkeeping_failed" | "disabled"> {
+  let mode: ReturnType<typeof resolveEmailSendingMode>;
+  try {
+    mode = resolveEmailSendingMode();
+  } catch (err) {
+    // A misconfigured production environment is a real operational fault —
+    // logged and marked "failed" like any other config problem below, so it
+    // surfaces the same way (loudly, not silently) rather than being
+    // confused with the intentional "disabled" path.
+    console.error("Email sending mode misconfigured:", err instanceof Error ? err.message : err);
+    await updateStatus(supabase, input.inquiryId, "failed");
+    return "send_failed";
+  }
+
+  if (mode === "disabled") {
+    // Intentionally never attempted (non-production default, explicit
+    // production opt-out, or a test/CI run). "pending" would falsely imply
+    // this is still expected to happen and risk a later accidental retry —
+    // recorded as its own distinct, honest state instead (requires the
+    // 20260823120000 migration to have been applied first).
+    console.error("email_sending_disabled: skipping notification email");
+    await updateStatus(supabase, input.inquiryId, "disabled");
+    return "disabled";
+  }
+
   if (!sender) {
     console.error("No email sender configured — skipping notification email.");
     await updateStatus(supabase, input.inquiryId, "failed");
@@ -119,9 +144,9 @@ export async function sendInquiryNotification(
   }
 }
 
-async function updateStatus(supabase: SupabaseClient, inquiryId: string, status: "failed") {
+async function updateStatus(supabase: SupabaseClient, inquiryId: string, status: "failed" | "disabled") {
   const { error } = await supabase.from("project_inquiries").update({ notification_status: status }).eq("id", inquiryId);
   if (error) {
-    console.error("Failed to record notification failure status:", error.message);
+    console.error(`Failed to record notification status "${status}":`, error.message);
   }
 }
