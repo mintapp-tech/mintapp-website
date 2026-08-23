@@ -1,31 +1,15 @@
 "use client";
 
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
+import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 
 const easeOut = [0.2, 0.7, 0.2, 1] as const;
-
-const DAY_NAMES = {
-  ar: ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"],
-  en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
-};
-const MONTH_NAMES = {
-  ar: ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"],
-  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-};
-const TIME_SLOTS = ["10:00", "11:30", "13:00", "15:00", "16:30"];
-
-interface MeetingDate {
-  key: string;
-  label: string;
-  dayLabel: string;
-  dayNum: string;
-}
 
 interface FormState {
   name: string;
@@ -37,73 +21,169 @@ interface FormState {
 
 const emptyForm: FormState = { name: "", company: "", email: "", phone: "", desc: "" };
 
+// Visual/reading order of the fields that can carry a server-side error —
+// used to find "the first invalid field" for focus management.
+const FIELD_ORDER: (keyof FormState)[] = ["name", "company", "email", "phone", "desc"];
+
 const inputClass =
   "w-full rounded-[14px] border border-ink/[.14] bg-canvas px-4 py-3 text-[15.5px] text-ink placeholder:text-ink-faint transition-colors focus:border-mint-deep focus:outline-none";
+
+function readUtmParams() {
+  if (typeof window === "undefined") return {};
+  const params = new URLSearchParams(window.location.search);
+  const utmSource = params.get("utm_source")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
+  const utmMedium = params.get("utm_medium")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
+  const utmCampaign = params.get("utm_campaign")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
+  return { utmSource, utmMedium, utmCampaign };
+}
 
 export default function StartExperience() {
   const { t, lang } = useLanguage();
   const router = useRouter();
-  const isAr = lang === "ar";
 
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [dates, setDates] = useState<MeetingDate[]>([]);
-  const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const [selectedTime, setSelectedTime] = useState<string | null>(null);
+  const [honeypot, setHoneypot] = useState("");
   const [consent, setConsent] = useState(false);
   const [consentTouched, setConsentTouched] = useState(false);
-  const [submitted, setSubmitted] = useState<{ name: string; dateLabel: string; time: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState<{ name: string } | null>(null);
+
+  // Generated once per form session — stable across retries of the same
+  // submission (so a duplicate POST is recognized server-side as the same
+  // attempt), and only replaced after a genuinely new/reset form.
+  const submissionTokenRef = useRef<string>(crypto.randomUUID());
+  const formStartedAtRef = useRef<string>(new Date().toISOString());
+  const utmRef = useRef(readUtmParams());
+
+  const successHeadingRef = useRef<HTMLHeadingElement>(null);
+  const errorRef = useRef<HTMLParagraphElement>(null);
+  const nameFieldRef = useRef<HTMLInputElement>(null);
+  const companyFieldRef = useRef<HTMLInputElement>(null);
+  const emailFieldRef = useRef<HTMLInputElement>(null);
+  const phoneFieldRef = useRef<HTMLInputElement>(null);
+  const descFieldRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
-    const dayNames = DAY_NAMES[isAr ? "ar" : "en"];
-    const monthNames = MONTH_NAMES[isAr ? "ar" : "en"];
-    const next: MeetingDate[] = [];
-    const cursor = new Date();
-    cursor.setDate(cursor.getDate() + 1);
-    let guard = 0;
-    while (next.length < 6 && guard < 30) {
-      const day = cursor.getDay();
-      if (day !== 5 && day !== 6) {
-        next.push({
-          key: cursor.toDateString(),
-          label: `${dayNames[day]} ${cursor.getDate()} ${monthNames[cursor.getMonth()]}`,
-          dayLabel: dayNames[day],
-          dayNum: String(cursor.getDate()),
-        });
-      }
-      cursor.setDate(cursor.getDate() + 1);
-      guard += 1;
+    if (submitted) successHeadingRef.current?.focus();
+  }, [submitted]);
+
+  useEffect(() => {
+    if (submitError) errorRef.current?.focus();
+  }, [submitError]);
+
+  useEffect(() => {
+    if (Object.keys(fieldErrors).length === 0) return;
+    // Move focus to the first invalid field in reading order — the summary
+    // above stays for screen-reader users who tab from the top rather than
+    // land directly on a field.
+    const firstInvalid = FIELD_ORDER.find((key) => fieldErrors[key]);
+    switch (firstInvalid) {
+      case "name":
+        nameFieldRef.current?.focus();
+        break;
+      case "company":
+        companyFieldRef.current?.focus();
+        break;
+      case "email":
+        emailFieldRef.current?.focus();
+        break;
+      case "phone":
+        phoneFieldRef.current?.focus();
+        break;
+      case "desc":
+        descFieldRef.current?.focus();
+        break;
     }
-    // Intentional: meeting dates depend on the real client clock at visit time,
-    // not the server prerender time, so they're computed post-mount.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setDates(next);
-  }, [isAr]);
+  }, [fieldErrors]);
 
-  const selectedDateLabel = useMemo(
-    () => dates.find((d) => d.key === selectedDate)?.label ?? "",
-    [dates, selectedDate],
-  );
-
-  const canSubmit = Boolean(
-    form.name.trim() && form.email.trim() && form.desc.trim() && selectedDate && selectedTime && consent,
-  );
+  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.desc.trim() && consent);
 
   const updateField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
+    // Clear this field's server-reported error the moment the user changes
+    // it — the old error may no longer be true, and re-validating fully
+    // client-side on every keystroke isn't worth the complexity here since
+    // the server remains authoritative on the next real submit anyway.
+    setFieldErrors((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
   };
 
-  const handleSubmit = (e: FormEvent) => {
+  function messageForCode(code: string): string {
+    const messages = t.start.fieldErrorMessages;
+    return (messages as Record<string, string>)[code] ?? messages.invalid;
+  }
+
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!consent) {
       setConsentTouched(true);
       return;
     }
-    if (!canSubmit || !selectedTime) return;
-    setSubmitted({ name: form.name.trim(), dateLabel: selectedDateLabel, time: selectedTime });
+    if (!canSubmit || submitting) return;
+
+    setSubmitting(true);
+    setSubmitError(null);
+    setFieldErrors({});
+
+    try {
+      const res = await fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          company: form.company.trim() || undefined,
+          email: form.email.trim(),
+          phone: form.phone.trim() || undefined,
+          desc: form.desc.trim(),
+          lang,
+          consent,
+          submissionToken: submissionTokenRef.current,
+          formStartedAt: formStartedAtRef.current,
+          honeypot,
+          ...utmRef.current,
+        }),
+      });
+
+      if (res.ok) {
+        // Success (including the "already received" duplicate-token case,
+        // which is still a 2xx) — either way, this exact submission is done.
+        setSubmitted({ name: form.name.trim() });
+        return;
+      }
+
+      let body: { error?: string; fields?: Record<string, string> } | null = null;
+      try {
+        body = await res.json();
+      } catch {
+        // Non-JSON error body — fall through to the generic message below.
+      }
+
+      if (body?.fields && Object.keys(body.fields).length > 0) {
+        setFieldErrors(body.fields);
+      } else {
+        setSubmitError(t.start.submitError);
+      }
+    } catch {
+      setSubmitError(t.start.submitError);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <section className="mx-auto max-w-[1280px] px-5 pt-[clamp(34px,5vw,68px)] pb-[clamp(60px,8vw,110px)] sm:px-6">
+      {/* Polite live region for the loading state only — the error state uses
+          its own role="alert" (assertive) below, so nothing double-announces. */}
+      <span role="status" aria-live="polite" className="sr-only">
+        {submitting ? t.start.sending : ""}
+      </span>
+
       <AnimatePresence mode="wait">
         {submitted ? (
           <motion.div
@@ -118,17 +198,17 @@ export default function StartExperience() {
               <span className="block h-1.5 w-1.5 rounded-full bg-mint-deep" />
               {t.success.badge}
             </span>
-            <h1 className="m-0 text-[clamp(28px,3.6vw,42px)] font-semibold tracking-[-0.02em] text-balance">
+            <h1
+              ref={successHeadingRef}
+              tabIndex={-1}
+              className="m-0 text-[clamp(28px,3.6vw,42px)] font-semibold tracking-[-0.02em] text-balance focus:outline-none"
+            >
               {t.success.title}
             </h1>
             <p className="mx-auto mt-4 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{t.success.copy}</p>
 
-            <div className="mx-auto mt-8 max-w-[380px] rounded-2xl border border-ink/[.08] bg-canvas p-5 text-start">
-              <div className="mb-2 font-manrope text-[11.5px] font-bold tracking-[.12em] text-mint-deep uppercase">
-                {t.success.meeting}
-              </div>
-              <div className="text-[17px] font-semibold">{submitted.dateLabel}</div>
-              <div className="text-[15px] text-ink-soft">{submitted.time}</div>
+            <div className="mx-auto mt-8 max-w-[440px] rounded-2xl border border-ink/[.08] bg-canvas p-5 text-start">
+              <p className="m-0 text-[14.5px] leading-[1.7] text-ink-soft">{t.success.schedulingNote}</p>
             </div>
 
             <div className="mx-auto mt-8 max-w-[440px] text-start">
@@ -170,30 +250,102 @@ export default function StartExperience() {
 
             <div className="mt-[clamp(36px,5vw,60px)] grid grid-cols-1 gap-8 lg:grid-cols-[1.4fr_1fr] lg:gap-10">
               <Reveal as="div">
-                <form onSubmit={handleSubmit} className="flex flex-col gap-5 rounded-[24px] border border-ink/[.08] bg-surface p-[clamp(22px,3vw,36px)]">
+                <form onSubmit={handleSubmit} noValidate={false} className="flex flex-col gap-5 rounded-[24px] border border-ink/[.08] bg-surface p-[clamp(22px,3vw,36px)]">
+                  {/* Honeypot: invisible and unreachable for real users (aria-hidden +
+                      not focusable), but present in the DOM for bots that blindly fill
+                      every input. Any non-empty value here is treated as a bot signal
+                      server-side, silently, before anything else is validated. */}
+                  <div aria-hidden="true" className="absolute -left-[9999px] h-0 w-0 overflow-hidden">
+                    <label>
+                      Leave this field blank
+                      <input
+                        type="text"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                      />
+                    </label>
+                  </div>
+
+                  {Object.keys(fieldErrors).length > 0 && (
+                    <p role="alert" className="m-0 text-[13.5px] font-medium text-red-600">
+                      {t.start.errorSummary}
+                    </p>
+                  )}
+
                   <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                       {t.start.fName}
-                      <input required value={form.name} onChange={updateField("name")} className={inputClass} />
+                      <input
+                        ref={nameFieldRef}
+                        required
+                        maxLength={INQUIRY_LIMITS.nameMax}
+                        value={form.name}
+                        onChange={updateField("name")}
+                        aria-invalid={!!fieldErrors.name}
+                        aria-describedby={fieldErrors.name ? "name-error" : undefined}
+                        className={`${inputClass} ${fieldErrors.name ? "border-red-500" : ""}`}
+                      />
+                      {fieldErrors.name && (
+                        <span id="name-error" className="text-[12.5px] font-medium text-red-600">
+                          {messageForCode(fieldErrors.name)}
+                        </span>
+                      )}
                     </label>
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                       {t.start.fCompany}{" "}
                       <span className="font-normal text-ink-faint">({t.start.optional})</span>
-                      <input value={form.company} onChange={updateField("company")} className={inputClass} />
+                      <input
+                        ref={companyFieldRef}
+                        maxLength={INQUIRY_LIMITS.companyMax}
+                        value={form.company}
+                        onChange={updateField("company")}
+                        aria-invalid={!!fieldErrors.company}
+                        aria-describedby={fieldErrors.company ? "company-error" : undefined}
+                        className={`${inputClass} ${fieldErrors.company ? "border-red-500" : ""}`}
+                      />
+                      {fieldErrors.company && (
+                        <span id="company-error" className="text-[12.5px] font-medium text-red-600">
+                          {messageForCode(fieldErrors.company)}
+                        </span>
+                      )}
                     </label>
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                       {t.start.fEmail}
                       <input
+                        ref={emailFieldRef}
                         required
                         type="email"
+                        maxLength={INQUIRY_LIMITS.emailMax}
                         value={form.email}
                         onChange={updateField("email")}
-                        className={inputClass}
+                        aria-invalid={!!fieldErrors.email}
+                        aria-describedby={fieldErrors.email ? "email-error" : undefined}
+                        className={`${inputClass} ${fieldErrors.email ? "border-red-500" : ""}`}
                       />
+                      {fieldErrors.email && (
+                        <span id="email-error" className="text-[12.5px] font-medium text-red-600">
+                          {messageForCode(fieldErrors.email)}
+                        </span>
+                      )}
                     </label>
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                       {t.start.fPhone} <span className="font-normal text-ink-faint">({t.start.optional})</span>
-                      <input value={form.phone} onChange={updateField("phone")} className={inputClass} />
+                      <input
+                        ref={phoneFieldRef}
+                        maxLength={INQUIRY_LIMITS.phoneMax}
+                        value={form.phone}
+                        onChange={updateField("phone")}
+                        aria-invalid={!!fieldErrors.phone}
+                        aria-describedby={fieldErrors.phone ? "phone-error" : undefined}
+                        className={`${inputClass} ${fieldErrors.phone ? "border-red-500" : ""}`}
+                      />
+                      {fieldErrors.phone && (
+                        <span id="phone-error" className="text-[12.5px] font-medium text-red-600">
+                          {messageForCode(fieldErrors.phone)}
+                        </span>
+                      )}
                     </label>
                   </div>
 
@@ -201,13 +353,23 @@ export default function StartExperience() {
                     {t.start.fDesc}
                     <span className="text-[13.5px] font-normal leading-[1.6] text-ink-soft">{t.start.fDescHelp}</span>
                     <textarea
+                      ref={descFieldRef}
                       required
+                      minLength={INQUIRY_LIMITS.descMin}
+                      maxLength={INQUIRY_LIMITS.descMax}
                       value={form.desc}
                       onChange={updateField("desc")}
                       placeholder={t.start.fDescPh}
                       rows={5}
-                      className={`${inputClass} resize-none`}
+                      aria-invalid={!!fieldErrors.desc}
+                      aria-describedby={fieldErrors.desc ? "desc-error" : undefined}
+                      className={`${inputClass} resize-none ${fieldErrors.desc ? "border-red-500" : ""}`}
                     />
+                    {fieldErrors.desc && (
+                      <span id="desc-error" className="text-[12.5px] font-medium text-red-600">
+                        {messageForCode(fieldErrors.desc)}
+                      </span>
+                    )}
                   </label>
 
                   <div className="rounded-[14px] border border-ink/[.1] bg-canvas px-4 py-3.5">
@@ -221,46 +383,6 @@ export default function StartExperience() {
                       ))}
                     </div>
                     <p className="m-0 mt-2.5 text-[12.5px] leading-[1.6] text-ink-faint">{t.start.confidentialNote}</p>
-                  </div>
-
-                  <div className="flex flex-col gap-2.5">
-                    <div className="text-[14px] font-medium text-ink">{t.start.fDate}</div>
-                    <div className="flex flex-wrap gap-2.5">
-                      {dates.map((d) => (
-                        <button
-                          key={d.key}
-                          type="button"
-                          onClick={() => setSelectedDate(d.key)}
-                          className={`min-w-[88px] flex-1 rounded-[14px] border px-2.5 py-3.5 text-center text-[14px] transition-colors sm:flex-none ${
-                            selectedDate === d.key
-                              ? "border-ink bg-ink text-white"
-                              : "border-ink/[.14] bg-canvas text-ink hover:border-ink/30"
-                          }`}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2.5">
-                    <div className="text-[14px] font-medium text-ink">{t.start.fTime}</div>
-                    <div className="flex flex-wrap gap-2.5">
-                      {TIME_SLOTS.map((time) => (
-                        <button
-                          key={time}
-                          type="button"
-                          onClick={() => setSelectedTime(time)}
-                          className={`rounded-full border px-5 py-2.5 text-[14.5px] transition-colors ${
-                            selectedTime === time
-                              ? "border-ink bg-ink text-white"
-                              : "border-ink/[.14] bg-canvas text-ink hover:border-ink/30"
-                          }`}
-                        >
-                          {time}
-                        </button>
-                      ))}
-                    </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
@@ -297,19 +419,24 @@ export default function StartExperience() {
                     )}
                   </div>
 
-                  <Magnetic className={canSubmit ? "self-start" : "pointer-events-none self-start"}>
+                  <Magnetic className={canSubmit && !submitting ? "self-start" : "pointer-events-none self-start"}>
                     <button
                       type="submit"
-                      disabled={!canSubmit}
+                      disabled={!canSubmit || submitting}
                       className={`rounded-full border-0 px-8 py-[16px] text-[16px] font-semibold transition-colors ${
-                        canSubmit
+                        canSubmit && !submitting
                           ? "cursor-pointer bg-ink text-white hover:bg-mint hover:text-dark"
                           : "cursor-not-allowed bg-ink/[.16] text-ink/45"
                       }`}
                     >
-                      {t.start.cta}
+                      {submitting ? t.start.sending : t.start.cta}
                     </button>
                   </Magnetic>
+                  {submitError && (
+                    <p ref={errorRef} tabIndex={-1} role="alert" className="text-[13px] font-medium text-red-600 focus:outline-none">
+                      {submitError}
+                    </p>
+                  )}
                   <p className="text-[13px] text-ink-soft">{t.start.privacy}</p>
                 </form>
               </Reveal>
