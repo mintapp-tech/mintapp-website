@@ -609,6 +609,10 @@ export const en: HomeContent = {
         body: "A few specialized services help us run this process. We only share what each one needs to do its job:",
       },
       {
+        title: "Scheduling your meeting",
+        body: "Once we accept your inquiry, we show an inline scheduling tool from Cal.com so you can pick a time directly. Loading it causes your browser to connect directly to Cal.com's servers, which may receive technical details such as your IP address and browser information as part of that connection, governed by Cal.com's own privacy policy. To match the meeting you book back to your inquiry, we send Cal.com a signed reference containing your inquiry's identifier and the time it was issued. This reference is cryptographically signed, so it cannot be altered or forged — but it is not encrypted and is not a secret value. On its own it doesn't grant access to anything, since our database has no publicly reachable access policies. We don't send your name, email, company or project description to Cal.com as part of this reference.",
+      },
+      {
         title: "What we don't do",
         body: "We never sell your personal information. Access is limited to authorized Mintapp team members and the service providers listed above — only to the extent each needs it to do its job.",
       },
@@ -641,7 +645,7 @@ export const en: HomeContent = {
     processors: [
       { name: "Supabase", role: "Securely stores your inquiry" },
       { name: "Resend", role: "Sends internal email notifications, once activated" },
-      { name: "Cal.com", role: "Handles meeting scheduling, once activated" },
+      { name: "Cal.com", role: "Handles meeting scheduling for your discovery call" },
       { name: "Vercel", role: "Hosts this website" },
       { name: "Cloudflare Turnstile", role: "Helps prevent automated abuse of this form" },
     ],
