@@ -40,3 +40,40 @@ Non-secret log of production deployments and their verification. No project URL,
 npm run test        # Vitest — unit/integration suite
 npm run test:e2e    # Playwright — browser suite (starts its own dev server; needs `npx playwright install chromium` once)
 ```
+
+## 2026-09-05 — Cal.com meeting scheduling: backend webhook + frontend embed
+
+**Production commits:**
+- Backend webhook: `af554c4`, `00619b2`, `8a54f5e`
+- Frontend embed: `98d205b`, `26a980d`, `d8dd231`
+- Vercel Production source commit at time of this verification: `d8dd231`
+
+**What shipped:**
+- **Backend** — `POST /api/webhooks/cal`, an event-type-scoped Cal.com webhook using payload version `2021-10-20`, handling exactly three triggers: `BOOKING_CREATED`, `BOOKING_CANCELLED`, `BOOKING_RESCHEDULED`. Every request is HMAC-verified over its exact raw bytes before any parsing, then staged through envelope/routing/full-schema validation before any database access. Bookings correlate to `project_inquiries` rows through short-lived, HMAC-signed context tokens (never a bare id), applied through three atomic, ordering-guarded Postgres RPC functions (`SECURITY INVOKER`, `service_role`-only).
+- **Frontend** — after an accepted Start-form submission, the server signs a booking-context token (best-effort; a signing failure never fails the underlying inquiry) and the client renders an inline Cal.com scheduler (`@calcom/embed-react`, pinned exact version) using the officially documented `metadata[key]` config mechanism. Includes a namespaced embed instance, a 15-second readiness timeout with a clean retry path, bilingual (EN/AR) copy, and an updated privacy-policy disclosure covering the direct browser-to-Cal.com connection and the nature of the signed reference (integrity-protected, not encrypted, not secret).
+
+**Live verification completed (real, non-mocked, full lifecycle):**
+One real, clearly-labeled QA inquiry was submitted through the live Start form and taken through submit → book → reschedule → cancel, checked via read-only Supabase queries after each stage. Confirmed:
+- The signed booking-context token issued at submission reached Cal.com and correctly correlated the resulting `BOOKING_CREATED` webhook to the correct inquiry row.
+- The attendee-reported timezone (`Africa/Cairo`) was captured into `meeting_timezone` — a genuine reported value, never the hardcoded fallback the design forbids.
+- A genuine reschedule occurred on Cal.com's side (confirmed via Cal.com's own UI).
+- A genuine cancellation updated the correct inquiry row to `booking_status = cancelled`, and the rescheduled → cancelled transition strictly increased `cal_booking_event_at`, confirming the ordering guard behaved correctly across that specific transition.
+- The QA row was deleted afterward by an exact-match filter, with row counts confirmed both immediately before (`1`) and after (`0`) deletion — no collateral rows touched.
+
+**Known evidence limitation — the created → rescheduled transition:** this was **not conclusively proven**. No clean before/after database read bracketed the reschedule action itself, so it is not established from this test that the `BOOKING_RESCHEDULED` webhook updated the inquiry, that `meeting_start_at` changed in the database, or that `cal_booking_event_at` increased between the created and rescheduled stages. Cal.com's UI confirms a reschedule happened on the provider side, but that does not by itself prove our webhook/RPC applied the corresponding database transition. Closing this fully would require a further, narrow QA cycle checking `meeting_start_at` and the raw ordering timestamp on both sides of a reschedule specifically.
+
+**Known evidence limitation — metadata presence on cancellation/reschedule:** delivery-level payload inspection was not available during this verification, so it remains **unverified** whether `metadata.bookingContext` is actually present on the real `BOOKING_CANCELLED`/`BOOKING_RESCHEDULED` webhook payloads. The successful cancellation in this test does not establish this: once `BOOKING_CREATED` had already stored `cal_booking_id` on the row, the cancellation could have correlated purely through that stored booking UID (the designed fallback path) with or without `bookingContext` present.
+
+**Required production environment variables** (names only, matching this file's existing convention):
+- `NEXT_PUBLIC_CAL_LINK`
+- `CAL_EVENT_TYPE_ID`
+- `CAL_WEBHOOK_SECRET`
+- `CAL_BOOKING_CONTEXT_SECRET`
+
+No secrets, inquiry IDs, booking UIDs, meeting URLs, personal data, or exact QA timestamps appear in this record.
+
+**Rerunning tests:**
+```bash
+npm run test
+npm run test:e2e
+```
