@@ -1,10 +1,25 @@
-import { test, expect, devices } from "@playwright/test";
-import { installTurnstileMock } from "./turnstile-mock";
+import { test, expect, devices, type Page } from "@playwright/test";
+import { installTurnstileMock, mockInquiriesRoute } from "./turnstile-mock";
 
 // No test in this file lets a submission reach a real backend — the
-// Cloudflare script is blocked/mocked and /api/inquiries is never actually
-// invoked (these tests stop at "is the form keyboard/viewport usable",
-// not "does a submission succeed").
+// Cloudflare script is blocked/mocked, and any test that needs a successful
+// submission mocks /api/inquiries directly rather than ever invoking the
+// real route (these tests stop at "is the form/success panel
+// keyboard/focus/viewport usable", not "does a submission succeed
+// server-side" — that's route.test.ts's job).
+
+async function fillMinimumValidForm(page: Page) {
+  const textInputs = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])');
+  await textInputs.nth(0).fill("Test User");
+  await textInputs.nth(2).fill("test@example.com");
+  await page.locator("form textarea").first().fill("A".repeat(40));
+  await page.locator('input[type="checkbox"]').check();
+}
+
+async function submitForm(page: Page) {
+  await expect(page.locator('button[type="submit"]')).toBeEnabled({ timeout: 5000 });
+  await page.locator('button[type="submit"]').click();
+}
 
 test.describe("keyboard-only progression", () => {
   test("Tab reaches every real field in order and skips the honeypot entirely", async ({ page }) => {
@@ -53,6 +68,60 @@ test.describe("keyboard-only progression", () => {
     await expect(consentCheckbox).toBeFocused();
     await page.keyboard.press("Space");
     await expect(consentCheckbox).toBeChecked();
+  });
+});
+
+test.describe("success-heading focus after the animated form-to-success transition", () => {
+  // Regression coverage for a real, pre-existing defect: a useEffect keyed
+  // on the `submitted` state object ran before AnimatePresence's
+  // mode="wait" finished mounting the success panel (it delays mounting
+  // the incoming child until the outgoing child's exit animation
+  // completes), so the heading ref was still null when focus() was called
+  // and focus never actually landed. Fixed with a stable-identity callback
+  // ref instead, which React invokes exactly when the node mounts. No
+  // scheduling/Cal.com code is involved in any of these three tests.
+
+  test("English: document.activeElement is the success heading after submission", async ({ page }) => {
+    await installTurnstileMock(page);
+    await mockInquiriesRoute(page, () => ({ status: 201, body: { id: "11111111-1111-4111-8111-111111111111" } }));
+
+    await page.goto("/en/start");
+    await fillMinimumValidForm(page);
+    await submitForm(page);
+
+    const heading = page.getByRole("heading", { name: "We have your idea" });
+    await expect(heading).toBeFocused();
+  });
+
+  test("Arabic: document.activeElement is the success heading after submission", async ({ page }) => {
+    await installTurnstileMock(page);
+    await mockInquiriesRoute(page, () => ({ status: 201, body: { id: "11111111-1111-4111-8111-111111111111" } }));
+
+    await page.goto("/ar/start");
+    await fillMinimumValidForm(page);
+    await submitForm(page);
+
+    const heading = page.getByRole("heading", { name: "وصلتنا فكرتك" });
+    await expect(heading).toBeFocused();
+  });
+
+  test("a subsequent rerender/settle of the success panel does not steal focus away from the heading", async ({ page }) => {
+    await installTurnstileMock(page);
+    await mockInquiriesRoute(page, () => ({ status: 201, body: { id: "11111111-1111-4111-8111-111111111111" } }));
+
+    await page.goto("/en/start");
+    await fillMinimumValidForm(page);
+    await submitForm(page);
+
+    const heading = page.getByRole("heading", { name: "We have your idea" });
+    await expect(heading).toBeFocused();
+
+    // Give the exit/enter animation and any settle-time rerenders a full
+    // window to complete, then confirm nothing re-fired and moved focus a
+    // second time (a stable-identity callback ref only fires on genuine
+    // mount/unmount, never on an ordinary rerender).
+    await page.waitForTimeout(1000);
+    await expect(heading).toBeFocused();
   });
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
@@ -60,7 +60,6 @@ export default function StartExperience() {
   const formStartedAtRef = useRef<string>(new Date().toISOString());
   const utmRef = useRef(readUtmParams());
 
-  const successHeadingRef = useRef<HTMLHeadingElement>(null);
   const errorRef = useRef<HTMLParagraphElement>(null);
   const nameFieldRef = useRef<HTMLInputElement>(null);
   const companyFieldRef = useRef<HTMLInputElement>(null);
@@ -68,9 +67,18 @@ export default function StartExperience() {
   const phoneFieldRef = useRef<HTMLInputElement>(null);
   const descFieldRef = useRef<HTMLTextAreaElement>(null);
 
-  useEffect(() => {
-    if (submitted) successHeadingRef.current?.focus();
-  }, [submitted]);
+  // A callback ref (not a useEffect keyed on `submitted`) so focus is
+  // applied exactly when this heading actually mounts. AnimatePresence
+  // mode="wait" delays mounting the success panel until the form panel's
+  // exit animation finishes — by then, an effect keyed on `submitted` has
+  // already run and found the ref still null, and nothing re-triggers it
+  // once the node appears. A stable-identity callback ref has no such gap:
+  // React calls it exactly once when the node mounts, never on ordinary
+  // rerenders, and it does nothing on unmount (node is null) — so nothing
+  // here ever moves focus again later.
+  const focusSuccessHeading = useCallback((node: HTMLHeadingElement | null) => {
+    node?.focus();
+  }, []);
 
   useEffect(() => {
     if (submitError) errorRef.current?.focus();
@@ -224,7 +232,7 @@ export default function StartExperience() {
               {t.success.badge}
             </span>
             <h1
-              ref={successHeadingRef}
+              ref={focusSuccessHeading}
               tabIndex={-1}
               className="m-0 text-[clamp(28px,3.6vw,42px)] font-semibold tracking-[-0.02em] text-balance focus:outline-none"
             >
