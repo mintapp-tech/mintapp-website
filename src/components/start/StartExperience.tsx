@@ -9,8 +9,14 @@ import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 import TurnstileWidget, { type TurnstileWidgetHandle } from "./TurnstileWidget";
+import ScheduleEmbed from "./ScheduleEmbed";
 
 const easeOut = [0.2, 0.7, 0.2, 1] as const;
+
+// Generous bound on the signed booking-context token — well above any
+// realistic size (base64url payload + signature, ~90 chars in practice) but
+// still a firm ceiling against a malformed/oversized success body.
+const BOOKING_CONTEXT_MAX_LENGTH = 512;
 
 interface FormState {
   name: string;
@@ -49,7 +55,7 @@ export default function StartExperience() {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [submitted, setSubmitted] = useState<{ name: string } | null>(null);
+  const [submitted, setSubmitted] = useState<{ name: string; bookingContext?: string } | null>(null);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
@@ -75,7 +81,7 @@ export default function StartExperience() {
   // once the node appears. A stable-identity callback ref has no such gap:
   // React calls it exactly once when the node mounts, never on ordinary
   // rerenders, and it does nothing on unmount (node is null) — so nothing
-  // here ever moves focus again later.
+  // here ever moves focus again later (embed readiness, timeout, retry).
   const focusSuccessHeading = useCallback((node: HTMLHeadingElement | null) => {
     node?.focus();
   }, []);
@@ -173,7 +179,26 @@ export default function StartExperience() {
       if (res.ok) {
         // Success (including the "already received" duplicate-token case,
         // which is still a 2xx) — either way, this exact submission is done.
-        setSubmitted({ name: form.name.trim() });
+        // bookingContext is read defensively: the inquiry is already
+        // durably accepted server-side by this point, so a malformed body,
+        // an unparseable response, or an out-of-shape bookingContext value
+        // must never lose that success — it only means no scheduling
+        // section renders, falling back to the "unavailable" copy instead.
+        // The server-only context verifier is never imported here; this is
+        // a plain shape/bounds check, not a signature check.
+        let bookingContext: string | undefined;
+        try {
+          const parsedBody: unknown = await res.json();
+          if (parsedBody && typeof parsedBody === "object") {
+            const value = (parsedBody as Record<string, unknown>).bookingContext;
+            if (typeof value === "string" && value.length > 0 && value.length <= BOOKING_CONTEXT_MAX_LENGTH) {
+              bookingContext = value;
+            }
+          }
+        } catch {
+          // Non-JSON or empty success body — treated as "no context".
+        }
+        setSubmitted({ name: form.name.trim(), bookingContext });
         return;
       }
 
@@ -225,46 +250,52 @@ export default function StartExperience() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
             transition={{ duration: 0.5, ease: easeOut }}
-            className="mx-auto max-w-[640px] rounded-[24px] border border-ink/[.08] bg-surface p-[clamp(32px,5vw,56px)] text-center"
+            className="mx-auto w-full"
           >
-            <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-mint-soft px-4 py-1.5 text-[13px] font-semibold text-mint-deep">
-              <span className="block h-1.5 w-1.5 rounded-full bg-mint-deep" />
-              {t.success.badge}
-            </span>
-            <h1
-              ref={focusSuccessHeading}
-              tabIndex={-1}
-              className="m-0 text-[clamp(28px,3.6vw,42px)] font-semibold tracking-[-0.02em] text-balance focus:outline-none"
-            >
-              {t.success.title}
-            </h1>
-            <p className="mx-auto mt-4 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{t.success.copy}</p>
-
-            <div className="mx-auto mt-8 max-w-[440px] rounded-2xl border border-ink/[.08] bg-canvas p-5 text-start">
-              <p className="m-0 text-[14.5px] leading-[1.7] text-ink-soft">{t.success.schedulingNote}</p>
-            </div>
-
-            <div className="mx-auto mt-8 max-w-[440px] text-start">
-              <div className="mb-3 text-[15px] font-semibold">{t.success.nextTitle}</div>
-              <div className="flex flex-col gap-2.5">
-                {t.success.next.map((point) => (
-                  <div key={point} className="flex items-start gap-2.5 text-[14.5px] leading-[1.7] text-ink-soft">
-                    <span className="mt-2 block h-[5px] w-[5px] flex-none rounded-full bg-mint-deep" />
-                    {point}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <Magnetic className="mx-auto mt-9 inline-block">
-              <button
-                onClick={() => router.push(`/${lang}`)}
-                className="cursor-pointer rounded-full border-0 bg-ink px-8 py-[15px] text-[15.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+            <div className="mx-auto max-w-[640px] rounded-[24px] border border-ink/[.08] bg-surface p-[clamp(32px,5vw,56px)] text-center">
+              <span className="mb-5 inline-flex items-center gap-2 rounded-full bg-mint-soft px-4 py-1.5 text-[13px] font-semibold text-mint-deep">
+                <span className="block h-1.5 w-1.5 rounded-full bg-mint-deep" />
+                {t.success.badge}
+              </span>
+              <h1
+                ref={focusSuccessHeading}
+                tabIndex={-1}
+                className="m-0 text-[clamp(28px,3.6vw,42px)] font-semibold tracking-[-0.02em] text-balance focus:outline-none"
               >
-                {t.success.home}
-              </button>
-            </Magnetic>
-            <p className="mt-5 text-[13px] text-ink-soft">{t.success.note}</p>
+                {t.success.title}
+              </h1>
+              <p className="mx-auto mt-4 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{t.success.copy}</p>
+
+              <div className="mx-auto mt-8 max-w-[440px] text-start">
+                <div className="mb-3 text-[15px] font-semibold">{t.success.nextTitle}</div>
+                <div className="flex flex-col gap-2.5">
+                  {t.success.next.map((point) => (
+                    <div key={point} className="flex items-start gap-2.5 text-[14.5px] leading-[1.7] text-ink-soft">
+                      <span className="mt-2 block h-[5px] w-[5px] flex-none rounded-full bg-mint-deep" />
+                      {point}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <Magnetic className="mx-auto mt-9 inline-block">
+                <button
+                  onClick={() => router.push(`/${lang}`)}
+                  className="cursor-pointer rounded-full border-0 bg-ink px-8 py-[15px] text-[15.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+                >
+                  {t.success.home}
+                </button>
+              </Magnetic>
+              <p className="mt-5 text-[13px] text-ink-soft">{t.success.note}</p>
+            </div>
+
+            {submitted.bookingContext ? (
+              <ScheduleEmbed bookingContext={submitted.bookingContext} lang={lang} copy={t.success.scheduling} />
+            ) : (
+              <div className="mx-auto mt-8 max-w-[440px] rounded-2xl border border-ink/[.08] bg-canvas p-5 text-start">
+                <p className="m-0 text-[14.5px] leading-[1.7] text-ink-soft">{t.success.scheduling.unavailable}</p>
+              </div>
+            )}
           </motion.div>
         ) : (
           <motion.div

@@ -7,6 +7,7 @@ import { verifyTurnstileToken } from "@/lib/verify-turnstile";
 import { getTurnstileSecretKey, getAllowedTurnstileHostnames } from "@/lib/turnstile-config";
 import { inquirySchema } from "@/lib/inquiry-schema";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
+import { signBookingContext } from "@/lib/cal-booking-context";
 import type { z } from "zod";
 
 export const runtime = "nodejs";
@@ -114,6 +115,26 @@ function fieldErrors(error: z.ZodError): Record<string, string> {
   return out;
 }
 
+// The single place all three accepted-inquiry branches (fresh insert,
+// idempotent token match, reactive duplicate) build their response, so they
+// cannot drift out of sync on whether/how bookingContext is attached.
+// Signing is best-effort: the inquiry itself is already durably accepted by
+// the time this runs, so a signing failure (e.g. a missing
+// CAL_BOOKING_CONTEXT_SECRET) must never turn an accepted inquiry into an
+// error response — it only omits bookingContext, and the client falls back
+// to its own scheduling-unavailable copy. Never logs the underlying error,
+// the inquiry id, or which environment variable is at fault.
+function acceptedInquiryResponse(id: string, status: number, alreadyReceived: boolean) {
+  let bookingContext: string | undefined;
+  try {
+    bookingContext = signBookingContext(id);
+  } catch {
+    console.error("inquiry_booking_context_sign_failed");
+  }
+  const body = alreadyReceived ? { id, alreadyReceived: true as const, bookingContext } : { id, bookingContext };
+  return jsonResponse(body, status);
+}
+
 export async function POST(request: NextRequest) {
   // 1–4: method (framework-level), content-type, size, parse.
   const read = await readJsonWithLimit(request);
@@ -179,7 +200,7 @@ export async function POST(request: NextRequest) {
   // 9: idempotency lookup — only after Turnstile has passed.
   const existingId = await findInquiryIdByToken(supabase, body.submissionToken);
   if (existingId) {
-    return jsonResponse({ id: existingId, alreadyReceived: true }, 200);
+    return acceptedInquiryResponse(existingId, 200, true);
   }
 
   // 10: insert, with its own reactive unique-conflict handling for the rare
@@ -194,7 +215,7 @@ export async function POST(request: NextRequest) {
   }
 
   if (result.status === "duplicate") {
-    return jsonResponse({ id: result.id, alreadyReceived: true }, 200);
+    return acceptedInquiryResponse(result.id, 200, true);
   }
 
   const inquiryId = result.id;
@@ -219,5 +240,5 @@ export async function POST(request: NextRequest) {
   );
 
   // 12: success response.
-  return jsonResponse({ id: inquiryId }, 201);
+  return acceptedInquiryResponse(inquiryId, 201, false);
 }

@@ -46,6 +46,11 @@ vi.mock("@/lib/turnstile-config", () => ({
   getAllowedTurnstileHostnames: () => ["mintapp.tech", "www.mintapp.tech"],
 }));
 
+// The real (unmocked) implementation — used to independently verify any
+// bookingContext the route produces, exactly like a legitimate downstream
+// consumer would, rather than trusting the route's own claim about its shape.
+const { verifyBookingContext } = await import("@/lib/cal-booking-context");
+
 const { POST } = await import("./route");
 
 function makeRequest(body: unknown) {
@@ -278,5 +283,99 @@ describe("POST /api/inquiries — Supabase insert failure handling", () => {
     const body = await res.json();
     expect(body).toEqual({ id: "dup-id", alreadyReceived: true });
     expect(sendInquiryNotification).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/inquiries — bookingContext on every accepted branch", () => {
+  const REAL_UUID = "11111111-1111-4111-8111-111111111111";
+  const EXISTING_UUID = "22222222-2222-4222-8222-222222222222";
+  const DUPLICATE_UUID = "33333333-3333-4333-8333-333333333333";
+
+  test("fresh 201 insert carries a bookingContext that independently verifies to the same inquiry id", async () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", "test-only-secret-value-not-real");
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({});
+    findInquiryIdByToken.mockResolvedValue(null);
+    insertInquiry.mockResolvedValue({ status: "inserted", id: REAL_UUID });
+
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.id).toBe(REAL_UUID);
+    expect(typeof body.bookingContext).toBe("string");
+
+    const verified = verifyBookingContext(body.bookingContext);
+    expect(verified).toEqual({ ok: true, inquiryId: REAL_UUID });
+  });
+
+  test("idempotent existing-token 200 also carries a valid bookingContext for the existing inquiry id", async () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", "test-only-secret-value-not-real");
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({});
+    findInquiryIdByToken.mockResolvedValue(EXISTING_UUID);
+
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ id: EXISTING_UUID, alreadyReceived: true });
+
+    const verified = verifyBookingContext(body.bookingContext);
+    expect(verified).toEqual({ ok: true, inquiryId: EXISTING_UUID });
+  });
+
+  test("reactive duplicate-conflict 200 also carries a valid bookingContext for the resolved inquiry id", async () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", "test-only-secret-value-not-real");
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({});
+    findInquiryIdByToken.mockResolvedValue(null);
+    insertInquiry.mockResolvedValue({ status: "duplicate", id: DUPLICATE_UUID });
+
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toMatchObject({ id: DUPLICATE_UUID, alreadyReceived: true });
+
+    const verified = verifyBookingContext(body.bookingContext);
+    expect(verified).toEqual({ ok: true, inquiryId: DUPLICATE_UUID });
+  });
+
+  test("signing failure (missing secret) still returns the normal successful response, without bookingContext, logging only a fixed category", async () => {
+    // Deliberately not stubbing CAL_BOOKING_CONTEXT_SECRET — signBookingContext
+    // throws, which acceptedInquiryResponse must swallow without failing the
+    // already-accepted inquiry.
+    const consoleErrorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({});
+    findInquiryIdByToken.mockResolvedValue(null);
+    insertInquiry.mockResolvedValue({ status: "inserted", id: REAL_UUID });
+
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body).toEqual({ id: REAL_UUID });
+    expect(body.bookingContext).toBeUndefined();
+
+    expect(consoleErrorSpy).toHaveBeenCalledTimes(1);
+    expect(consoleErrorSpy).toHaveBeenCalledWith("inquiry_booking_context_sign_failed");
+    // Never the id, never an Error object, never a message, never an env var name.
+    const loggedArgs = consoleErrorSpy.mock.calls.flat();
+    for (const arg of loggedArgs) {
+      expect(String(arg)).not.toContain(REAL_UUID);
+      expect(arg).not.toBeInstanceOf(Error);
+      expect(String(arg)).not.toContain("CAL_BOOKING_CONTEXT_SECRET");
+    }
+    consoleErrorSpy.mockRestore();
+  });
+
+  test("signing failure on the idempotent branch also preserves the successful alreadyReceived response", async () => {
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({});
+    findInquiryIdByToken.mockResolvedValue(EXISTING_UUID);
+
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ id: EXISTING_UUID, alreadyReceived: true });
+    expect(body.bookingContext).toBeUndefined();
   });
 });

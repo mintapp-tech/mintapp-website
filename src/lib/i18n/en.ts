@@ -132,7 +132,16 @@ export const en: HomeContent = {
     badge: "Sent",
     title: "We have your idea",
     copy: "Our team will review what you sent and follow up with next steps.",
-    schedulingNote: "Meeting scheduling isn't set up yet — we'll reach out directly to arrange a time. Online scheduling is coming in a future update.",
+    scheduling: {
+      title: "Schedule your discovery call",
+      intro: "Choose a convenient time for a 30-minute conversation. We'll review your idea together and discuss the clearest next step.",
+      unavailable: "Online scheduling is unavailable right now. We'll contact you directly to arrange a suitable time, or you can email us at hello@mintapp.tech.",
+      errorTitle: "We couldn't load the scheduler",
+      errorBody: "Try loading it again, or email us and we'll arrange a suitable time directly.",
+      retry: "Try again",
+      loading: "Loading available times…",
+      languageNote: "",
+    },
     nextTitle: "What happens next",
     next: [
       "We review the idea and the intended users",

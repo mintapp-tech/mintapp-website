@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@calcom/embed-react": "1.5.3",
     "@supabase/supabase-js": "^2.112.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.43.0",

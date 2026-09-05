@@ -144,7 +144,16 @@ export interface HomeContent {
     badge: string;
     title: string;
     copy: string;
-    schedulingNote: string;
+    scheduling: {
+      title: string;
+      intro: string;
+      unavailable: string;
+      errorTitle: string;
+      errorBody: string;
+      retry: string;
+      loading: string;
+      languageNote: string;
+    };
     nextTitle: string;
     next: string[];
     home: string;
