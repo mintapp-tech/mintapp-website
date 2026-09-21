@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { Alexandria, Manrope } from "next/font/google";
 import "../globals.css";
 import { LanguageProvider } from "@/lib/language-context";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
-import { SUPPORTED_LOCALES, resolveLocale } from "@/lib/locales";
+import { SUPPORTED_LOCALES, isSupportedLocale } from "@/lib/locales";
 import { SITE_URL } from "@/lib/seo";
 
 const alexandria = Alexandria({
@@ -38,13 +39,25 @@ export default async function RootLayout({
   params: Promise<{ locale: string }>;
 }>) {
   const { locale: rawLocale } = await params;
-  const locale = resolveLocale(rawLocale);
-  const dir = locale === "ar" ? "rtl" : "ltr";
+  // proxy.ts already redirects any request whose first segment looks like
+  // someone else's locale code (or none at all) into a real supported
+  // locale before it ever reaches here. This guard exists for the one
+  // class of request that legitimately bypasses proxy.ts: a top-level path
+  // with a file extension that doesn't correspond to a real static file or
+  // special-file convention (e.g. a guessed /manifest.json). Those reach
+  // Next's router as a bare single segment, which the [locale] dynamic
+  // segment would otherwise happily match — silently rendering the
+  // default-locale homepage with a 200 instead of a real 404. Rejecting an
+  // unsupported value here, rather than coercing it, is the fix.
+  if (!isSupportedLocale(rawLocale)) {
+    notFound();
+  }
+  const dir = rawLocale === "ar" ? "rtl" : "ltr";
 
   return (
-    <html lang={locale} dir={dir} className={`${alexandria.variable} ${manrope.variable} h-full antialiased`}>
+    <html lang={rawLocale} dir={dir} className={`${alexandria.variable} ${manrope.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-canvas text-ink">
-        <LanguageProvider locale={locale}>
+        <LanguageProvider locale={rawLocale}>
           <SmoothScroll>{children}</SmoothScroll>
           <CustomCursor />
         </LanguageProvider>

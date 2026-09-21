@@ -8,6 +8,27 @@ import type { SupportedLocale } from "./locales";
 // documented metadataBase behavior.
 export const SITE_URL = "https://www.mintapp.tech";
 
+// The single source of truth for every real public page's path, shared by
+// the sitemap generator and (mirrored in) the Milestone 1/2 test suites.
+// Each entry is a path with a leading slash, or "" for the locale root.
+// Deliberately excludes "/work" (no Work index route exists) and
+// "/internal/concept-pack" (private, noindex, not locale-routed).
+export const PUBLIC_ROUTE_PATHS: readonly string[] = [
+  "",
+  "/about",
+  "/services",
+  "/insights",
+  "/start",
+  "/privacy",
+  "/work/arrentio",
+  "/work/jameel",
+  "/work/kwayes",
+  "/work/nazarih",
+  "/work/rentop",
+  "/work/tanglevibe",
+  "/work/taskaty",
+];
+
 interface PageSeoInput {
   locale: SupportedLocale;
   /** Path with a leading slash, or "" for the locale root (e.g. "/about", "/work/jameel"). */
