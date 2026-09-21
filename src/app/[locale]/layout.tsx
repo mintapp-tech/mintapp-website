@@ -5,6 +5,7 @@ import { LanguageProvider } from "@/lib/language-context";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
 import { SUPPORTED_LOCALES, resolveLocale } from "@/lib/locales";
+import { SITE_URL } from "@/lib/seo";
 
 const alexandria = Alexandria({
   variable: "--font-alexandria-google",
@@ -23,6 +24,7 @@ export function generateStaticParams() {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Mintapp — Software that feels easy",
   description:
     "Mintapp is a digital product studio helping startups and growing businesses across Egypt and the MENA region turn ideas into thoughtful, launch-ready websites and mobile apps.",
