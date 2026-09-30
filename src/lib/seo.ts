@@ -37,6 +37,33 @@ interface PageSeoInput {
   description: string;
 }
 
+// The one sitewide default social-preview image. No page-specific images
+// yet — every page shares this, so every og:image/twitter:image reference
+// stays correct by construction. Built as a fully absolute URL directly
+// (not left relative for metadataBase to resolve) so the nested
+// openGraph.images/twitter.images array is unambiguous regardless of any
+// metadataBase resolution nuance for nested object fields.
+const OG_IMAGE_PATH = "/og/mintapp-default.png";
+const OG_IMAGE_WIDTH = 1200;
+const OG_IMAGE_HEIGHT = 630;
+const OG_IMAGE_ALT = "Mintapp — Software that feels easy";
+const OG_IMAGE_URL = `${SITE_URL}${OG_IMAGE_PATH}`;
+
+const SITE_NAME = "Mintapp";
+
+// Real, specific locale tags — not a generic "ar" — matching this project's
+// established Egypt/MENA focus already stated elsewhere in the site's own
+// content (see privacy.regionCopy and the about page). Not a claim placed
+// on any visible content; purely a structured Open Graph locale signal.
+const OG_LOCALE: Record<SupportedLocale, string> = {
+  en: "en_US",
+  ar: "ar_EG",
+};
+
+function alternateLocaleFor(locale: SupportedLocale): string {
+  return locale === "en" ? OG_LOCALE.ar : OG_LOCALE.en;
+}
+
 // Every page's generateMetadata funnels through this one function so
 // canonical construction and the reciprocal en/ar alternate pair can never
 // drift out of sync between routes. Deliberately no x-default: the site's
@@ -44,15 +71,50 @@ interface PageSeoInput {
 // default) is visitor-dependent, not a fixed "canonical language," so an
 // x-default target isn't asserted here.
 export function buildPageMetadata({ locale, path, title, description }: PageSeoInput): Metadata {
+  const canonicalPath = `/${locale}${path}`;
+
   return {
     title,
     description,
     alternates: {
-      canonical: `/${locale}${path}`,
+      canonical: canonicalPath,
       languages: {
         en: `/en${path}`,
         ar: `/ar${path}`,
       },
+    },
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      // Relative — resolved to an absolute URL against the root layout's
+      // metadataBase, the same mechanism already proven for
+      // alternates.canonical.
+      url: canonicalPath,
+      siteName: SITE_NAME,
+      locale: OG_LOCALE[locale],
+      alternateLocale: alternateLocaleFor(locale),
+      images: [
+        {
+          url: OG_IMAGE_URL,
+          width: OG_IMAGE_WIDTH,
+          height: OG_IMAGE_HEIGHT,
+          alt: OG_IMAGE_ALT,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [
+        {
+          url: OG_IMAGE_URL,
+          alt: OG_IMAGE_ALT,
+          width: OG_IMAGE_WIDTH,
+          height: OG_IMAGE_HEIGHT,
+        },
+      ],
     },
   };
 }
