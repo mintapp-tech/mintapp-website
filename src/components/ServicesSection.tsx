@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
@@ -11,14 +11,14 @@ function ServiceCard({
   desc,
   items,
   more,
-  onMore,
+  moreHref,
 }: {
   icon: React.ReactNode;
   title: string;
   desc: string;
   items: string[];
   more: string;
-  onMore: () => void;
+  moreHref: string;
 }) {
   return (
     <RevealItem className="flex flex-col gap-4 rounded-[20px] border border-ink/[.09] bg-surface p-[clamp(26px,3vw,40px)]">
@@ -33,20 +33,19 @@ function ServiceCard({
           </div>
         ))}
       </div>
-      <button
-        onClick={onMore}
+      <Link
+        href={moreHref}
         className="mt-2.5 flex items-center gap-2 self-start border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5"
       >
         {more}
-      </button>
+      </Link>
     </RevealItem>
   );
 }
 
 export default function ServicesSection() {
   const { t, lang, arrow } = useLanguage();
-  const router = useRouter();
-  const goToServices = () => router.push(`/${lang}/services`);
+  const servicesHref = `/${lang}/services`;
 
   return (
     <section id="services" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
@@ -66,7 +65,7 @@ export default function ServicesSection() {
           desc={t.svc.s1.desc}
           items={t.svc.s1.items}
           more={t.svc.more}
-          onMore={goToServices}
+          moreHref={servicesHref}
         />
         <ServiceCard
           icon={<span className="block h-[19px] w-3 rounded-[4px] border-2 border-mint" />}
@@ -74,7 +73,7 @@ export default function ServicesSection() {
           desc={t.svc.s2.desc}
           items={t.svc.s2.items}
           more={t.svc.more}
-          onMore={goToServices}
+          moreHref={servicesHref}
         />
       </RevealGroup>
 

@@ -1,11 +1,11 @@
 "use client";
 
 import { useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { motion, useMotionValue, useSpring, useTransform, useScroll, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
-import { scrollToSection } from "@/lib/scroll";
+import { SectionLink } from "./nav/links";
 import { SplitReveal } from "./motion/SplitReveal";
 import { Magnetic } from "./motion/Magnetic";
 
@@ -52,7 +52,6 @@ function ParallaxLayer({
 
 export default function Hero() {
   const { t, lang } = useLanguage();
-  const router = useRouter();
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
@@ -101,19 +100,19 @@ export default function Hero() {
 
         <div style={enterDelay(0.24)} className="mt-enter mt-[clamp(28px,3.4vw,40px)] flex flex-wrap gap-3">
           <Magnetic className="inline-block">
-            <button
-              onClick={() => router.push(`/${lang}/start`)}
-              className="cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors duration-300 hover:bg-mint hover:text-dark"
+            <Link
+              href={`/${lang}/start`}
+              className="inline-block cursor-pointer rounded-full border-0 bg-ink px-[30px] py-[17px] text-[16.5px] font-semibold text-white transition-colors duration-300 hover:bg-mint hover:text-dark"
             >
               {t.hero.cta1}
-            </button>
+            </Link>
           </Magnetic>
-          <button
-            onClick={() => scrollToSection("work")}
+          <SectionLink
+            section="work"
             className="cursor-pointer rounded-full border border-ink/20 bg-transparent px-[30px] py-[17px] text-[16.5px] font-semibold text-ink transition-colors duration-300 hover:border-dark hover:bg-surface"
           >
             {t.hero.cta2}
-          </button>
+          </SectionLink>
         </div>
 
         <div

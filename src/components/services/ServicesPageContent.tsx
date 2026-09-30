@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
@@ -33,7 +33,6 @@ function ListBlock({ title, items }: { title: string; items: string[] }) {
 
 export default function ServicesPageContent() {
   const { t, lang } = useLanguage();
-  const router = useRouter();
   const svcp = t.svcp;
 
   return (
@@ -66,12 +65,12 @@ export default function ServicesPageContent() {
                 </div>
               </div>
               <Magnetic className="inline-block flex-none">
-                <button
-                  onClick={() => router.push(`/${lang}/start`)}
-                  className="cursor-pointer rounded-full border-0 bg-ink px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+                <Link
+                  href={`/${lang}/start`}
+                  className="inline-block cursor-pointer rounded-full border-0 bg-ink px-6 py-3 text-[14.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
                 >
                   {svcp.cta}
-                </button>
+                </Link>
               </Magnetic>
             </div>
 
@@ -116,12 +115,12 @@ export default function ServicesPageContent() {
                   {cat.relatedName} <span className="text-ink-soft">— {cat.relatedCat}</span>
                 </div>
               </div>
-              <button
-                onClick={() => router.push(`/${lang}/work/${relatedSlugs[i]}`)}
+              <Link
+                href={`/${lang}/work/${relatedSlugs[i]}`}
                 className="flex-none cursor-pointer text-[14px] font-semibold text-dark underline decoration-mint decoration-[1.5px] underline-offset-4"
               >
                 {t.work.cta}
-              </button>
+              </Link>
             </Reveal>
           </Reveal>
         </section>

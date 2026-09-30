@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
@@ -8,7 +8,6 @@ import { TiltCard } from "./motion/TiltCard";
 
 export default function InsightsSection() {
   const { t, lang, arrow } = useLanguage();
-  const router = useRouter();
 
   return (
     <section id="insights" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
@@ -18,12 +17,12 @@ export default function InsightsSection() {
           text={t.ins.title}
           className="m-0 text-[clamp(27px,3.4vw,44px)] leading-[1.2] font-semibold tracking-[-0.02em]"
         />
-        <button
-          onClick={() => router.push(`/${lang}/insights`)}
+        <Link
+          href={`/${lang}/insights`}
           className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5"
         >
           {t.ins.all} <span className="block">{arrow}</span>
-        </button>
+        </Link>
       </Reveal>
       <RevealGroup className="grid grid-cols-1 gap-[clamp(16px,2.2vw,24px)] sm:grid-cols-2 lg:grid-cols-3">
         {t.ins.items.map((item) => (

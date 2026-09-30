@@ -23,19 +23,15 @@ export function LogoMark({ size = 30, variant = "color" }: { size?: number; vari
   );
 }
 
-export function Wordmark({ light = false, onClick }: { light?: boolean; onClick?: () => void }) {
+export function Wordmark({ light = false }: { light?: boolean }) {
   return (
-    <button
-      onClick={onClick}
-      aria-label="Mintapp"
-      className="flex cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0"
-    >
+    <>
       <LogoMark size={30} variant={light ? "white" : "color"} />
       <span
         className={clsx("font-manrope text-[19px] font-bold tracking-[-0.03em]", light ? "text-canvas" : "text-ink")}
       >
         mintapp
       </span>
-    </button>
+    </>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
@@ -47,7 +46,6 @@ function readUtmParams() {
 
 export default function StartExperience() {
   const { t, lang } = useLanguage();
-  const router = useRouter();
   const prefersReducedMotion = usePrefersReducedMotion();
   const panelTransition = prefersReducedMotion ? { duration: 0 } : { duration: 0.5, ease: easeOut };
 
@@ -283,12 +281,12 @@ export default function StartExperience() {
               </div>
 
               <Magnetic className="mx-auto mt-9 inline-block">
-                <button
-                  onClick={() => router.push(`/${lang}`)}
-                  className="cursor-pointer rounded-full border-0 bg-ink px-8 py-[15px] text-[15.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+                <Link
+                  href={`/${lang}`}
+                  className="inline-block cursor-pointer rounded-full border-0 bg-ink px-8 py-[15px] text-[15.5px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
                 >
                   {t.success.home}
-                </button>
+                </Link>
               </Magnetic>
               <p className="mt-5 text-[13px] text-ink-soft">{t.success.note}</p>
             </div>

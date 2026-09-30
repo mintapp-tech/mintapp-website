@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
@@ -8,7 +8,6 @@ import { Magnetic } from "@/components/motion/Magnetic";
 
 export default function AboutPageContent() {
   const { t, lang } = useLanguage();
-  const router = useRouter();
   const about = t.about;
 
   return (
@@ -105,12 +104,12 @@ export default function AboutPageContent() {
           </h2>
           <div className="relative mt-6 flex justify-center">
             <Magnetic className="inline-block">
-              <button
-                onClick={() => router.push(`/${lang}/start`)}
-                className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[16px] text-[16px] font-bold text-dark transition-colors hover:bg-mint-soft"
+              <Link
+                href={`/${lang}/start`}
+                className="inline-block cursor-pointer rounded-full border-0 bg-mint px-8 py-[16px] text-[16px] font-bold text-dark transition-colors hover:bg-mint-soft"
               >
                 {about.ctaBtn}
-              </button>
+              </Link>
             </Magnetic>
           </div>
         </Reveal>

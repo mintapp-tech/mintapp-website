@@ -1,21 +1,16 @@
 "use client";
 
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 
 export default function WorkSection() {
   const { t, lang, arrow } = useLanguage();
-  const router = useRouter();
-  const goToArrentioCaseStudy = () => router.push(`/${lang}/work/arrentio`);
-  const goToRentopCaseStudy = () => router.push(`/${lang}/work/rentop`);
-  const goToJameelCaseStudy = () => router.push(`/${lang}/work/jameel`);
-  const goToNazarihCaseStudy = () => router.push(`/${lang}/work/nazarih`);
-  const goToTaskatyCaseStudy = () => router.push(`/${lang}/work/taskaty`);
-  const goToTangleVibeCaseStudy = () => router.push(`/${lang}/work/tanglevibe`);
-  const goToKwayesCaseStudy = () => router.push(`/${lang}/work/kwayes`);
+  const caseStudy = (slug: string) => `/${lang}/work/${slug}`;
+  const cardLink =
+    "flex w-fit items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5";
 
   return (
     <section id="work" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
@@ -53,9 +48,9 @@ export default function WorkSection() {
               </span>
             ))}
           </div>
-          <button onClick={goToArrentioCaseStudy} className="group flex items-center gap-2.5 self-start border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-base font-semibold text-dark transition-all hover:gap-4 hover:text-mint-deep">
+          <Link href={caseStudy("arrentio")} className="group flex items-center gap-2.5 self-start border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-base font-semibold text-dark transition-all hover:gap-4 hover:text-mint-deep">
             {t.work.cta} <span className="block">{arrow}</span>
-          </button>
+          </Link>
         </div>
         <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden bg-arrentio-bg p-9 sm:min-h-[420px]">
           <span className="absolute -end-[60px] -top-[60px] block h-[220px] w-[220px] rounded-full bg-arrentio/[.12]" />
@@ -106,9 +101,9 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToRentopCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <Link href={caseStudy("rentop")} className={cardLink}>
               {t.work.cta} <span className="block">{arrow}</span>
-            </button>
+            </Link>
           </div>
         </RevealItem>
 
@@ -134,9 +129,9 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToJameelCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <Link href={caseStudy("jameel")} className={cardLink}>
               {t.work.cta} <span className="block">{arrow}</span>
-            </button>
+            </Link>
           </div>
         </RevealItem>
 
@@ -175,9 +170,9 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToNazarihCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <Link href={caseStudy("nazarih")} className={cardLink}>
               {t.work.cta} <span className="block">{arrow}</span>
-            </button>
+            </Link>
           </div>
         </RevealItem>
 
@@ -211,9 +206,9 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToTaskatyCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <Link href={caseStudy("taskaty")} className={cardLink}>
               {t.work.cta} <span className="block">{arrow}</span>
-            </button>
+            </Link>
           </div>
         </RevealItem>
 
@@ -247,9 +242,9 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToTangleVibeCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <Link href={caseStudy("tanglevibe")} className={cardLink}>
               {t.work.cta} <span className="block">{arrow}</span>
-            </button>
+            </Link>
           </div>
         </RevealItem>
 
@@ -284,9 +279,9 @@ export default function WorkSection() {
                 </span>
               ))}
             </div>
-            <button onClick={goToKwayesCaseStudy} className="flex items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5">
+            <Link href={caseStudy("kwayes")} className={cardLink}>
               {t.work.cta} <span className="block">{arrow}</span>
-            </button>
+            </Link>
           </div>
         </RevealItem>
       </RevealGroup>

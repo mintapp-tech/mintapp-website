@@ -1,31 +1,25 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
-import { scrollToSection } from "@/lib/scroll";
+import { SectionLink } from "@/components/nav/links";
 
 export default function NazarihCaseStudy() {
   const { t, lang, arrow, backArrow } = useLanguage();
-  const router = useRouter();
   const cs = t.csNazarih;
-
-  const goWork = () => {
-    if (window.location.pathname === `/${lang}`) scrollToSection("work");
-    else router.push(`/${lang}#work`);
-  };
 
   return (
     <>
       <section className="mx-auto max-w-[1280px] px-5 pt-[clamp(34px,5vw,68px)] sm:px-6">
-        <button
-          onClick={goWork}
-          className="mb-[clamp(26px,4vw,44px)] flex cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-[14.5px] text-ink-soft transition-colors hover:text-ink"
+        <SectionLink
+          section="work"
+          className="mb-[clamp(26px,4vw,44px)] flex w-fit cursor-pointer items-center gap-2 border-0 bg-transparent p-0 text-[14.5px] text-ink-soft transition-colors hover:text-ink"
         >
           <span className="block">{backArrow}</span> {cs.back}
-        </button>
+        </SectionLink>
 
         <Reveal className="mb-4 flex items-center gap-3">
           <span className="font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
@@ -240,9 +234,9 @@ export default function NazarihCaseStudy() {
           {cs.relatedTitle}
         </Reveal>
         <Reveal delay={0.05}>
-          <button
-            onClick={() => router.push(`/${lang}/work/taskaty`)}
-            className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
+          <Link
+            href={`/${lang}/work/taskaty`}
+            className="flex w-full flex-col gap-3 rounded-2xl text-ink border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
@@ -254,7 +248,7 @@ export default function NazarihCaseStudy() {
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>
             </span>
-          </button>
+          </Link>
         </Reveal>
       </section>
 
@@ -266,12 +260,12 @@ export default function NazarihCaseStudy() {
           </h2>
           <div className="relative mt-6 flex justify-center">
             <Magnetic className="inline-block">
-              <button
-                onClick={() => router.push(`/${lang}/start`)}
-                className="cursor-pointer rounded-full border-0 bg-mint px-8 py-[16px] text-[16px] font-bold text-dark transition-colors hover:bg-mint-soft"
+              <Link
+                href={`/${lang}/start`}
+                className="inline-block cursor-pointer rounded-full border-0 bg-mint px-8 py-[16px] text-[16px] font-bold text-dark transition-colors hover:bg-mint-soft"
               >
                 {t.final.cta}
-              </button>
+              </Link>
             </Magnetic>
           </div>
         </Reveal>
