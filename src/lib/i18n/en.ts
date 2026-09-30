@@ -2,7 +2,7 @@ import type { HomeContent } from "./types";
 
 export const en: HomeContent = {
   tagline: "Software that feels easy",
-  nav: { home: "Home", work: "Work", services: "Services", about: "About", insights: "Insights", start: "Start a Project", lang: "AR" },
+  nav: { home: "Home", work: "Work", services: "Services", about: "About", insights: "Insights", start: "Start a Project", lang: "AR", menu: "Menu", close: "Close" },
   hero: {
     eyebrow: "Digital product studio · Egypt & MENA",
     title: "Your idea, made real.",

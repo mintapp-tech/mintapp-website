@@ -37,6 +37,8 @@ export interface HomeContent {
     insights: string;
     start: string;
     lang: string;
+    menu: string;
+    close: string;
   };
   hero: {
     eyebrow: string;

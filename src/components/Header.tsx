@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { HomeLink, LanguageLink, SectionLink } from "./nav/links";
 import { LogoMark, Wordmark } from "./Logo";
 import { Magnetic } from "./motion/Magnetic";
@@ -13,16 +14,76 @@ const navLink =
 
 const menuLink = "cursor-pointer border-0 bg-transparent py-3 text-start text-[30px] font-medium text-canvas";
 
+const MENU_ID = "mobile-menu";
+
 export default function Header() {
   const { t, lang } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const closeMenu = () => setMenuOpen(false);
+  const prefersReducedMotion = usePrefersReducedMotion();
+
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const wasOpen = useRef(false);
+
+  // Focus moves into the dialog on open and back to the trigger on close.
+  useEffect(() => {
+    if (menuOpen) {
+      wasOpen.current = true;
+      closeRef.current?.focus();
+    } else if (wasOpen.current) {
+      wasOpen.current = false;
+      triggerRef.current?.focus();
+    }
+  }, [menuOpen]);
+
+  // Lock background scroll (native and Lenis) and close if the viewport grows to desktop.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.__lenis?.stop();
+
+    const desktop = window.matchMedia("(min-width: 768px)");
+    const onViewportChange = () => {
+      if (desktop.matches) setMenuOpen(false);
+    };
+    desktop.addEventListener("change", onViewportChange);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.__lenis?.start();
+      desktop.removeEventListener("change", onViewportChange);
+    };
+  }, [menuOpen]);
+
+  const onDialogKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeMenu();
+      return;
+    }
+    if (e.key !== "Tab" || !dialogRef.current) return;
+    const focusable = dialogRef.current.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
+    if (focusable.length === 0) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || !dialogRef.current.contains(active))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (active === last || !dialogRef.current.contains(active))) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
     <>
       <header className="sticky top-0 z-[60] border-b border-ink/[.07] bg-canvas/[.86] backdrop-blur-md">
-        <div className="mx-auto flex h-[74px] max-w-[1280px] items-center gap-4 px-5 sm:px-6 md:gap-8">
-          <HomeLink ariaLabel="Mintapp" className="flex cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0">
+        <div className="mx-auto flex h-[74px] max-w-[1280px] items-center gap-3 px-5 sm:px-6 md:gap-8">
+          <HomeLink ariaLabel="Mintapp" className="flex shrink-0 cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0">
             <Wordmark />
           </HomeLink>
 
@@ -52,14 +113,22 @@ export default function Header() {
             </Magnetic>
           </nav>
 
-          <div className="ms-auto flex items-center gap-2.5 md:hidden">
-            <LanguageLink className="cursor-pointer rounded-full border border-ink/[.16] bg-transparent px-3.5 py-2 font-manrope text-[12.5px] font-bold tracking-[.08em] text-ink">
-              {t.nav.lang}
-            </LanguageLink>
+          <div className="ms-auto flex items-center gap-2 md:hidden">
+            <Link
+              href={`/${lang}/start`}
+              className="inline-block cursor-pointer whitespace-nowrap rounded-full border-0 bg-ink px-3.5 py-[11px] text-[14px] leading-none font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+            >
+              {t.nav.start}
+            </Link>
             <button
+              ref={triggerRef}
+              type="button"
               onClick={() => setMenuOpen(true)}
-              aria-label="Menu"
-              className="flex h-[46px] w-[46px] cursor-pointer flex-col items-center justify-center gap-[5px] rounded-[13px] border border-ink/[.16] bg-transparent"
+              aria-label={t.nav.menu}
+              aria-haspopup="dialog"
+              aria-expanded={menuOpen}
+              aria-controls={MENU_ID}
+              className="flex h-[46px] w-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[5px] rounded-[13px] border border-ink/[.16] bg-transparent"
             >
               <span className="block h-[1.6px] w-[18px] bg-ink" />
               <span className="block h-[1.6px] w-[18px] bg-ink" />
@@ -71,11 +140,17 @@ export default function Header() {
       <AnimatePresence>
         {menuOpen && (
           <motion.div
+            ref={dialogRef}
+            id={MENU_ID}
+            role="dialog"
+            aria-modal="true"
+            aria-label={t.nav.menu}
+            onKeyDown={onDialogKeyDown}
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 14 }}
-            transition={{ duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
-            className="fixed inset-0 z-[80] flex flex-col bg-dark px-6 py-6 text-canvas sm:px-8"
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.3, ease: [0.2, 0.7, 0.2, 1] }}
+            className="fixed inset-0 z-[80] flex flex-col bg-dark px-6 py-6 text-canvas sm:px-8 md:hidden"
           >
             <div className="flex items-center justify-between">
               <span className="flex items-center gap-2.5">
@@ -83,11 +158,13 @@ export default function Header() {
                 <span className="font-manrope text-[19px] font-bold tracking-[-0.03em] text-canvas">mintapp</span>
               </span>
               <button
-                onClick={() => setMenuOpen(false)}
-                aria-label="Close"
+                ref={closeRef}
+                type="button"
+                onClick={closeMenu}
+                aria-label={t.nav.close}
                 className="flex h-[46px] w-[46px] cursor-pointer items-center justify-center rounded-[13px] border border-white/[.24] bg-transparent text-[22px] leading-none text-canvas"
               >
-                ×
+                <span aria-hidden>×</span>
               </button>
             </div>
             <nav className="my-auto flex flex-col gap-1.5">
@@ -107,13 +184,21 @@ export default function Header() {
                 {t.nav.insights}
               </Link>
             </nav>
-            <Link
-              href={`/${lang}/start`}
-              onClick={closeMenu}
-              className="block w-full cursor-pointer rounded-full border-0 bg-mint px-6 py-[17px] text-center text-[17px] font-bold text-dark"
-            >
-              {t.nav.start}
-            </Link>
+            <div className="flex flex-col gap-3">
+              <LanguageLink
+                onNavigate={closeMenu}
+                className="self-start rounded-full border border-canvas/24 bg-transparent px-[15px] py-2 text-[13.5px] font-semibold text-canvas transition-colors hover:border-mint hover:bg-canvas/[.08]"
+              >
+                {t.footer.langBtn}
+              </LanguageLink>
+              <Link
+                href={`/${lang}/start`}
+                onClick={closeMenu}
+                className="block w-full cursor-pointer rounded-full border-0 bg-mint px-6 py-[17px] text-center text-[17px] font-bold text-dark"
+              >
+                {t.nav.start}
+              </Link>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
