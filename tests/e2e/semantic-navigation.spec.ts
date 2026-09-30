@@ -5,7 +5,6 @@ const COPY = {
     work: "Work",
     services: "Services",
     about: "About",
-    insights: "Insights",
     start: "Start a Project",
     lang: "AR",
     switchLang: "Switch to Arabic",
@@ -21,7 +20,6 @@ const COPY = {
     work: "أعمالنا",
     services: "خدماتنا",
     about: "من نحن",
-    insights: "مقالات",
     start: "ابدأ مشروعك",
     lang: "EN",
     switchLang: "التبديل إلى الإنجليزية",
@@ -60,7 +58,6 @@ for (const locale of LOCALES) {
       await expectLink(page, nav.getByRole("link", exact(c.work)), `/${locale}#work`);
       await expectLink(page, nav.getByRole("link", exact(c.services)), `/${locale}/services`);
       await expectLink(page, nav.getByRole("link", exact(c.about)), `/${locale}/about`);
-      await expectLink(page, nav.getByRole("link", exact(c.insights)), `/${locale}/insights`);
       await expectLink(page, nav.getByRole("link", exact(c.start)), `/${locale}/start`);
       await expectLink(page, nav.getByRole("link", exact(c.switchLang)), `/${other}`);
       await expect(nav.getByRole("link", exact(c.switchLang))).toHaveText(c.lang);
@@ -86,22 +83,29 @@ for (const locale of LOCALES) {
       await expectLink(page, footer.getByRole("link", exact(c.work)), `/${locale}#work`);
       await expectLink(page, footer.getByRole("link", exact(c.services)), `/${locale}/services`);
       await expectLink(page, footer.getByRole("link", exact(c.about)), `/${locale}/about`);
-      await expectLink(page, footer.getByRole("link", exact(c.insights)), `/${locale}/insights`);
       await expectLink(page, footer.getByRole("link", exact(c.start)), `/${locale}/start`);
       await expectLink(page, footer.getByRole("link", exact(c.privacy)), `/${locale}/privacy`);
       await expectLink(page, footer.getByRole("link", exact(c.switchLang)), `/${other}`);
       await expect(footer.getByRole("link", exact(c.switchLang))).toHaveText(c.footerLang);
     });
 
+    test("Insights is no longer linked from anywhere", async ({ page }) => {
+      for (const path of ["", "/about", "/services", "/start", "/privacy", "/work/jameel"]) {
+        await page.goto(`/${locale}${path}`);
+        await expect(page.locator('a[href*="/insights"]')).toHaveCount(0);
+        await expect(page.locator("#insights")).toHaveCount(0);
+      }
+    });
+
     test("no navigation label is still rendered as a button", async ({ page }) => {
       await page.goto(`/${locale}`);
-      for (const label of [c.work, c.services, c.about, c.insights, c.start, c.lang, c.switchLang, c.heroSecondary, c.finalCta, c.privacy]) {
+      for (const label of [c.work, c.services, c.about, c.start, c.lang, c.switchLang, c.heroSecondary, c.finalCta, c.privacy]) {
         await expect(page.getByRole("button", exact(label))).toHaveCount(0);
       }
     });
 
     test("every internal link stays in this locale, and nothing interactive is nested", async ({ page }) => {
-      for (const path of ["", "/about", "/services", "/insights", "/privacy", "/start", "/work/jameel", "/work/arrentio"]) {
+      for (const path of ["", "/about", "/services", "/privacy", "/start", "/work/jameel", "/work/arrentio"]) {
         await page.goto(`/${locale}${path}`);
         const hrefs = await page.locator('a[href^="/"]:not([hreflang])').evaluateAll((els) => els.map((el) => el.getAttribute("href")!));
         expect(hrefs.length).toBeGreaterThan(0);
@@ -196,7 +200,7 @@ test.describe("links behave like links", () => {
   test("destinations are discoverable in the raw server HTML", async ({ request }) => {
     for (const locale of LOCALES) {
       const html = await (await request.get(`/${locale}`)).text();
-      for (const href of [`/${locale}/start`, `/${locale}/services`, `/${locale}/about`, `/${locale}/insights`, `/${locale}/privacy`, `/${locale}#work`]) {
+      for (const href of [`/${locale}/start`, `/${locale}/services`, `/${locale}/about`, `/${locale}/privacy`, `/${locale}#work`]) {
         expect(html, href).toContain(`href="${href}"`);
       }
       for (const slug of CASE_STUDIES) expect(html).toContain(`href="/${locale}/work/${slug}"`);

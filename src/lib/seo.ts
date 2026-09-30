@@ -17,7 +17,6 @@ export const PUBLIC_ROUTE_PATHS: readonly string[] = [
   "",
   "/about",
   "/services",
-  "/insights",
   "/start",
   "/privacy",
   "/work/arrentio",

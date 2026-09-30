@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { installTurnstileMock } from "./turnstile-mock";
 
-const PATHS = ["", "/about", "/services", "/insights", "/start", "/privacy", "/work/arrentio", "/work/jameel", "/work/kwayes", "/work/nazarih", "/work/rentop", "/work/tanglevibe", "/work/taskaty"];
+const PATHS = ["", "/about", "/services", "/start", "/privacy", "/work/arrentio", "/work/jameel", "/work/kwayes", "/work/nazarih", "/work/rentop", "/work/tanglevibe", "/work/taskaty"];
 const WIDTHS = [320, 360, 390, 768, 1280];
 const LOCALES = ["en", "ar"] as const;
 

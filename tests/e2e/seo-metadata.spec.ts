@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Locale-aware metadata coverage for every real page pair (derived from the
 // actual route inventory — see docs/deployments.md-style verification: `find
-// src/app -name page.tsx` — 13 locale-routed pages, 26 URLs total). No
+// src/app -name page.tsx` — 12 locale-routed pages, 24 URLs total). No
 // sitemap/OG/JSON-LD/404/analytics assertions here — that's later milestones.
 
 const ROUTES: { path: string; en: { title: string; description: string }; ar: { title: string; description: string } }[] = [
@@ -43,18 +43,6 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
       title: "خدماتنا — Mintapp",
       description:
         "Mintapp تبني مواقع وتطبيقات ويب وموبايل — عملية واحدة متكاملة من استراتيجية المنتج إلى التصميم والتطوير والاختبار والإطلاق.",
-    },
-  },
-  {
-    path: "/insights",
-    en: {
-      title: "Insights — Mintapp",
-      description:
-        "Short writing on building digital products in Egypt and the wider MENA region — product strategy, UX/UI design, and web and mobile development.",
-    },
-    ar: {
-      title: "مقالات — Mintapp",
-      description: "كتابات موجزة عن بناء المنتجات الرقمية في مصر والمنطقة العربية — استراتيجية المنتج، تصميم التجربة والواجهة، وتطوير الويب والموبايل.",
     },
   },
   {
@@ -159,7 +147,7 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
   },
 ];
 
-test.describe("locale-aware SEO metadata — all 13 route pairs / 26 URLs", () => {
+test.describe("locale-aware SEO metadata — all 12 route pairs / 24 URLs", () => {
   for (const route of ROUTES) {
     for (const locale of ["en", "ar"] as const) {
       const copy = route[locale];
@@ -192,7 +180,7 @@ test.describe("locale-aware SEO metadata — all 13 route pairs / 26 URLs", () =
     }
   }
 
-  test("the route inventory itself has exactly 13 pairs / 26 URLs — guards against silently adding/removing a page without updating this suite", () => {
-    expect(ROUTES.length).toBe(13);
+  test("the route inventory itself has exactly 12 pairs / 24 URLs — guards against silently adding/removing a page without updating this suite", () => {
+    expect(ROUTES.length).toBe(12);
   });
 });

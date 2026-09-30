@@ -6,7 +6,6 @@ const PUBLIC_PATHS = [
   "",
   "/about",
   "/services",
-  "/insights",
   "/start",
   "/privacy",
   "/work/arrentio",
@@ -18,7 +17,7 @@ const PUBLIC_PATHS = [
   "/work/taskaty",
 ];
 
-test.describe("all 26 valid localized URLs succeed and render with the correct lang/dir", () => {
+test.describe("all 24 valid localized URLs succeed and render with the correct lang/dir", () => {
   for (const path of PUBLIC_PATHS) {
     for (const locale of ["en", "ar"] as const) {
       test(`/${locale}${path}`, async ({ page }) => {
@@ -64,6 +63,24 @@ test.describe("invalid routes are deterministic real 404s, never a silent 200", 
   });
 });
 
+test.describe("the removed Insights pages are genuine 404s, never a homepage or soft 404", () => {
+  for (const locale of ["en", "ar"] as const) {
+    test(`/${locale}/insights returns 404 and renders no site content`, async ({ page }) => {
+      const response = await page.goto(`/${locale}/insights`);
+      expect(response?.status()).toBe(404);
+      expect(new URL(page.url()).pathname).toBe(`/${locale}/insights`);
+      await expect(page.locator("main#main-content")).toHaveCount(0);
+      await expect(page.locator("header nav")).toHaveCount(0);
+    });
+  }
+
+  test("the bare /insights path is locale-prefixed by the proxy and then 404s, never redirected to the homepage", async ({ page }) => {
+    const response = await page.goto("/insights");
+    expect(response?.status()).toBe(404);
+    expect(new URL(page.url()).pathname).toMatch(/^\/(en|ar)\/insights$/);
+  });
+});
+
 test.describe("locale-like-but-unsupported prefixes redirect to a real supported locale, rather than rendering content at the unsupported URL", () => {
   test("/fr/about redirects (not a direct 200) to a real /en or /ar page, never staying on /fr/about", async ({ page }) => {
     const response = await page.goto("/fr/about");
@@ -75,21 +92,22 @@ test.describe("locale-like-but-unsupported prefixes redirect to a real supported
 });
 
 test.describe("/sitemap.xml", () => {
-  test("returns real XML containing exactly the 26 intended public URLs", async ({ page }) => {
+  test("returns real XML containing exactly the 24 intended public URLs", async ({ page }) => {
     const response = await page.goto("/sitemap.xml");
     expect(response?.status()).toBe(200);
     expect(response?.headers()["content-type"]).toContain("xml");
 
     const body = await response!.text();
     const locations = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    expect(locations.length).toBe(26);
-    expect(new Set(locations).size).toBe(26);
+    expect(locations.length).toBe(24);
+    expect(new Set(locations).size).toBe(24);
 
     for (const loc of locations) {
       expect(loc.startsWith(SITE_URL)).toBe(true);
     }
     expect(locations.some((l) => l.includes("/internal"))).toBe(false);
     expect(locations.some((l) => l.endsWith("/work") || l.endsWith("/work/"))).toBe(false);
+    expect(locations.some((l) => l.includes("/insights"))).toBe(false);
   });
 });
 
@@ -105,7 +123,7 @@ test.describe("/robots.txt", () => {
 });
 
 test.describe("/internal/concept-pack stays excluded and noindex, unaffected by this milestone", () => {
-  test("is not one of the sitemap's 26 URLs", async ({ page }) => {
+  test("is not one of the sitemap's 24 URLs", async ({ page }) => {
     const response = await page.goto("/sitemap.xml");
     const body = await response!.text();
     expect(body).not.toContain("/internal");

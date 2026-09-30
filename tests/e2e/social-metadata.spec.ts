@@ -44,18 +44,6 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     },
   },
   {
-    path: "/insights",
-    en: {
-      title: "Insights — Mintapp",
-      description:
-        "Short writing on building digital products in Egypt and the wider MENA region — product strategy, UX/UI design, and web and mobile development.",
-    },
-    ar: {
-      title: "مقالات — Mintapp",
-      description: "كتابات موجزة عن بناء المنتجات الرقمية في مصر والمنطقة العربية — استراتيجية المنتج، تصميم التجربة والواجهة، وتطوير الويب والموبايل.",
-    },
-  },
-  {
     path: "/start",
     en: {
       title: "Start a Project — Mintapp",
@@ -157,7 +145,7 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
   },
 ];
 
-test.describe("Open Graph and Twitter metadata — all 13 route pairs / 26 URLs", () => {
+test.describe("Open Graph and Twitter metadata — all 12 route pairs / 24 URLs", () => {
   for (const route of ROUTES) {
     for (const locale of ["en", "ar"] as const) {
       const copy = route[locale];
@@ -242,11 +230,11 @@ test.describe("the default social-preview image asset", () => {
 });
 
 test.describe("no regression to sitemap or robots from this milestone", () => {
-  test("/sitemap.xml still has exactly 26 URLs", async ({ page }) => {
+  test("/sitemap.xml still has exactly 24 URLs", async ({ page }) => {
     const response = await page.goto("/sitemap.xml");
     const body = await response!.text();
     const locations = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)];
-    expect(locations.length).toBe(26);
+    expect(locations.length).toBe(24);
   });
 
   test("/robots.txt is unchanged", async ({ page }) => {

@@ -6,8 +6,8 @@ import { SUPPORTED_LOCALES } from "@/lib/locales";
 describe("sitemap", () => {
   const entries = sitemap();
 
-  test("contains exactly 26 URLs", () => {
-    expect(entries.length).toBe(26);
+  test("contains exactly 24 URLs", () => {
+    expect(entries.length).toBe(24);
   });
 
   test("every URL is absolute, using the fixed production origin — never derived from a request host", () => {
@@ -21,7 +21,6 @@ describe("sitemap", () => {
       "",
       "/about",
       "/services",
-      "/insights",
       "/start",
       "/privacy",
       "/work/arrentio",
@@ -52,6 +51,10 @@ describe("sitemap", () => {
 
   test("never includes /work (no Work index route exists)", () => {
     expect(entries.some((e) => e.url === `${SITE_URL}/en/work` || e.url === `${SITE_URL}/ar/work`)).toBe(false);
+  });
+
+  test("never includes the removed Insights pages", () => {
+    expect(entries.some((e) => e.url.includes("/insights"))).toBe(false);
   });
 
   test("never includes /internal/concept-pack", () => {

@@ -96,9 +96,6 @@ export default function Header() {
             <NavLink href={`/${lang}/about`} className={navLink}>
               {t.nav.about}
             </NavLink>
-            <NavLink href={`/${lang}/insights`} className={navLink}>
-              {t.nav.insights}
-            </NavLink>
             <LanguageLink className="cursor-pointer rounded-full border border-ink/[.16] bg-transparent px-3.5 py-[7px] font-manrope text-[12.5px] font-bold tracking-[.08em] text-ink transition-colors hover:border-mint-deep hover:bg-surface">
               {t.nav.lang}
             </LanguageLink>
@@ -178,9 +175,6 @@ export default function Header() {
               </NavLink>
               <NavLink href={`/${lang}/about`} onNavigate={closeMenu} className={menuLink}>
                 {t.nav.about}
-              </NavLink>
-              <NavLink href={`/${lang}/insights`} onNavigate={closeMenu} className={menuLink}>
-                {t.nav.insights}
               </NavLink>
             </nav>
             <div className="flex flex-col gap-3">

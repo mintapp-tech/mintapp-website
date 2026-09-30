@@ -13,7 +13,6 @@ export default function Footer() {
   const links = [
     { label: t.nav.services, href: `/${lang}/services` },
     { label: t.nav.about, href: `/${lang}/about` },
-    { label: t.nav.insights, href: `/${lang}/insights` },
   ];
 
   return (

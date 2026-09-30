@@ -34,7 +34,6 @@ export interface HomeContent {
     work: string;
     services: string;
     about: string;
-    insights: string;
     start: string;
     lang: string;
     menu: string;
@@ -84,12 +83,6 @@ export interface HomeContent {
     cta: string;
     note: string;
     steps: { n: string; title: string; desc: string }[];
-  };
-  ins: {
-    title: string;
-    all: string;
-    read: string;
-    items: { cat: string; title: string; blurb: string }[];
   };
   final: { title: string; sub: string; cta: string };
   footer: {
@@ -190,20 +183,6 @@ export interface HomeContent {
       relatedCat: string;
     }[];
     note: string;
-  };
-  insp: {
-    title: string;
-    sub: string;
-    filters: string[];
-    featuredLabel: string;
-    read: string;
-    featured: { cat: string; title: string; blurb: string };
-    items: { cat: string; title: string; blurb: string }[];
-    ctaTitle: string;
-    ctaCopy: string;
-    ctaBtn: string;
-    emailPh: string;
-    subscribed: string;
   };
   about: {
     title: string;

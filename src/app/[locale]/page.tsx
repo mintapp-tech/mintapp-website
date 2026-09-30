@@ -6,7 +6,6 @@ import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
 import ProcessSection from "@/components/ProcessSection";
 import DifferentiatorSection from "@/components/DifferentiatorSection";
-import InsightsSection from "@/components/InsightsSection";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
 import { resolveLocale } from "@/lib/locales";
@@ -42,7 +41,6 @@ export default function Home() {
         <ServicesSection />
         <ProcessSection />
         <DifferentiatorSection />
-        <InsightsSection />
         <FinalCta />
       </main>
       <Footer />

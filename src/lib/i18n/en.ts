@@ -2,7 +2,7 @@ import type { HomeContent } from "./types";
 
 export const en: HomeContent = {
   tagline: "Software that feels easy",
-  nav: { home: "Home", work: "Work", services: "Services", about: "About", insights: "Insights", start: "Start a Project", lang: "AR", menu: "Menu", close: "Close", switchLang: "Switch to Arabic", skip: "Skip to main content" },
+  nav: { home: "Home", work: "Work", services: "Services", about: "About", start: "Start a Project", lang: "AR", menu: "Menu", close: "Close", switchLang: "Switch to Arabic", skip: "Skip to main content" },
   hero: {
     eyebrow: "Digital product studio · Egypt & MENA",
     title: "Your idea, made real.",
@@ -53,16 +53,6 @@ export const en: HomeContent = {
       { n: "1", title: "You describe the idea", desc: "In your own words. No brief document required." },
       { n: "2", title: "We prepare", desc: "We review the idea, the audience and the right platform." },
       { n: "3", title: "We meet, already prepared", desc: "A meeting that starts at decisions, not definitions." },
-    ],
-  },
-  ins: {
-    title: "Notes from the work",
-    all: "All insights",
-    read: "Read the article",
-    items: [
-      { cat: "Product strategy", title: "From idea to MVP: deciding what to build first", blurb: "A practical way to find the smallest version actually worth launching." },
-      { cat: "Startup guidance", title: "Website or mobile app: choosing the right starting point", blurb: "Clear criteria for picking where your product should begin." },
-      { cat: "UX/UI design", title: "Designing digital products for the MENA market", blurb: "Notes on language, direction and everyday user behaviour." },
     ],
   },
   final: { title: "Let's make your idea easier to build.", sub: "Tell us what you want to build and we'll come back with a clear first step.", cta: "Start a project" },
@@ -524,31 +514,6 @@ export const en: HomeContent = {
       },
     ],
     note: "AI, back-end, automation and data are supporting capabilities we use where a product needs them — not separate headline services.",
-  },
-  insp: {
-    title: "Insights",
-    sub: "Short writing on building digital products in Egypt and the wider MENA region.",
-    filters: ["All", "Product Strategy", "UX/UI Design", "Web Development", "Mobile Development", "Startup Guidance", "Behind the Build"],
-    featuredLabel: "Featured",
-    read: "Read the article",
-    featured: {
-      cat: "Product Strategy",
-      title: "From idea to MVP: deciding what to build first",
-      blurb: "Most projects don't stall because the idea is weak — they stall because the first version is bigger than it needs to be. Here's a practical way to find the smallest release worth launching.",
-    },
-    items: [
-      { cat: "Startup Guidance", title: "Website or mobile app: choosing the right starting point", blurb: "Clear criteria for where to begin." },
-      { cat: "UX/UI Design", title: "Designing digital products for the MENA market", blurb: "Language, direction and everyday behaviour." },
-      { cat: "Web Development", title: "When you need a platform, and when a website is enough", blurb: "The practical difference in cost and time." },
-      { cat: "Mobile Development", title: "A testable first release: what gets postponed?", blurb: "How to choose what stays out of version one." },
-      { cat: "Behind the Build", title: "How we build genuinely right-to-left interfaces", blurb: "Layout and typography decisions we repeat." },
-      { cat: "Product Strategy", title: "Defining scope without freezing the project", blurb: "Writing a scope that is clear and still changeable." },
-    ],
-    ctaTitle: "New thinking, monthly",
-    ctaCopy: "A short letter on building digital products. No filler.",
-    ctaBtn: "Subscribe",
-    emailPh: "Your email",
-    subscribed: "You're subscribed",
   },
   about: {
     title: "We make building software understandable",
