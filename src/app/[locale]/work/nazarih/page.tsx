@@ -28,7 +28,7 @@ export default function NazarihCaseStudyPage() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <NazarihCaseStudy />
       </main>
       <Footer />

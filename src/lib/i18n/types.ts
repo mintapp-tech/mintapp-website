@@ -39,6 +39,8 @@ export interface HomeContent {
     lang: string;
     menu: string;
     close: string;
+    switchLang: string;
+    skip: string;
   };
   hero: {
     eyebrow: string;

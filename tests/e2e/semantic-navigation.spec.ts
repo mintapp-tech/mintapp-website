@@ -8,6 +8,7 @@ const COPY = {
     insights: "Insights",
     start: "Start a Project",
     lang: "AR",
+    switchLang: "Switch to Arabic",
     footerLang: "العربية",
     privacy: "Privacy",
     heroPrimary: "Start your project",
@@ -23,6 +24,7 @@ const COPY = {
     insights: "مقالات",
     start: "ابدأ مشروعك",
     lang: "EN",
+    switchLang: "التبديل إلى الإنجليزية",
     footerLang: "English",
     privacy: "الخصوصية",
     heroPrimary: "ابدأ مشروعك",
@@ -60,7 +62,8 @@ for (const locale of LOCALES) {
       await expectLink(page, nav.getByRole("link", exact(c.about)), `/${locale}/about`);
       await expectLink(page, nav.getByRole("link", exact(c.insights)), `/${locale}/insights`);
       await expectLink(page, nav.getByRole("link", exact(c.start)), `/${locale}/start`);
-      await expectLink(page, nav.getByRole("link", exact(c.lang)), `/${other}`);
+      await expectLink(page, nav.getByRole("link", exact(c.switchLang)), `/${other}`);
+      await expect(nav.getByRole("link", exact(c.switchLang))).toHaveText(c.lang);
     });
 
     test("hero, work section and final calls to action", async ({ page }) => {
@@ -86,12 +89,13 @@ for (const locale of LOCALES) {
       await expectLink(page, footer.getByRole("link", exact(c.insights)), `/${locale}/insights`);
       await expectLink(page, footer.getByRole("link", exact(c.start)), `/${locale}/start`);
       await expectLink(page, footer.getByRole("link", exact(c.privacy)), `/${locale}/privacy`);
-      await expectLink(page, footer.getByRole("link", exact(c.footerLang)), `/${other}`);
+      await expectLink(page, footer.getByRole("link", exact(c.switchLang)), `/${other}`);
+      await expect(footer.getByRole("link", exact(c.switchLang))).toHaveText(c.footerLang);
     });
 
     test("no navigation label is still rendered as a button", async ({ page }) => {
       await page.goto(`/${locale}`);
-      for (const label of [c.work, c.services, c.about, c.insights, c.start, c.lang, c.heroSecondary, c.finalCta, c.privacy]) {
+      for (const label of [c.work, c.services, c.about, c.insights, c.start, c.lang, c.switchLang, c.heroSecondary, c.finalCta, c.privacy]) {
         await expect(page.getByRole("button", exact(label))).toHaveCount(0);
       }
     });
@@ -147,7 +151,7 @@ for (const locale of LOCALES) {
       expect(otherLocaleRequests).toEqual([]);
       expect(await savedLocale()).toBe(locale);
 
-      await page.locator("header nav").getByRole("link", exact(c.lang)).click();
+      await page.locator("header nav").getByRole("link", exact(c.switchLang)).click();
       await page.waitForURL(`**/${other}/about`);
       await page.waitForLoadState("networkidle");
       await expect(page.locator("html")).toHaveAttribute("lang", other);

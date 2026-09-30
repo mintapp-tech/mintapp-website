@@ -28,7 +28,7 @@ export default function ArrentioCaseStudyPage() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <ArrentioCaseStudy />
       </main>
       <Footer />

@@ -26,7 +26,7 @@ export default function StartPage() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <StartExperience />
       </main>
       <Footer />

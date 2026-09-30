@@ -2,7 +2,7 @@ import type { HomeContent } from "./types";
 
 export const ar: HomeContent = {
   tagline: "برمجيات تُصنع بسهولة",
-  nav: { home: "الرئيسية", work: "أعمالنا", services: "خدماتنا", about: "من نحن", insights: "مقالات", start: "ابدأ مشروعك", lang: "EN", menu: "القائمة", close: "إغلاق" },
+  nav: { home: "الرئيسية", work: "أعمالنا", services: "خدماتنا", about: "من نحن", insights: "مقالات", start: "ابدأ مشروعك", lang: "EN", menu: "القائمة", close: "إغلاق", switchLang: "التبديل إلى الإنجليزية", skip: "انتقل إلى المحتوى الرئيسي" },
   hero: {
     eyebrow: "استوديو منتجات رقمية · مصر والمنطقة العربية",
     title: "نحوّل فكرتك إلى منتج حقيقي",

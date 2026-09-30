@@ -28,7 +28,7 @@ export default function InsightsPage() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <InsightsPageContent />
       </main>
       <Footer />

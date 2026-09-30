@@ -36,7 +36,7 @@ export default function Home() {
     <>
       <HashScrollHandler />
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <Hero />
         <WorkSection />
         <ServicesSection />

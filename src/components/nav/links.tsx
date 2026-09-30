@@ -39,6 +39,16 @@ export function SectionLink({ section, className, children, onNavigate }: LinkPr
   );
 }
 
+// A route link that announces itself as the current page when it is.
+export function NavLink({ href, className, children, onNavigate }: LinkProps & { href: string }) {
+  const pathname = usePathname();
+  return (
+    <Link href={href} aria-current={pathname === href ? "page" : undefined} className={className} onClick={onNavigate}>
+      {children}
+    </Link>
+  );
+}
+
 // The locale homepage. Already there, a plain click scrolls back to the top.
 export function HomeLink({ className, children, onNavigate, ariaLabel }: LinkProps & { ariaLabel?: string }) {
   const { lang } = useLanguage();
@@ -47,6 +57,7 @@ export function HomeLink({ className, children, onNavigate, ariaLabel }: LinkPro
     <Link
       href={`/${lang}`}
       aria-label={ariaLabel}
+      aria-current={pathname === `/${lang}` ? "page" : undefined}
       className={className}
       onClick={(e) => {
         onNavigate?.();
@@ -65,8 +76,9 @@ export function HomeLink({ className, children, onNavigate, ariaLabel }: LinkPro
 // keeps the current #section on a plain click (an href can't know the hash at render).
 // Never prefetched: proxy.ts stores the locale of every request it sees, so a background
 // prefetch of the other locale would silently flip the visitor's saved preference.
+// The visible text stays short (AR / EN, or the language name); the accessible name states the purpose.
 export function LanguageLink({ className, children, onNavigate }: LinkProps) {
-  const { lang } = useLanguage();
+  const { lang, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
   const next = lang === "ar" ? "en" : "ar";
@@ -76,6 +88,7 @@ export function LanguageLink({ className, children, onNavigate }: LinkProps) {
       href={href}
       hrefLang={next}
       prefetch={false}
+      aria-label={t.nav.switchLang}
       className={className}
       onClick={(e) => {
         rememberLocale(next);

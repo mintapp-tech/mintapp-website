@@ -28,7 +28,7 @@ export default function TangleVibeCaseStudyPage() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <TangleVibeCaseStudy />
       </main>
       <Footer />

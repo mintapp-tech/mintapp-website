@@ -1,9 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { LogoMark } from "./Logo";
-import { LanguageLink, SectionLink } from "./nav/links";
+import { LanguageLink, NavLink, SectionLink } from "./nav/links";
 
 const footerLink =
   "cursor-pointer border-0 bg-transparent p-0 text-start text-[15px] text-canvas/85 transition-colors hover:text-mint";
@@ -37,13 +36,13 @@ export default function Footer() {
               {t.nav.work}
             </SectionLink>
             {links.map((link) => (
-              <Link key={link.href} href={link.href} className={footerLink}>
+              <NavLink key={link.href} href={link.href} className={footerLink}>
                 {link.label}
-              </Link>
+              </NavLink>
             ))}
-            <Link href={`/${lang}/start`} className={footerLink}>
+            <NavLink href={`/${lang}/start`} className={footerLink}>
               {t.nav.start}
-            </Link>
+            </NavLink>
           </div>
 
           <div className="flex flex-col gap-2.5">
@@ -64,12 +63,12 @@ export default function Footer() {
         <div className="flex flex-wrap justify-between gap-3.5 pt-[22px] text-[13.5px] text-canvas/50">
           <span>{t.footer.rights}</span>
           <span className="flex gap-5">
-            <Link
+            <NavLink
               href={`/${lang}/privacy`}
               className="cursor-pointer border-0 bg-transparent p-0 text-[13.5px] text-canvas/50 underline decoration-canvas/30 decoration-[1.5px] underline-offset-4 transition-colors hover:text-mint hover:decoration-mint"
             >
               {t.footer.privacy}
-            </Link>
+            </NavLink>
             <span>{t.tagline}</span>
           </span>
         </div>

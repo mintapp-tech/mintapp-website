@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
-import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
-import { HomeLink, LanguageLink, SectionLink } from "./nav/links";
+import { HomeLink, LanguageLink, NavLink, SectionLink } from "./nav/links";
 import { LogoMark, Wordmark } from "./Logo";
 import { Magnetic } from "./motion/Magnetic";
 
@@ -82,7 +81,7 @@ export default function Header() {
   return (
     <>
       <header className="sticky top-0 z-[60] border-b border-ink/[.07] bg-canvas/[.86] backdrop-blur-md">
-        <div className="mx-auto flex h-[74px] max-w-[1280px] items-center gap-3 px-5 sm:px-6 md:gap-8">
+        <div className="mx-auto flex h-[74px] max-w-[1280px] items-center gap-3 px-5 max-[359px]:gap-2 sm:px-6 md:gap-8">
           <HomeLink ariaLabel="Mintapp" className="flex shrink-0 cursor-pointer items-center gap-2.5 border-0 bg-transparent p-0">
             <Wordmark />
           </HomeLink>
@@ -91,35 +90,35 @@ export default function Header() {
             <SectionLink section="work" className={navLink}>
               {t.nav.work}
             </SectionLink>
-            <Link href={`/${lang}/services`} className={navLink}>
+            <NavLink href={`/${lang}/services`} className={navLink}>
               {t.nav.services}
-            </Link>
-            <Link href={`/${lang}/about`} className={navLink}>
+            </NavLink>
+            <NavLink href={`/${lang}/about`} className={navLink}>
               {t.nav.about}
-            </Link>
-            <Link href={`/${lang}/insights`} className={navLink}>
+            </NavLink>
+            <NavLink href={`/${lang}/insights`} className={navLink}>
               {t.nav.insights}
-            </Link>
+            </NavLink>
             <LanguageLink className="cursor-pointer rounded-full border border-ink/[.16] bg-transparent px-3.5 py-[7px] font-manrope text-[12.5px] font-bold tracking-[.08em] text-ink transition-colors hover:border-mint-deep hover:bg-surface">
               {t.nav.lang}
             </LanguageLink>
             <Magnetic strength={0.25} className="inline-block">
-              <Link
+              <NavLink
                 href={`/${lang}/start`}
                 className="inline-block cursor-pointer rounded-full border-0 bg-ink px-[22px] py-3 text-[15px] font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
               >
                 {t.nav.start}
-              </Link>
+              </NavLink>
             </Magnetic>
           </nav>
 
-          <div className="ms-auto flex items-center gap-2 md:hidden">
-            <Link
+          <div className="ms-auto flex items-center gap-2 max-[359px]:gap-1 md:hidden">
+            <NavLink
               href={`/${lang}/start`}
-              className="inline-block cursor-pointer whitespace-nowrap rounded-full border-0 bg-ink px-3.5 py-[11px] text-[14px] leading-none font-semibold text-white transition-colors hover:bg-mint hover:text-dark"
+              className="inline-block cursor-pointer whitespace-nowrap rounded-full border-0 bg-ink px-3.5 py-[11px] text-[14px] leading-none font-semibold text-white transition-colors hover:bg-mint hover:text-dark max-[359px]:px-2.5 max-[359px]:text-[13px]"
             >
               {t.nav.start}
-            </Link>
+            </NavLink>
             <button
               ref={triggerRef}
               type="button"
@@ -128,7 +127,7 @@ export default function Header() {
               aria-haspopup="dialog"
               aria-expanded={menuOpen}
               aria-controls={MENU_ID}
-              className="flex h-[46px] w-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[5px] rounded-[13px] border border-ink/[.16] bg-transparent"
+              className="flex h-[46px] w-[46px] shrink-0 cursor-pointer flex-col items-center justify-center gap-[5px] rounded-[13px] border border-ink/[.16] bg-transparent max-[359px]:h-11 max-[359px]:w-11"
             >
               <span className="block h-[1.6px] w-[18px] bg-ink" />
               <span className="block h-[1.6px] w-[18px] bg-ink" />
@@ -174,15 +173,15 @@ export default function Header() {
               <SectionLink section="work" onNavigate={closeMenu} className={menuLink}>
                 {t.nav.work}
               </SectionLink>
-              <Link href={`/${lang}/services`} onClick={closeMenu} className={menuLink}>
+              <NavLink href={`/${lang}/services`} onNavigate={closeMenu} className={menuLink}>
                 {t.nav.services}
-              </Link>
-              <Link href={`/${lang}/about`} onClick={closeMenu} className={menuLink}>
+              </NavLink>
+              <NavLink href={`/${lang}/about`} onNavigate={closeMenu} className={menuLink}>
                 {t.nav.about}
-              </Link>
-              <Link href={`/${lang}/insights`} onClick={closeMenu} className={menuLink}>
+              </NavLink>
+              <NavLink href={`/${lang}/insights`} onNavigate={closeMenu} className={menuLink}>
                 {t.nav.insights}
-              </Link>
+              </NavLink>
             </nav>
             <div className="flex flex-col gap-3">
               <LanguageLink
@@ -191,13 +190,13 @@ export default function Header() {
               >
                 {t.footer.langBtn}
               </LanguageLink>
-              <Link
+              <NavLink
                 href={`/${lang}/start`}
-                onClick={closeMenu}
+                onNavigate={closeMenu}
                 className="block w-full cursor-pointer rounded-full border-0 bg-mint px-6 py-[17px] text-center text-[17px] font-bold text-dark"
               >
                 {t.nav.start}
-              </Link>
+              </NavLink>
             </div>
           </motion.div>
         )}

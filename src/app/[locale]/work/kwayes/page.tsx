@@ -28,7 +28,7 @@ export default function KwayesCaseStudyPage() {
   return (
     <>
       <Header />
-      <main>
+      <main id="main-content" tabIndex={-1} className="outline-none">
         <KwayesCaseStudy />
       </main>
       <Footer />
