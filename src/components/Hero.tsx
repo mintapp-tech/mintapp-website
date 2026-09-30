@@ -1,23 +1,30 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, type CSSProperties, type ReactNode, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { motion, useMotionValue, useSpring, useTransform, useScroll, useReducedMotion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { scrollToSection } from "@/lib/scroll";
 import { SplitReveal } from "./motion/SplitReveal";
 import { Magnetic } from "./motion/Magnetic";
 
-const easeOut = [0.2, 0.7, 0.2, 1] as const;
+const enterDelay = (seconds: number) => ({ "--mt-delay": `${seconds}s` }) as CSSProperties;
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 22 },
-  show: (delay: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, ease: easeOut, delay },
-  }),
-};
+const HERO_GRID = "grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16";
+
+// Not rendered under reduced motion: Framer drives this fade with a native scroll
+// timeline that keeps running on the element, so it is removed rather than zeroed.
+function ScrollExit({ target, children }: { target: RefObject<HTMLElement | null>; children: ReactNode }) {
+  const { scrollYProgress } = useScroll({ target, offset: ["start start", "end start"] });
+  const opacity = useTransform(scrollYProgress, [0, 1], [1, 0.35]);
+  const y = useTransform(scrollYProgress, [0, 1], [0, 70]);
+  return (
+    <motion.div style={{ opacity, y }} className={HERO_GRID}>
+      {children}
+    </motion.div>
+  );
+}
 
 function ParallaxLayer({
   mvX,
@@ -49,10 +56,7 @@ export default function Hero() {
   const sectionRef = useRef<HTMLElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
-
-  const { scrollYProgress } = useScroll({ target: sectionRef, offset: ["start start", "end start"] });
-  const exitOpacity = useTransform(scrollYProgress, [0, 1], [1, 0.35]);
-  const exitY = useTransform(scrollYProgress, [0, 1], [0, 70]);
+  const prefersReducedMotion = usePrefersReducedMotion();
 
   const mvX = useMotionValue(0);
   const mvY = useMotionValue(0);
@@ -73,26 +77,13 @@ export default function Hero() {
     mvY.set(0);
   };
 
-  return (
-    <section
-      ref={sectionRef}
-      className="mx-auto max-w-[1280px] px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(44px,6vw,86px)] sm:px-6"
-    >
-    <motion.div
-      style={{ opacity: exitOpacity, y: exitY }}
-      className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16"
-    >
+  const content = (
+    <>
       <div>
-        <motion.div
-          custom={0}
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          className="mb-[clamp(20px,3vw,30px)] inline-flex items-center gap-2.5 rounded-full border border-ink/[.14] px-[15px] py-[7px] text-[13px] text-ink-soft"
-        >
+        <div className="mt-enter mb-[clamp(20px,3vw,30px)] inline-flex items-center gap-2.5 rounded-full border border-ink/[.14] px-[15px] py-[7px] text-[13px] text-ink-soft">
           <span className="block h-[7px] w-[7px] rounded-full bg-mint" />
           {t.hero.eyebrow}
-        </motion.div>
+        </div>
 
         <SplitReveal
           as="h1"
@@ -101,23 +92,14 @@ export default function Hero() {
           className="m-0 text-[clamp(38px,5.4vw,74px)] leading-[1.12] font-semibold tracking-[-0.02em] text-balance text-ink"
         />
 
-        <motion.p
-          custom={0.16}
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          className="mt-[clamp(20px,2.6vw,28px)] max-w-[46ch] text-[clamp(16.5px,1.35vw,19.5px)] leading-[1.85] text-ink-soft text-pretty"
+        <p
+          style={enterDelay(0.16)}
+          className="mt-enter mt-[clamp(20px,2.6vw,28px)] max-w-[46ch] text-[clamp(16.5px,1.35vw,19.5px)] leading-[1.85] text-ink-soft text-pretty"
         >
           {t.hero.sub}
-        </motion.p>
+        </p>
 
-        <motion.div
-          custom={0.24}
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          className="mt-[clamp(28px,3.4vw,40px)] flex flex-wrap gap-3"
-        >
+        <div style={enterDelay(0.24)} className="mt-enter mt-[clamp(28px,3.4vw,40px)] flex flex-wrap gap-3">
           <Magnetic className="inline-block">
             <button
               onClick={() => router.push(`/${lang}/start`)}
@@ -132,14 +114,11 @@ export default function Hero() {
           >
             {t.hero.cta2}
           </button>
-        </motion.div>
+        </div>
 
-        <motion.div
-          custom={0.32}
-          initial="hidden"
-          animate="show"
-          variants={fadeUp}
-          className="mt-[clamp(34px,4.6vw,58px)] flex flex-wrap gap-[clamp(18px,3vw,34px)] border-t border-ink/[.09] pt-[clamp(22px,3vw,30px)]"
+        <div
+          style={enterDelay(0.32)}
+          className="mt-enter mt-[clamp(34px,4.6vw,58px)] flex flex-wrap gap-[clamp(18px,3vw,34px)] border-t border-ink/[.09] pt-[clamp(22px,3vw,30px)]"
         >
           {t.hero.marks.map((m) => (
             <div key={m} className="flex items-center gap-2 text-[14.5px] text-ink-soft">
@@ -147,18 +126,15 @@ export default function Hero() {
               {m}
             </div>
           ))}
-        </motion.div>
+        </div>
       </div>
 
-      <motion.div
+      <div
         ref={containerRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        initial={{ opacity: 0, scale: 0.96 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8, ease: easeOut, delay: 0.2 }}
-        className="relative min-h-[clamp(360px,42vw,530px)]"
-        style={{ perspective: 1200 }}
+        className="mt-enter-scale relative min-h-[clamp(360px,42vw,530px)]"
+        style={{ perspective: 1200, ...enterDelay(0.2) }}
       >
         <div
           aria-hidden
@@ -240,8 +216,20 @@ export default function Hero() {
         >
           <span />
         </ParallaxLayer>
-      </motion.div>
-    </motion.div>
+      </div>
+    </>
+  );
+
+  return (
+    <section
+      ref={sectionRef}
+      className="mx-auto max-w-[1280px] px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(44px,6vw,86px)] sm:px-6"
+    >
+      {prefersReducedMotion ? (
+        <div className={HERO_GRID}>{content}</div>
+      ) : (
+        <ScrollExit target={sectionRef}>{content}</ScrollExit>
+      )}
     </section>
   );
 }

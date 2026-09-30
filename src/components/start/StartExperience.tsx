@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
+import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
@@ -47,6 +48,8 @@ function readUtmParams() {
 export default function StartExperience() {
   const { t, lang } = useLanguage();
   const router = useRouter();
+  const prefersReducedMotion = usePrefersReducedMotion();
+  const panelTransition = prefersReducedMotion ? { duration: 0 } : { duration: 0.5, ease: easeOut };
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [honeypot, setHoneypot] = useState("");
@@ -242,14 +245,15 @@ export default function StartExperience() {
         {submitting ? t.start.sending : ""}
       </span>
 
-      <AnimatePresence mode="wait">
+      {/* initial={false}: the form is server-rendered visible rather than faded in after hydration. */}
+      <AnimatePresence mode="wait" initial={false}>
         {submitted ? (
           <motion.div
             key="success"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.5, ease: easeOut }}
+            transition={panelTransition}
             className="mx-auto w-full"
           >
             <div className="mx-auto max-w-[640px] rounded-[24px] border border-ink/[.08] bg-surface p-[clamp(32px,5vw,56px)] text-center">
@@ -303,7 +307,7 @@ export default function StartExperience() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.5, ease: easeOut }}
+            transition={panelTransition}
           >
             <Reveal className="mx-auto max-w-[70ch] text-center">
               <h1 className="m-0 text-[clamp(30px,4vw,48px)] font-semibold leading-[1.16] tracking-[-0.02em] text-balance">

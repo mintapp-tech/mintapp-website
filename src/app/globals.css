@@ -119,6 +119,85 @@
   }
 }
 
+/* Entrance motion is pure CSS so content never depends on hydration to become
+   visible. scroll-reveal.ts only re-hides ("arms") sections still below the fold
+   after hydration, so their entrance replays when they scroll into view. */
+@property --mt-delay {
+  syntax: "<time>";
+  inherits: false;
+  initial-value: 0s;
+}
+
+@keyframes mt-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.97);
+  }
+}
+
+@keyframes mt-word {
+  from {
+    opacity: 0;
+    transform: translateY(0.35em);
+  }
+}
+
+@keyframes mt-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+@keyframes mt-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+.mt-reveal {
+  animation: mt-reveal 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
+}
+
+.mt-reveal-item {
+  --mt-delay: 0.04s;
+  animation: mt-reveal 0.75s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
+}
+.mt-reveal-item:nth-child(2) { --mt-delay: 0.13s; }
+.mt-reveal-item:nth-child(3) { --mt-delay: 0.22s; }
+.mt-reveal-item:nth-child(4) { --mt-delay: 0.31s; }
+.mt-reveal-item:nth-child(5) { --mt-delay: 0.4s; }
+.mt-reveal-item:nth-child(6) { --mt-delay: 0.49s; }
+.mt-reveal-item:nth-child(7) { --mt-delay: 0.58s; }
+.mt-reveal-item:nth-child(n + 8) { --mt-delay: 0.67s; }
+
+.mt-word {
+  display: inline-block;
+  animation: mt-word 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
+}
+
+.mt-enter {
+  animation: mt-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
+}
+
+.mt-enter-scale {
+  animation: mt-scale-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
+}
+
+[data-reveal="armed"].mt-reveal,
+[data-reveal="armed"] .mt-reveal-item {
+  animation: none;
+  opacity: 0;
+  transform: translateY(28px) scale(0.97);
+}
+
+[data-reveal="armed"] .mt-word {
+  animation: none;
+  opacity: 0;
+  transform: translateY(0.35em);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -126,5 +205,21 @@
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .mt-reveal,
+  .mt-reveal-item,
+  .mt-word,
+  .mt-enter,
+  .mt-enter-scale,
+  .animate-marquee {
+    animation: none !important;
+  }
+
+  [data-reveal].mt-reveal,
+  [data-reveal] .mt-reveal-item,
+  [data-reveal] .mt-word {
+    opacity: 1 !important;
+    transform: none !important;
   }
 }

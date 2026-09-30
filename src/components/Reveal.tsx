@@ -1,21 +1,7 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
-import type { ReactNode } from "react";
-
-const easeOut = [0.2, 0.7, 0.2, 1] as const;
-
-export const revealVariants: Variants = {
-  hidden: { opacity: 0, y: 28, scale: 0.97 },
-  show: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.75, ease: easeOut } },
-};
-
-export const staggerContainer: Variants = {
-  hidden: {},
-  show: {
-    transition: { staggerChildren: 0.09, delayChildren: 0.04 },
-  },
-};
+import { useRef, type CSSProperties, type ReactNode } from "react";
+import { useScrollReveal } from "./motion/scroll-reveal";
 
 export function Reveal({
   children,
@@ -28,51 +14,26 @@ export function Reveal({
   delay?: number;
   as?: "div" | "h1" | "h2" | "h3";
 }) {
-  const MotionTag = motion[Tag];
+  const ref = useRef<HTMLElement>(null);
+  useScrollReveal(ref);
+  const style = delay ? ({ "--mt-delay": `${delay}s` } as CSSProperties) : undefined;
   return (
-    <MotionTag
-      className={className}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "0px 0px -8% 0px" }}
-      variants={revealVariants}
-      transition={{ duration: 0.7, ease: easeOut, delay }}
-    >
+    <Tag ref={ref as React.Ref<never>} className={className ? `mt-reveal ${className}` : "mt-reveal"} style={style}>
       {children}
-    </MotionTag>
+    </Tag>
   );
 }
 
-export function RevealGroup({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function RevealGroup({ children, className }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  useScrollReveal(ref);
   return (
-    <motion.div
-      className={className}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "0px 0px -8% 0px" }}
-      variants={staggerContainer}
-    >
+    <div ref={ref} className={className}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
-export function RevealItem({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
-  return (
-    <motion.div className={className} variants={revealVariants}>
-      {children}
-    </motion.div>
-  );
+export function RevealItem({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={className ? `mt-reveal-item ${className}` : "mt-reveal-item"}>{children}</div>;
 }

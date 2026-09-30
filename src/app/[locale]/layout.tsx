@@ -5,6 +5,7 @@ import "../globals.css";
 import { LanguageProvider } from "@/lib/language-context";
 import SmoothScroll from "@/components/SmoothScroll";
 import CustomCursor from "@/components/CustomCursor";
+import { MotionPreferences } from "@/components/motion/MotionPreferences";
 import { SUPPORTED_LOCALES, isSupportedLocale } from "@/lib/locales";
 import { SITE_URL } from "@/lib/seo";
 
@@ -58,8 +59,10 @@ export default async function RootLayout({
     <html lang={rawLocale} dir={dir} className={`${alexandria.variable} ${manrope.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-canvas text-ink">
         <LanguageProvider locale={rawLocale}>
-          <SmoothScroll>{children}</SmoothScroll>
-          <CustomCursor />
+          <MotionPreferences>
+            <SmoothScroll>{children}</SmoothScroll>
+            <CustomCursor />
+          </MotionPreferences>
         </LanguageProvider>
       </body>
     </html>

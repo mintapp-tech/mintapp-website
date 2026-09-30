@@ -1,14 +1,7 @@
 "use client";
 
-import { motion, type Variants } from "framer-motion";
-import type { ReactNode } from "react";
-
-const easeOut = [0.2, 0.7, 0.2, 1] as const;
-
-const wordVariants: Variants = {
-  hidden: { y: "0.35em", opacity: 0 },
-  show: { y: "0em", opacity: 1 },
-};
+import { useRef, type CSSProperties, type ReactNode } from "react";
+import { useScrollReveal } from "./scroll-reveal";
 
 export function SplitReveal({
   text,
@@ -23,33 +16,24 @@ export function SplitReveal({
   delay?: number;
   wordDelay?: number;
 }) {
+  const ref = useRef<HTMLElement>(null);
+  useScrollReveal(ref);
   const words = text.split(" ");
-  const MotionTag = motion[Tag];
 
   const nodes: ReactNode[] = [];
   words.forEach((word, i) => {
+    const style = { "--mt-delay": `${(delay + i * wordDelay).toFixed(3)}s` } as CSSProperties;
     nodes.push(
-      <motion.span
-        key={`w-${i}`}
-        className="inline-block"
-        variants={wordVariants}
-        transition={{ duration: 0.6, ease: easeOut, delay: delay + i * wordDelay }}
-      >
+      <span key={`w-${i}`} className="mt-word" style={style}>
         {word}
-      </motion.span>,
+      </span>,
     );
     if (i < words.length - 1) nodes.push(" ");
   });
 
   return (
-    <MotionTag
-      key={text}
-      className={className}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: "0px 0px -10% 0px" }}
-    >
+    <Tag key={text} ref={ref as React.Ref<never>} className={className}>
       {nodes}
-    </MotionTag>
+    </Tag>
   );
 }
