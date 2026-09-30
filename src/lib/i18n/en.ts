@@ -14,7 +14,7 @@ export const en: HomeContent = {
   work: {
     eyebrow: "Selected work",
     title: "Products built to be used every day",
-    intro: "Work from the studio: a platform we designed and built end to end, alongside sample projects that show how we think.",
+    intro: "Products we designed and built, from marketplace platforms to mobile apps.",
     cta: "View case study",
     featured: { name: "Arrentio", category: "Car rental marketplace & agency platform", desc: "A verified marketplace that moves car rental out of chat threads into a system built on trust — with a branded storefront for every agency.", tags: ["Web Platform", "UI/UX", "Development"] },
     p1: { name: "Rentop", category: "Car rental booking app", desc: "A consumer car rental app for browsing by brand and category, and booking a car in a few taps — ratings, specs and live availability included.", tags: ["Mobile App", "UI/UX", "Development"] },
