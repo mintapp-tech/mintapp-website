@@ -54,7 +54,7 @@ export default function WorkSection() {
         </div>
         <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden bg-arrentio-bg p-9 sm:min-h-[420px]">
           <span className="absolute -end-[60px] -top-[60px] block h-[220px] w-[220px] rounded-full bg-arrentio/[.12]" />
-          <div className="relative w-[min(94%,430px)] -rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_30px_50px_-26px_rgba(11,20,32,.4)]">
+          <div style={{ "--mt-delay": "0.25s" } as React.CSSProperties} className="mt-settle relative w-[min(94%,430px)] -rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_30px_50px_-26px_rgba(11,20,32,.4)]">
             <div className="flex h-[30px] items-center gap-1.5 bg-arrentio-ink px-3">
               <span className="block h-1.5 w-1.5 rounded-full bg-white/90" />
               <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
@@ -73,7 +73,8 @@ export default function WorkSection() {
             alt="Arrentio logo"
             width={64}
             height={52}
-            className="absolute bottom-7 start-7 rotate-3 rounded-[16px] shadow-[0_18px_36px_-16px_rgba(11,20,32,.5)]"
+            style={{ "--mt-delay": "0.65s" } as React.CSSProperties}
+            className="mt-settle absolute bottom-7 start-7 rotate-3 rounded-[16px] shadow-[0_18px_36px_-16px_rgba(11,20,32,.5)]"
           />
         </div>
       </Reveal>

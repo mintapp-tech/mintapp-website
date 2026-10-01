@@ -37,6 +37,7 @@ export default function ProcessSection() {
               <li key={step.n} className="mt-reveal-item relative ps-[60px] lg:ps-0">
                 <span
                   aria-hidden
+                  style={{ "--mt-delay": `${(0.3 + i * 0.4).toFixed(2)}s` } as React.CSSProperties}
                   className={`mt-node absolute start-0 top-0 flex h-10 w-10 items-center justify-center rounded-full font-manrope text-[13px] font-bold lg:relative ${
                     featured ? "bg-dark text-mint ring-[6px] ring-mint/25" : "border-2 border-mint bg-canvas text-mint-deep"
                   }`}
