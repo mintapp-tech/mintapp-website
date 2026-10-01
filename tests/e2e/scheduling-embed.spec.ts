@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { installTurnstileMock, mockInquiriesRoute } from "./turnstile-mock";
-import { installCalEmbedMock, fireCalEvent, getRecordedInlineCalls } from "./cal-embed-mock";
+import { installCalEmbedMock, fireCalEvent, getActiveListenerCount, getRecordedInlineCalls } from "./cal-embed-mock";
 
 // Every test here blocks the real Cloudflare Turnstile script (via
 // installTurnstileMock) and the real Cal.com embed script/domain (via
@@ -165,11 +165,24 @@ test.describe("retry reinitializes cleanly with the same bookingContext, no new 
     expect(inquiryCallCount).toBe(1);
     expect(requests.length).toBe(1);
 
-    // The remounted instance registers a fresh listener; firing linkReady
-    // now proves the retry cleanly reinitialized (old timeout/listener from
-    // the first attempt no longer fires a stale transition).
+    // The remount is asynchronous: the new embed calls inline() and registers
+    // its linkReady listener only after React re-renders and getCalApi()
+    // resolves. Wait for exactly one inline() per attempt, and for the first
+    // attempt's listener to be gone and the retry's to be in place (one, not
+    // zero or two), before firing anything.
+    await expect.poll(async () => (await getRecordedInlineCalls(page)).length).toBe(2);
+    await expect.poll(() => getActiveListenerCount(page, NAMESPACE, "linkReady")).toBe(1);
+
+    const region = page.getByRole("region", { name: "Schedule your discovery call" });
+    const loadingStatus = page.getByRole("status").filter({ hasText: "Loading available times…" });
+    await expect(region).toBeVisible();
+    await expect(loadingStatus).toHaveCount(1);
+
+    // linkReady now reaches the retry's listener: the status moves to ready.
     await fireCalEvent(page, NAMESPACE, "linkReady");
-    await expect(page.getByRole("region", { name: "Schedule your discovery call" })).toBeVisible();
+    await expect(loadingStatus).toHaveCount(0);
+    await expect(region).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "We couldn't load the scheduler" })).toHaveCount(0);
 
     const calls = await getRecordedInlineCalls(page);
     expect(calls.length).toBe(2);
