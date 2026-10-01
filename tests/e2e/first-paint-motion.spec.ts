@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { installTurnstileMock } from "./turnstile-mock";
 
-const HERO_TITLE = { en: "Your idea, made real.", ar: "نحوّل فكرتك إلى منتج حقيقي" } as const;
+const HERO_TITLE = { en: "Your first meeting starts with direction, not a blank page.", ar: "اجتماعك الأول يبدأ باتجاه واضح، لا من صفحة فارغة" } as const;
 
 // Pages whose top heading and main content must never depend on hydration.
 const PAGES = [

@@ -11,7 +11,18 @@ import { Magnetic } from "./motion/Magnetic";
 
 const enterDelay = (seconds: number) => ({ "--mt-delay": `${seconds}s` }) as CSSProperties;
 
-const HERO_GRID = "grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-16";
+const HERO_GRID = "grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.12fr_.88fr] lg:gap-14";
+
+// Where each question fragment starts before it settles into the board: loose,
+// tilted, drifting above it. Offsets are in px/deg and mirrored for RTL in CSS.
+const SCATTER: [number, number, number][] = [
+  [-36, -150, -9],
+  [74, -196, 7],
+  [150, -126, -5],
+  [-12, -96, 6],
+  [112, -70, -8],
+  [36, -170, 11],
+];
 
 // Not rendered under reduced motion: Framer drives this fade with a native scroll
 // timeline that keeps running on the element, so it is removed rather than zeroed.
@@ -50,6 +61,80 @@ function ParallaxLayer({
   );
 }
 
+// The differentiator made visible: open questions about an idea drift in loosely,
+// then settle into an ordered first-call direction (context, questions, next step).
+// Pure CSS keyframes, so it plays before hydration and without JavaScript; the
+// settled state is the element's natural layout. Decorative: the same message is
+// in the headline, the supporting copy and "How it works".
+function DirectionBoard() {
+  const { t, arrow } = useLanguage();
+  const b = t.hero.board;
+  return (
+    <div className="relative rounded-[22px] border border-ink/[.08] bg-surface/95 p-[clamp(18px,2.2vw,26px)] shadow-[0_10px_30px_-18px_rgba(7,27,22,.35),0_50px_90px_-40px_rgba(7,27,22,.45)] backdrop-blur-xl">
+      <div className="flex items-center gap-3 font-manrope text-[11.5px] font-bold tracking-[.1em] uppercase rtl:text-[13px]">
+        <span className="flex items-center gap-2 text-ink-faint">
+          <span className="block h-1.5 w-1.5 rounded-full bg-ink/30" />
+          {b.idea}
+        </span>
+        <span className="relative block h-px flex-1 overflow-hidden bg-ink/[.12]">
+          <span className="hb-progress absolute inset-0 block bg-mint" />
+        </span>
+        <span className="flex items-center gap-2 text-mint-deep">
+          <span className="block h-1.5 w-1.5 rounded-full bg-mint" />
+          {b.direction}
+        </span>
+      </div>
+
+      <div className="relative mt-[clamp(18px,2.4vw,26px)] grid gap-[clamp(14px,1.8vw,20px)] ps-8">
+        <span className="absolute start-[7px] top-2 bottom-7 block w-[2px] overflow-hidden rounded-full bg-ink/[.1]">
+          <span className="hb-path absolute inset-0 block bg-mint" />
+        </span>
+
+        <div className="hb-group relative" style={enterDelay(0.35)}>
+          <span className="absolute -start-8 top-1 block h-4 w-4 rounded-full border-2 border-mint bg-surface" />
+          <div className="font-manrope text-[11.5px] font-bold tracking-[.1em] text-ink-faint uppercase rtl:text-[13px]">{b.context}</div>
+          <div className="mt-1.5 text-[15px] font-semibold text-ink">{b.contextText}</div>
+        </div>
+
+        <div className="relative">
+          <span className="hb-group absolute -start-8 top-1 block h-4 w-4 rounded-full border-2 border-mint bg-surface" style={enterDelay(0.6)} />
+          <div className="hb-group font-manrope text-[11.5px] font-bold tracking-[.1em] text-ink-faint uppercase rtl:text-[13px]" style={enterDelay(0.6)}>
+            {b.questions}
+          </div>
+          <div className="mt-2.5 flex flex-wrap gap-2">
+            {b.fragments.map((fragment, i) => {
+              const [x, y, r] = SCATTER[i % SCATTER.length];
+              const style = { "--sx": `${x}px`, "--sy": `${y}px`, "--sr": `${r}deg`, "--mt-delay": `${(0.15 + i * 0.09).toFixed(2)}s` } as CSSProperties;
+              return (
+                <span
+                  key={fragment}
+                  style={style}
+                  className="hb-chip pointer-events-none rounded-full border border-ink/[.1] bg-canvas px-3 py-1.5 text-[13px] leading-tight text-ink"
+                >
+                  {fragment}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="relative">
+          <span className="hb-node absolute -start-8 top-2.5 block h-4 w-4 rounded-full bg-mint shadow-[0_0_0_5px_theme(colors.mint/18%)]" />
+          <div className="hb-next flex items-center justify-between gap-3 rounded-2xl bg-dark px-4 py-3.5 text-canvas">
+            <div>
+              <div className="font-manrope text-[11px] font-bold tracking-[.1em] text-mint uppercase rtl:text-[13px]">{b.next}</div>
+              <div className="mt-1 text-[15px] font-semibold">{b.nextText}</div>
+            </div>
+            <span className="flex h-8 w-8 flex-none items-center justify-center rounded-full bg-mint text-[15px] font-bold text-dark">
+              {arrow}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Hero() {
   const { t, lang } = useLanguage();
   const sectionRef = useRef<HTMLElement>(null);
@@ -79,8 +164,8 @@ export default function Hero() {
   const content = (
     <>
       <div>
-        <div className="mt-enter mb-[clamp(20px,3vw,30px)] inline-flex items-center gap-2.5 rounded-full border border-ink/[.14] px-[15px] py-[7px] text-[13px] text-ink-soft">
-          <span className="block h-[7px] w-[7px] rounded-full bg-mint" />
+        <div className="mt-enter mb-[clamp(20px,3vw,28px)] inline-flex items-center gap-2.5 rounded-full border border-ink/[.14] px-[15px] py-[7px] text-[13px] leading-snug text-ink-soft">
+          <span className="block h-[7px] w-[7px] flex-none rounded-full bg-mint" />
           {t.hero.eyebrow}
         </div>
 
@@ -88,17 +173,18 @@ export default function Hero() {
           as="h1"
           text={t.hero.title}
           delay={0.1}
-          className="m-0 text-[clamp(38px,5.4vw,74px)] leading-[1.12] font-semibold tracking-[-0.02em] text-balance text-ink"
+          wordDelay={0.035}
+          className="m-0 max-w-[17ch] text-[clamp(34px,4.5vw,64px)] leading-[1.12] font-semibold tracking-[-0.025em] text-balance text-ink rtl:leading-[1.3] rtl:tracking-normal"
         />
 
         <p
           style={enterDelay(0.16)}
-          className="mt-enter mt-[clamp(20px,2.6vw,28px)] max-w-[46ch] text-[clamp(16.5px,1.35vw,19.5px)] leading-[1.85] text-ink-soft text-pretty"
+          className="mt-enter mt-[clamp(18px,2.4vw,26px)] max-w-[48ch] text-[clamp(16.5px,1.3vw,19px)] leading-[1.8] text-ink-soft text-pretty"
         >
           {t.hero.sub}
         </p>
 
-        <div style={enterDelay(0.24)} className="mt-enter mt-[clamp(28px,3.4vw,40px)] flex flex-wrap gap-3">
+        <div style={enterDelay(0.24)} className="mt-enter mt-[clamp(24px,3vw,36px)] flex flex-wrap gap-3">
           <Magnetic className="inline-block">
             <Link
               href={`/${lang}/start`}
@@ -117,14 +203,13 @@ export default function Hero() {
 
         <div
           style={enterDelay(0.32)}
-          className="mt-enter mt-[clamp(34px,4.6vw,58px)] flex flex-wrap gap-[clamp(18px,3vw,34px)] border-t border-ink/[.09] pt-[clamp(22px,3vw,30px)]"
+          className="mt-enter mt-[clamp(28px,3.6vw,46px)] max-w-[52ch] border-t border-ink/[.09] pt-[clamp(18px,2.4vw,24px)]"
         >
-          {t.hero.marks.map((m) => (
-            <div key={m} className="flex items-center gap-2 text-[14.5px] text-ink-soft">
-              <span className="block h-[5px] w-[5px] rounded-full bg-mint" />
-              {m}
-            </div>
-          ))}
+          <div className="mb-2 flex items-center gap-2 font-manrope text-[12px] font-bold tracking-[.12em] text-mint-deep uppercase rtl:text-[14px]">
+            <span className="block h-[5px] w-[5px] rounded-full bg-mint" />
+            {t.tagline}
+          </div>
+          <p className="m-0 text-[15px] leading-[1.75] text-ink-soft">{t.hero.fit}</p>
         </div>
       </div>
 
@@ -132,76 +217,39 @@ export default function Hero() {
         ref={containerRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        className="mt-enter-scale relative min-h-[clamp(360px,42vw,530px)]"
+        aria-hidden
+        className="mt-enter-scale relative mx-auto w-full max-w-[520px] pt-[clamp(8px,2vw,24px)] pb-[clamp(40px,5vw,64px)] lg:max-w-none"
         style={{ perspective: 1200, ...enterDelay(0.2) }}
       >
-        <div
-          aria-hidden
-          className="absolute end-[6%] top-[4%] h-[280px] w-[280px] rounded-full bg-mint/25 blur-[90px]"
-        />
-        <div
-          aria-hidden
-          className="absolute bottom-[6%] start-[2%] h-[220px] w-[220px] rounded-full bg-accent/20 blur-[80px]"
-        />
-
-        <ParallaxLayer
-          mvX={springX}
-          mvY={springY}
-          depth={6}
-          className="absolute start-0 top-[8%] w-[min(78%,470px)] overflow-hidden rounded-[18px] border border-ink/[.08] bg-surface/90 shadow-[0_10px_30px_-18px_rgba(7,27,22,.35),0_50px_90px_-40px_rgba(7,27,22,.5)] backdrop-blur-xl"
-        >
-          <div className="flex h-[38px] items-center gap-1.5 border-b border-ink/[.07] bg-gradient-to-b from-canvas/90 to-canvas/60 px-3.5">
-            <span className="block h-2 w-2 rounded-full bg-ink/[.16]" />
-            <span className="block h-2 w-2 rounded-full bg-ink/[.16]" />
-            <span className="block h-2 w-2 rounded-full bg-mint shadow-[0_0_8px_1px_theme(colors.mint/60%)]" />
-            <span className="ms-3 block h-4 max-w-[150px] flex-1 rounded-[6px] bg-ink/[.06]" />
-          </div>
-          <div className="grid gap-3.5 p-[22px]">
-            <div className="h-[11px] w-[42%] rounded-[5px] bg-gradient-to-r from-dark to-dark/80" />
-            <div className="h-2 w-[74%] rounded bg-ink/[.13]" />
-            <div className="mt-1 grid grid-cols-2 gap-3">
-              <div className="relative h-[78px] overflow-hidden rounded-xl bg-gradient-to-br from-dark to-[#0d2a22]">
-                <span className="absolute inset-0 bg-gradient-to-t from-mint/10 via-transparent to-transparent" />
-                <span className="absolute bottom-3.5 start-3.5 block h-1.5 w-[46px] rounded-[3px] bg-mint shadow-[0_0_10px_1px_theme(colors.mint/50%)]" />
-                <span className="absolute bottom-[26px] start-3.5 block h-1.5 w-[26px] rounded-[3px] bg-canvas/35" />
-              </div>
-              <div className="flex h-[78px] items-end gap-1.5 rounded-xl border border-ink/[.09] bg-canvas p-3">
-                <span className="block h-[24%] flex-1 rounded-sm bg-ink/[.12]" />
-                <span className="block h-[52%] flex-1 rounded-sm bg-ink/[.12]" />
-                <span className="block h-[78%] flex-1 rounded-sm bg-gradient-to-t from-mint to-mint/70" />
-                <span className="block h-[40%] flex-1 rounded-sm bg-ink/[.12]" />
-              </div>
-            </div>
-            <div className="h-2 w-[56%] rounded bg-ink/[.13]" />
-          </div>
+        <ParallaxLayer mvX={springX} mvY={springY} depth={6} className="relative z-10 w-[min(100%,460px)]">
+          <DirectionBoard />
         </ParallaxLayer>
 
         <ParallaxLayer
           mvX={springX}
           mvY={springY}
-          depth={10}
-          className="absolute end-[2%] bottom-[2%] w-[min(46%,214px)] rounded-[30px] bg-gradient-to-b from-dark to-[#0a1f19] p-[9px] shadow-[0_10px_24px_-14px_rgba(7,27,22,.5),0_60px_100px_-34px_rgba(7,27,22,.65)] ring-1 ring-white/[.06]"
+          depth={11}
+          className="hb-product absolute end-0 bottom-0 z-0 hidden w-[132px] rounded-[26px] bg-gradient-to-b from-dark to-[#0a1f19] p-[7px] shadow-[0_10px_24px_-14px_rgba(7,27,22,.5),0_50px_80px_-34px_rgba(7,27,22,.6)] ring-1 ring-white/[.06] sm:block"
           style={{ aspectRatio: "9 / 18.6" }}
         >
           <motion.div
-            animate={reducedMotion ? undefined : { y: [0, -10, 0] }}
+            animate={reducedMotion ? undefined : { y: [0, -8, 0] }}
             transition={{ duration: 4.5, repeat: Infinity, ease: "easeInOut" }}
-            className="relative flex h-full flex-col overflow-hidden rounded-[23px] bg-canvas"
+            className="relative flex h-full flex-col overflow-hidden rounded-[20px] bg-canvas"
           >
-            <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[.05] to-transparent" />
-            <div className="flex flex-col gap-2.5 px-3.5 pb-2.5 pt-4">
-              <span className="mx-auto block h-1 w-[34px] rounded-full bg-ink/[.18]" />
-              <span className="block h-[9px] w-[58%] rounded bg-dark" />
+            <div className="flex flex-col gap-2 px-3 pb-2 pt-3.5">
+              <span className="mx-auto block h-1 w-[28px] rounded-full bg-ink/[.18]" />
+              <span className="block h-[7px] w-[58%] rounded bg-dark" />
               <span className="block h-1.5 w-[80%] rounded bg-ink/[.14]" />
             </div>
-            <div className="flex flex-1 flex-col gap-2 px-3.5 py-1.5">
-              <div className="h-11 rounded-[11px] border border-ink/[.06] bg-surface" />
-              <div className="h-11 rounded-[11px] bg-mint-soft shadow-[0_4px_14px_-6px_theme(colors.mint/70%)]" />
-              <div className="h-11 rounded-[11px] border border-ink/[.06] bg-surface" />
+            <div className="flex flex-1 flex-col gap-1.5 px-3 py-1">
+              <div className="h-8 rounded-[9px] border border-ink/[.06] bg-surface" />
+              <div className="h-8 rounded-[9px] bg-mint-soft" />
+              <div className="h-8 rounded-[9px] border border-ink/[.06] bg-surface" />
             </div>
-            <div className="px-3.5 pb-4 pt-3">
-              <div className="flex h-[38px] items-center justify-center rounded-full bg-gradient-to-b from-dark to-[#0a1f19] shadow-[0_6px_16px_-8px_rgba(7,27,22,.6)]">
-                <span className="block h-1.5 w-[44%] rounded-sm bg-mint" />
+            <div className="px-3 pb-3.5 pt-2">
+              <div className="flex h-7 items-center justify-center rounded-full bg-dark">
+                <span className="block h-1 w-[44%] rounded-sm bg-mint" />
               </div>
             </div>
           </motion.div>
@@ -211,7 +259,7 @@ export default function Hero() {
           mvX={springX}
           mvY={springY}
           depth={9}
-          className="absolute bottom-[12%] start-[8%] block h-14 w-14 rounded-full bg-gradient-to-br from-mint-soft to-mint/40 shadow-[0_8px_20px_-8px_theme(colors.mint/60%)]"
+          className="absolute -start-3 bottom-[6%] z-20 block h-12 w-12 rounded-full bg-gradient-to-br from-mint-soft to-mint/40 shadow-[0_8px_20px_-8px_theme(colors.mint/60%)]"
         >
           <span />
         </ParallaxLayer>
@@ -222,7 +270,7 @@ export default function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="mx-auto max-w-[1280px] px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(44px,6vw,86px)] sm:px-6"
+      className="mx-auto max-w-[1280px] px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(36px,5vw,72px)] sm:px-6"
     >
       {prefersReducedMotion ? (
         <div className={HERO_GRID}>{content}</div>

@@ -11,12 +11,12 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     en: {
       title: "Mintapp — Software that feels easy",
       description:
-        "Mintapp is a digital product studio helping startups and growing businesses across Egypt and the MENA region turn ideas into thoughtful, launch-ready websites and mobile apps.",
+        "Websites, web apps and mobile apps for founders and teams in Egypt and MENA. We review your idea before the first call, so it starts with direction.",
     },
     ar: {
       title: "Mintapp — برمجيات تُصنع بسهولة",
       description:
-        "Mintapp استوديو منتجات رقمية يساعد الشركات الناشئة والنامية في مصر والمنطقة العربية على تحويل أفكارها إلى مواقع وتطبيقات مدروسة وجاهزة للإطلاق.",
+        "مواقع وتطبيقات ويب وتطبيقات موبايل للمؤسسين والفرق في مصر والمنطقة العربية. نراجع فكرتك قبل المكالمة الأولى، لتبدأ باتجاه واضح.",
     },
   },
   {

@@ -47,7 +47,18 @@ export interface HomeContent {
     sub: string;
     cta1: string;
     cta2: string;
-    marks: string[];
+    fit: string;
+    // Visual only (aria-hidden): an unclear idea resolving into a first-call direction.
+    board: {
+      idea: string;
+      direction: string;
+      fragments: string[];
+      context: string;
+      contextText: string;
+      questions: string;
+      next: string;
+      nextText: string;
+    };
   };
   work: {
     eyebrow: string;
@@ -66,25 +77,18 @@ export interface HomeContent {
     eyebrow: string;
     title: string;
     more: string;
-    s1: { title: string; desc: string; items: string[] };
-    s2: { title: string; desc: string; items: string[] };
+    needLabel: string;
+    items: { title: string; need: string; desc: string; points: string[] }[];
     stripLabel: string;
     strip: string[];
   };
   proc: {
     eyebrow: string;
     title: string;
-    steps: { n: string; title: string; desc: string }[];
-  };
-  diff: {
-    eyebrow: string;
-    title: string;
-    copy: string;
-    cta: string;
+    steps: { n: string; title: string; desc: string; points?: string[] }[];
     note: string;
-    steps: { n: string; title: string; desc: string }[];
   };
-  final: { title: string; sub: string; cta: string };
+  final: { title: string; sub: string; cta: string; emailLabel: string };
   footer: {
     pitch: string;
     explore: string;

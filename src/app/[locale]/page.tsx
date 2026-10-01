@@ -5,7 +5,6 @@ import Hero from "@/components/Hero";
 import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
 import ProcessSection from "@/components/ProcessSection";
-import DifferentiatorSection from "@/components/DifferentiatorSection";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
 import { resolveLocale } from "@/lib/locales";
@@ -15,12 +14,12 @@ const COPY = {
   en: {
     title: "Mintapp — Software that feels easy",
     description:
-      "Mintapp is a digital product studio helping startups and growing businesses across Egypt and the MENA region turn ideas into thoughtful, launch-ready websites and mobile apps.",
+      "Websites, web apps and mobile apps for founders and teams in Egypt and MENA. We review your idea before the first call, so it starts with direction.",
   },
   ar: {
     title: "Mintapp — برمجيات تُصنع بسهولة",
     description:
-      "Mintapp استوديو منتجات رقمية يساعد الشركات الناشئة والنامية في مصر والمنطقة العربية على تحويل أفكارها إلى مواقع وتطبيقات مدروسة وجاهزة للإطلاق.",
+      "مواقع وتطبيقات ويب وتطبيقات موبايل للمؤسسين والفرق في مصر والمنطقة العربية. نراجع فكرتك قبل المكالمة الأولى، لتبدأ باتجاه واضح.",
   },
 } as const;
 
@@ -37,10 +36,9 @@ export default function Home() {
       <Header />
       <main id="main-content" tabIndex={-1} className="outline-none">
         <Hero />
+        <ProcessSection />
         <WorkSection />
         <ServicesSection />
-        <ProcessSection />
-        <DifferentiatorSection />
         <FinalCta />
       </main>
       <Footer />

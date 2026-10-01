@@ -110,6 +110,13 @@
   }
 }
 
+/* Manrope has no Arabic glyphs, and Arabic is a joined script that tracked-out
+   label styling would pull apart: in RTL, labels use the Arabic face, unspaced. */
+[dir="rtl"] .font-manrope {
+  font-family: var(--font-alexandria);
+  letter-spacing: normal;
+}
+
 @keyframes floaty {
   from {
     transform: translateY(0);
