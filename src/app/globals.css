@@ -192,6 +192,108 @@
   animation: mt-scale-in 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
 }
 
+/* Hero direction board: loose questions about an idea settle into an ordered
+   first-call direction. Time-based like the other entrances (no scroll hijack),
+   transform/opacity only, and the settled state is the natural layout. */
+:root {
+  --hb-dir: 1;
+}
+[dir="rtl"] {
+  --hb-dir: -1;
+}
+
+@keyframes hb-gather {
+  0% {
+    opacity: 0;
+    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread)), calc(var(--sy) * var(--hb-spread)))
+      rotate(calc(var(--sr) * var(--hb-dir))) scale(0.9);
+  }
+  22% {
+    opacity: 1;
+    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread)), calc(var(--sy) * var(--hb-spread)))
+      rotate(calc(var(--sr) * var(--hb-dir)));
+  }
+  50% {
+    opacity: 1;
+    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread) * 0.86), calc(var(--sy) * var(--hb-spread) * 0.86))
+      rotate(calc(var(--sr) * var(--hb-dir) * 0.8));
+  }
+}
+
+@keyframes hb-grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes hb-grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes hb-resolve {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+@keyframes hb-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+@keyframes hb-appear {
+  from {
+    opacity: 0;
+  }
+}
+
+.hb-chip {
+  --hb-spread: 0.5;
+  animation: hb-gather 2.3s cubic-bezier(0.55, 0.05, 0.25, 1) var(--mt-delay) backwards;
+}
+@media (min-width: 1024px) {
+  .hb-chip {
+    --hb-spread: 1;
+  }
+}
+
+.hb-progress {
+  transform-origin: left;
+  animation: hb-grow-x 2.3s cubic-bezier(0.45, 0, 0.2, 1) 0.3s backwards;
+}
+[dir="rtl"] .hb-progress {
+  transform-origin: right;
+}
+
+.hb-path {
+  transform-origin: top;
+  animation: hb-grow-y 1.1s cubic-bezier(0.45, 0, 0.2, 1) 1.3s backwards;
+}
+
+.hb-group {
+  animation: mt-fade-up 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--mt-delay) backwards;
+}
+
+.hb-next {
+  animation: hb-resolve 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) 2.2s backwards;
+}
+
+.hb-node {
+  animation: hb-pop 0.55s cubic-bezier(0.3, 1.5, 0.5, 1) 2.15s backwards;
+}
+
+.hb-product {
+  animation: hb-appear 0.9s ease-out 2.5s backwards;
+}
+
+[data-reveal="armed"] :is(.hb-chip, .hb-progress, .hb-path, .hb-group, .hb-next, .hb-node, .hb-product) {
+  animation-play-state: paused;
+}
+
 [data-reveal="armed"].mt-reveal,
 [data-reveal="armed"] .mt-reveal-item {
   animation: none;
@@ -219,7 +321,14 @@
   .mt-word,
   .mt-enter,
   .mt-enter-scale,
-  .animate-marquee {
+  .animate-marquee,
+  .hb-chip,
+  .hb-progress,
+  .hb-path,
+  .hb-group,
+  .hb-next,
+  .hb-node,
+  .hb-product {
     animation: none !important;
   }
 

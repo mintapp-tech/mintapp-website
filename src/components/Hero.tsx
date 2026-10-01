@@ -8,6 +8,7 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { SectionLink } from "./nav/links";
 import { SplitReveal } from "./motion/SplitReveal";
 import { Magnetic } from "./motion/Magnetic";
+import { useScrollReveal } from "./motion/scroll-reveal";
 
 const enterDelay = (seconds: number) => ({ "--mt-delay": `${seconds}s` }) as CSSProperties;
 
@@ -141,6 +142,8 @@ export default function Hero() {
   const containerRef = useRef<HTMLDivElement>(null);
   const reducedMotion = useReducedMotion();
   const prefersReducedMotion = usePrefersReducedMotion();
+  // On short screens the board starts below the fold: hold its story until it is seen.
+  useScrollReveal(containerRef);
 
   const mvX = useMotionValue(0);
   const mvY = useMotionValue(0);
