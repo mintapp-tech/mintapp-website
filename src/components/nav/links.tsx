@@ -76,8 +76,9 @@ export function HomeLink({ className, children, onNavigate, ariaLabel }: LinkPro
 // keeps the current #section on a plain click (an href can't know the hash at render).
 // Never prefetched: proxy.ts stores the locale of every request it sees, so a background
 // prefetch of the other locale would silently flip the visitor's saved preference.
-// The visible text stays short (AR / EN, or the language name); the accessible name states the purpose.
-export function LanguageLink({ className, children, onNavigate }: LinkProps) {
+// The accessible name starts with the visible label (WCAG 2.5.3 Label in Name), so a voice
+// user can say what they see, then states the purpose: "AR — Switch to Arabic".
+export function LanguageLink({ className, label, onNavigate }: Omit<LinkProps, "children"> & { label: string }) {
   const { lang, t } = useLanguage();
   const pathname = usePathname();
   const router = useRouter();
@@ -88,7 +89,7 @@ export function LanguageLink({ className, children, onNavigate }: LinkProps) {
       href={href}
       hrefLang={next}
       prefetch={false}
-      aria-label={t.nav.switchLang}
+      aria-label={`${label} — ${t.nav.switchLang}`}
       className={className}
       onClick={(e) => {
         rememberLocale(next);
@@ -100,7 +101,7 @@ export function LanguageLink({ className, children, onNavigate }: LinkProps) {
         }
       }}
     >
-      {children}
+      {label}
     </Link>
   );
 }

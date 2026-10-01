@@ -1,8 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const COPY = {
-  en: { start: "Start a Project", menu: "Menu", close: "Close", langInMenu: "العربية", services: "Services", deskLang: "AR", switchLang: "Switch to Arabic" },
-  ar: { start: "ابدأ مشروعك", menu: "القائمة", close: "إغلاق", langInMenu: "English", services: "خدماتنا", deskLang: "EN", switchLang: "التبديل إلى الإنجليزية" },
+  en: { start: "Start a Project", menu: "Menu", close: "Close", langInMenu: "العربية", services: "Services", deskLang: "AR", switchLang: "Switch to Arabic", desktopName: "AR — Switch to Arabic", menuName: "العربية — Switch to Arabic" },
+  ar: { start: "ابدأ مشروعك", menu: "القائمة", close: "إغلاق", langInMenu: "English", services: "خدماتنا", deskLang: "EN", switchLang: "التبديل إلى الإنجليزية", desktopName: "EN — التبديل إلى الإنجليزية", menuName: "English — التبديل إلى الإنجليزية" },
 } as const;
 
 const LOCALES = ["en", "ar"] as const;
@@ -114,7 +114,7 @@ for (const locale of LOCALES) {
         await page.goto(`/${locale}/services`, { waitUntil: "networkidle" });
         await trigger(page).click();
         await expect(dialog(page).getByRole("link", { name: c.start, exact: true })).toHaveAttribute("href", `/${locale}/start`);
-        const langLink = dialog(page).getByRole("link", { name: c.switchLang, exact: true });
+        const langLink = dialog(page).getByRole("link", { name: c.menuName, exact: true });
         await expect(langLink).toHaveText(c.langInMenu);
         await expect(langLink).toHaveAttribute("href", `/${other}/services`);
         await langLink.click();
@@ -147,8 +147,8 @@ for (const locale of LOCALES) {
         const nav = page.locator("header nav");
         await expect(nav).toBeVisible();
         await expect(nav.getByRole("link", { name: c.services, exact: true })).toBeVisible();
-        await expect(nav.getByRole("link", { name: c.switchLang, exact: true })).toBeVisible();
-        await expect(nav.getByRole("link", { name: c.switchLang, exact: true })).toHaveText(c.deskLang);
+        await expect(nav.getByRole("link", { name: c.desktopName, exact: true })).toBeVisible();
+        await expect(nav.getByRole("link", { name: c.desktopName, exact: true })).toHaveText(c.deskLang);
         await expect(nav.getByRole("link", { name: c.start, exact: true })).toBeVisible();
         await expect(trigger(page)).toBeHidden();
         // The mobile CTA is still in the DOM but display:none, so only the desktop one is exposed.

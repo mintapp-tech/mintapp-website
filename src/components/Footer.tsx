@@ -53,9 +53,9 @@ export default function Footer() {
             </a>
             <span className="text-[15px] text-canvas">mintapp.tech</span>
             <span className="text-[15px] text-canvas/50">{t.footer.region}</span>
-            <LanguageLink className="mt-1.5 self-start rounded-full border border-canvas/24 bg-transparent px-[15px] py-2 text-[13.5px] font-semibold text-canvas transition-colors hover:border-mint hover:bg-canvas/[.08]">
-              {t.footer.langBtn}
-            </LanguageLink>
+            <LanguageLink className="mt-1.5 self-start rounded-full border border-canvas/24 bg-transparent px-[15px] py-2 text-[13.5px] font-semibold text-canvas transition-colors hover:border-mint hover:bg-canvas/[.08]"
+              label={t.footer.langBtn}
+            />
           </div>
         </div>
 

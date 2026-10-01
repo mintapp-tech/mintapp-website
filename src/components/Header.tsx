@@ -96,9 +96,9 @@ export default function Header() {
             <NavLink href={`/${lang}/about`} className={navLink}>
               {t.nav.about}
             </NavLink>
-            <LanguageLink className="cursor-pointer rounded-full border border-ink/[.16] bg-transparent px-3.5 py-[7px] font-manrope text-[12.5px] font-bold tracking-[.08em] text-ink transition-colors hover:border-mint-deep hover:bg-surface">
-              {t.nav.lang}
-            </LanguageLink>
+            <LanguageLink className="cursor-pointer rounded-full border border-ink/[.16] bg-transparent px-3.5 py-[7px] font-manrope text-[12.5px] font-bold tracking-[.08em] text-ink transition-colors hover:border-mint-deep hover:bg-surface"
+              label={t.nav.lang}
+            />
             <Magnetic strength={0.25} className="inline-block">
               <NavLink
                 href={`/${lang}/start`}
@@ -181,9 +181,8 @@ export default function Header() {
               <LanguageLink
                 onNavigate={closeMenu}
                 className="self-start rounded-full border border-canvas/24 bg-transparent px-[15px] py-2 text-[13.5px] font-semibold text-canvas transition-colors hover:border-mint hover:bg-canvas/[.08]"
-              >
-                {t.footer.langBtn}
-              </LanguageLink>
+                label={t.footer.langBtn}
+              />
               <NavLink
                 href={`/${lang}/start`}
                 onNavigate={closeMenu}

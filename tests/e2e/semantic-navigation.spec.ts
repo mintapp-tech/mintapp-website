@@ -7,7 +7,8 @@ const COPY = {
     about: "About",
     start: "Start a Project",
     lang: "AR",
-    switchLang: "Switch to Arabic",
+    switchLang: "AR — Switch to Arabic",
+    footerSwitchLang: "العربية — Switch to Arabic",
     footerLang: "العربية",
     privacy: "Privacy",
     heroPrimary: "Start your project",
@@ -22,7 +23,8 @@ const COPY = {
     about: "من نحن",
     start: "ابدأ مشروعك",
     lang: "EN",
-    switchLang: "التبديل إلى الإنجليزية",
+    switchLang: "EN — التبديل إلى الإنجليزية",
+    footerSwitchLang: "English — التبديل إلى الإنجليزية",
     footerLang: "English",
     privacy: "الخصوصية",
     heroPrimary: "ابدأ مشروعك",
@@ -85,8 +87,8 @@ for (const locale of LOCALES) {
       await expectLink(page, footer.getByRole("link", exact(c.about)), `/${locale}/about`);
       await expectLink(page, footer.getByRole("link", exact(c.start)), `/${locale}/start`);
       await expectLink(page, footer.getByRole("link", exact(c.privacy)), `/${locale}/privacy`);
-      await expectLink(page, footer.getByRole("link", exact(c.switchLang)), `/${other}`);
-      await expect(footer.getByRole("link", exact(c.switchLang))).toHaveText(c.footerLang);
+      await expectLink(page, footer.getByRole("link", exact(c.footerSwitchLang)), `/${other}`);
+      await expect(footer.getByRole("link", exact(c.footerSwitchLang))).toHaveText(c.footerLang);
     });
 
     test("Insights is no longer linked from anywhere", async ({ page }) => {

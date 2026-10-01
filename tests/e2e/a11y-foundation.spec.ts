@@ -6,8 +6,8 @@ const WIDTHS = [320, 360, 390, 768, 1280];
 const LOCALES = ["en", "ar"] as const;
 
 const COPY = {
-  en: { switchLang: "Switch to Arabic", visibleLang: "AR", skip: "Skip to main content", services: "Services", about: "About", start: "Start a Project", menu: "Menu" },
-  ar: { switchLang: "التبديل إلى الإنجليزية", visibleLang: "EN", skip: "انتقل إلى المحتوى الرئيسي", services: "خدماتنا", about: "من نحن", start: "ابدأ مشروعك", menu: "القائمة" },
+  en: { switchLang: "Switch to Arabic", visibleLang: "AR", langName: "العربية", desktopName: "AR — Switch to Arabic", menuName: "العربية — Switch to Arabic", skip: "Skip to main content", services: "Services", about: "About", start: "Start a Project", menu: "Menu" },
+  ar: { switchLang: "التبديل إلى الإنجليزية", visibleLang: "EN", langName: "English", desktopName: "EN — التبديل إلى الإنجليزية", menuName: "English — التبديل إلى الإنجليزية", skip: "انتقل إلى المحتوى الرئيسي", services: "خدماتنا", about: "من نحن", start: "ابدأ مشروعك", menu: "القائمة" },
 } as const;
 
 // Horizontal overflow that a visitor could actually lose. html/body use overflow-x: hidden,
@@ -43,15 +43,26 @@ for (const locale of LOCALES) {
       await page.goto(`/${locale}`);
       const headerSwitch = page.locator("header nav a[hreflang]");
       await expect(headerSwitch).toHaveText(c.visibleLang);
-      await expect(headerSwitch).toHaveAccessibleName(c.switchLang);
-      await expect(page.locator("footer a[hreflang]")).toHaveAccessibleName(c.switchLang);
+      await expect(headerSwitch).toHaveAccessibleName(c.desktopName);
+      const footerSwitch = page.locator("footer a[hreflang]");
+      await expect(footerSwitch).toHaveText(c.langName);
+      await expect(footerSwitch).toHaveAccessibleName(c.menuName);
+
+      // WCAG 2.5.3 Label in Name: every accessible name starts with the text the user sees.
+      for (const link of [headerSwitch, footerSwitch]) {
+        const visible = (await link.innerText()).trim();
+        const name = (await link.getAttribute("aria-label"))!;
+        expect(name.startsWith(visible), `${name} should start with ${visible}`).toBe(true);
+      }
     });
 
     test("mobile menu", async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 800 });
       await page.goto(`/${locale}`);
       await page.getByRole("button", { name: c.menu, exact: true }).click();
-      await expect(page.getByRole("dialog").getByRole("link", { name: c.switchLang, exact: true })).toBeVisible();
+      const menuSwitch = page.getByRole("dialog").getByRole("link", { name: c.menuName, exact: true });
+      await expect(menuSwitch).toBeVisible();
+      await expect(menuSwitch).toHaveText(c.langName);
     });
   });
 
