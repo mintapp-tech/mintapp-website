@@ -177,7 +177,7 @@ export default function Hero() {
           text={t.hero.title}
           delay={0.1}
           wordDelay={0.035}
-          className="m-0 max-w-[17ch] text-[clamp(34px,4.5vw,64px)] leading-[1.12] font-semibold tracking-[-0.025em] text-balance text-ink rtl:leading-[1.3] rtl:tracking-normal"
+          className="m-0 max-w-[17ch] text-[30px] min-[360px]:text-[clamp(34px,4.5vw,64px)] leading-[1.12] font-semibold tracking-[-0.025em] text-balance text-ink rtl:leading-[1.3] rtl:tracking-normal"
         />
 
         <p
