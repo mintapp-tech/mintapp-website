@@ -94,6 +94,7 @@ export interface HomeContent {
     explore: string;
     contact: string;
     region: string;
+    based: string;
     langBtn: string;
     rights: string;
     privacy: string;

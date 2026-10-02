@@ -4,7 +4,7 @@ import { ar } from "./ar";
 
 describe("homepage positioning copy", () => {
   test("English hero is the approved wording", () => {
-    expect(en.hero.eyebrow).toBe("Websites · Web apps · Mobile apps · Egypt & MENA");
+    expect(en.hero.eyebrow).toBe("Digital product studio · Web & mobile");
     expect(en.hero.title).toBe("Your first meeting starts with direction, not a blank page.");
     expect(en.hero.sub).toBe("Share your idea. If we're the right fit, we review it before the call and arrive with context, questions and a clear next step.");
     expect(en.hero.cta1).toBe("Start a project");
@@ -12,6 +12,17 @@ describe("homepage positioning copy", () => {
     expect(en.hero.fit).toBe("Mintapp works best with founders and teams ready to turn a real business need into a focused digital product.");
     expect(en.tagline).toBe("Software that feels easy");
     expect(en.work.title).toBe("Selected work");
+  });
+
+  test("the hero positioning line is about the studio, not a region", () => {
+    expect(ar.hero.eyebrow).toBe("استوديو منتجات رقمية · للويب والموبايل");
+    for (const t of [en, ar]) expect(`${t.hero.eyebrow} ${t.hero.title} ${t.hero.sub}`).not.toMatch(/Egypt|MENA|مصر|المنطقة العربية/);
+  });
+
+  test("the geographic line is secondary, outside the hero, and open beyond the region", () => {
+    expect(en.footer.based).toBe("Based in Egypt. Working with teams across MENA and beyond.");
+    expect(ar.footer.based).toBe("مقرّنا في مصر، ونعمل مع فرق في المنطقة العربية وخارجها.");
+    expect(ar.footer.based).toMatch(/وخارجها/);
   });
 
   test("the direction board asks the six first-call discovery questions", () => {

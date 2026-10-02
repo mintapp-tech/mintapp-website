@@ -4,7 +4,7 @@ export const en: HomeContent = {
   tagline: "Software that feels easy",
   nav: { home: "Home", work: "Work", services: "Services", about: "About", start: "Start a Project", lang: "AR", menu: "Menu", close: "Close", switchLang: "Switch to Arabic", skip: "Skip to main content" },
   hero: {
-    eyebrow: "Websites · Web apps · Mobile apps · Egypt & MENA",
+    eyebrow: "Digital product studio · Web & mobile",
     title: "Your first meeting starts with direction, not a blank page.",
     sub: "Share your idea. If we're the right fit, we review it before the call and arrive with context, questions and a clear next step.",
     cta1: "Start a project",
@@ -89,6 +89,7 @@ export const en: HomeContent = {
     explore: "Explore",
     contact: "Contact",
     region: "Egypt · MENA",
+    based: "Based in Egypt. Working with teams across MENA and beyond.",
     langBtn: "العربية",
     rights: "© 2026 Mintapp",
     privacy: "Privacy",

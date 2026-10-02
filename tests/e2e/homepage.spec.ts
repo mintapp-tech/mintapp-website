@@ -1,8 +1,22 @@
 import { test, expect } from "@playwright/test";
 
 const COPY = {
-  en: { h1: "Your first meeting starts with direction, not a blank page.", start: "Start a project", work: "View selected work", fit: "Mintapp works best with founders" },
-  ar: { h1: "اجتماعك الأول يبدأ باتجاه واضح، لا من صفحة فارغة", start: "ابدأ مشروعك", work: "تصفّح أعمالنا المختارة", fit: "نعمل بأفضل شكل مع المؤسسين" },
+  en: {
+    h1: "Your first meeting starts with direction, not a blank page.",
+    start: "Start a project",
+    work: "View selected work",
+    fit: "Mintapp works best with founders",
+    eyebrow: "Digital product studio · Web & mobile",
+    based: "Based in Egypt. Working with teams across MENA and beyond.",
+  },
+  ar: {
+    h1: "اجتماعك الأول يبدأ باتجاه واضح، لا من صفحة فارغة",
+    start: "ابدأ مشروعك",
+    work: "تصفّح أعمالنا المختارة",
+    fit: "نعمل بأفضل شكل مع المؤسسين",
+    eyebrow: "استوديو منتجات رقمية · للويب والموبايل",
+    based: "مقرّنا في مصر، ونعمل مع فرق في المنطقة العربية وخارجها.",
+  },
 } as const;
 
 const VIEWPORTS = [
@@ -31,6 +45,15 @@ for (const locale of ["en", "ar"] as const) {
         expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
       });
     }
+
+    test("positioning line in the hero, geographic line only in the footer", async ({ page }) => {
+      await page.goto(`/${locale}`);
+      const hero = page.locator("main > section").first();
+      await expect(hero.getByText(c.eyebrow, { exact: true })).toBeVisible();
+      await expect(hero).not.toContainText(locale === "en" ? "MENA" : "المنطقة العربية");
+      await expect(page.locator("footer").getByText(c.based, { exact: true })).toBeVisible();
+      await expect(page.locator("main").getByText(c.based)).toHaveCount(0);
+    });
 
     test("fit statement is present and the decorative board is hidden from assistive tech", async ({ page }) => {
       await page.goto(`/${locale}`);
