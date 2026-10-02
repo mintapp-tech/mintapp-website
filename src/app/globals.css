@@ -205,17 +205,17 @@
 @keyframes hb-gather {
   0% {
     opacity: 0;
-    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread)), calc(var(--sy) * var(--hb-spread)))
+    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread-x)), calc(var(--sy) * var(--hb-spread)))
       rotate(calc(var(--sr) * var(--hb-dir))) scale(0.9);
   }
   22% {
     opacity: 1;
-    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread)), calc(var(--sy) * var(--hb-spread)))
+    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread-x)), calc(var(--sy) * var(--hb-spread)))
       rotate(calc(var(--sr) * var(--hb-dir)));
   }
   50% {
     opacity: 1;
-    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread) * 0.86), calc(var(--sy) * var(--hb-spread) * 0.86))
+    transform: translate(calc(var(--sx) * var(--hb-dir) * var(--hb-spread-x) * 0.86), calc(var(--sy) * var(--hb-spread) * 0.86))
       rotate(calc(var(--sr) * var(--hb-dir) * 0.8));
   }
 }
@@ -251,13 +251,27 @@
   }
 }
 
+/* Full-width chips (single column) only drift a little sideways; content-sized
+   chips in two columns can drift further. */
 .hb-chip {
   --hb-spread: 0.5;
+  --hb-spread-x: 0.18;
   animation: hb-gather 2.3s cubic-bezier(0.55, 0.05, 0.25, 1) var(--mt-delay) backwards;
+}
+@media (min-width: 640px) {
+  .hb-chip {
+    --hb-spread-x: 0.6;
+  }
 }
 @media (min-width: 1024px) {
   .hb-chip {
     --hb-spread: 1;
+    --hb-spread-x: 0.25;
+  }
+}
+@media (min-width: 1280px) {
+  .hb-chip {
+    --hb-spread-x: 1;
   }
 }
 

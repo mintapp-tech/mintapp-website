@@ -15,16 +15,18 @@ const enterDelay = (seconds: number) => ({ "--mt-delay": `${seconds}s` }) as CSS
 const HERO_GRID = "grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.12fr_.88fr] lg:gap-14";
 
 // Where each question fragment starts before it settles into the board: loose,
-// tilted, drifting above and beside it. Offsets are in px/deg (scaled down on
-// small screens and mirrored for RTL in CSS). Alternating sides and heights keep
-// the longer questions from piling onto each other while they are loose.
+// tilted, drifting above it. Offsets are in px/deg, mirrored for RTL in CSS.
+// Questions settling into the first column drift in from the end side and those
+// in the second column from the start side, so the loose cloud stays over the
+// board instead of spilling past the page edge; single-column layouts keep the
+// sideways drift small (see .hb-chip).
 const SCATTER: [number, number, number][] = [
-  [-28, -158, -8],
-  [96, -204, 6],
-  [-54, -150, 5],
-  [118, -128, -7],
-  [-40, -142, 7],
-  [84, -96, -5],
+  [72, -152, -8],
+  [-92, -204, 6],
+  [98, -146, 5],
+  [-62, -126, -7],
+  [56, -138, 7],
+  [-108, -94, -5],
 ];
 
 // Not rendered under reduced motion: Framer drives this fade with a native scroll
@@ -275,7 +277,7 @@ export default function Hero() {
   return (
     <section
       ref={sectionRef}
-      className="mx-auto max-w-[1280px] px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(36px,5vw,72px)] sm:px-6"
+      className="mx-auto max-w-[1280px] overflow-x-clip px-5 pb-[clamp(30px,4vw,60px)] pt-[clamp(36px,5vw,72px)] sm:px-6"
     >
       {prefersReducedMotion ? (
         <div className={HERO_GRID}>{content}</div>
