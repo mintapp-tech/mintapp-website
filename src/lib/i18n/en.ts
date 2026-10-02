@@ -3,6 +3,16 @@ import type { HomeContent } from "./types";
 export const en: HomeContent = {
   tagline: "Software that feels easy",
   nav: { home: "Home", work: "Work", services: "Services", about: "About", start: "Start a Project", lang: "AR", menu: "Menu", close: "Close", switchLang: "Switch to Arabic", skip: "Skip to main content" },
+  contact: {
+    nav: "Contact",
+    title: "Where would you like to start?",
+    startTitle: "Start a project",
+    startDesc: "For a website, web application or mobile application. Share your idea and we'll review it before we meet.",
+    generalTitle: "General inquiry",
+    generalDesc: "For questions or anything else, email us directly.",
+    reply: "We reply within one business day.",
+    close: "Close contact options",
+  },
   hero: {
     eyebrow: "Digital product studio · Web & mobile",
     title: "Your first meeting starts with direction, not a blank page.",

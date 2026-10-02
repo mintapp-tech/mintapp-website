@@ -4,7 +4,8 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLanguage } from "@/lib/language-context";
 import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
-import { HomeLink, LanguageLink, NavLink, SectionLink } from "./nav/links";
+import { HomeLink, LanguageLink, NavLink, SectionLink, isPlainLeftClick } from "./nav/links";
+import { CONTACT_PANEL_ID, ContactPanel } from "./nav/ContactPanel";
 import { LogoMark, Wordmark } from "./Logo";
 import { Magnetic } from "./motion/Magnetic";
 
@@ -26,16 +27,27 @@ export default function Header() {
   const dialogRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
 
-  // Focus moves into the dialog on open and back to the trigger on close.
+  // Contact opens a panel; without JavaScript the same link jumps to the
+  // footer's contact details (#contact), so both routes stay reachable.
+  const [contactOpen, setContactOpen] = useState(false);
+  const contactReturnRef = useRef<HTMLElement | null>(null);
+  const desktopContactRef = useRef<HTMLAnchorElement>(null);
+  const openContact = (from: HTMLElement | null) => {
+    contactReturnRef.current = from;
+    setContactOpen(true);
+  };
+
+  // Focus moves into the dialog on open and back to the trigger on close
+  // (unless the menu closed to hand over to the Contact panel, which takes focus).
   useEffect(() => {
     if (menuOpen) {
       wasOpen.current = true;
       closeRef.current?.focus();
     } else if (wasOpen.current) {
       wasOpen.current = false;
-      triggerRef.current?.focus();
+      if (!contactOpen) triggerRef.current?.focus();
     }
-  }, [menuOpen]);
+  }, [menuOpen, contactOpen]);
 
   // Lock background scroll (native and Lenis) and close if the viewport grows to desktop.
   useEffect(() => {
@@ -96,6 +108,21 @@ export default function Header() {
             <NavLink href={`/${lang}/about`} className={navLink}>
               {t.nav.about}
             </NavLink>
+            <a
+              ref={desktopContactRef}
+              href="#contact"
+              aria-haspopup="dialog"
+              aria-expanded={contactOpen}
+              aria-controls={CONTACT_PANEL_ID}
+              onClick={(e) => {
+                if (!isPlainLeftClick(e)) return;
+                e.preventDefault();
+                openContact(desktopContactRef.current);
+              }}
+              className={navLink}
+            >
+              {t.contact.nav}
+            </a>
             <LanguageLink className="cursor-pointer rounded-full border border-ink/[.16] bg-transparent px-3.5 py-[7px] font-manrope text-[12.5px] font-bold tracking-[.08em] text-ink transition-colors hover:border-mint-deep hover:bg-surface"
               label={t.nav.lang}
             />
@@ -176,6 +203,19 @@ export default function Header() {
               <NavLink href={`/${lang}/about`} onNavigate={closeMenu} className={menuLink}>
                 {t.nav.about}
               </NavLink>
+              <a
+                href="#contact"
+                aria-haspopup="dialog"
+                onClick={(e) => {
+                  if (!isPlainLeftClick(e)) return;
+                  e.preventDefault();
+                  setMenuOpen(false);
+                  openContact(triggerRef.current);
+                }}
+                className={menuLink}
+              >
+                {t.contact.nav}
+              </a>
             </nav>
             <div className="flex flex-col gap-3">
               <LanguageLink
@@ -194,6 +234,8 @@ export default function Header() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <ContactPanel open={contactOpen} onClose={() => setContactOpen(false)} returnFocusTo={contactReturnRef} />
     </>
   );
 }

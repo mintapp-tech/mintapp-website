@@ -41,6 +41,17 @@ export interface HomeContent {
     switchLang: string;
     skip: string;
   };
+  // The header's Contact panel: two routes, a project or a general inquiry.
+  contact: {
+    nav: string;
+    title: string;
+    startTitle: string;
+    startDesc: string;
+    generalTitle: string;
+    generalDesc: string;
+    reply: string;
+    close: string;
+  };
   hero: {
     eyebrow: string;
     title: string;

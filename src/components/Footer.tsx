@@ -44,7 +44,7 @@ export default function Footer() {
             </NavLink>
           </div>
 
-          <div className="flex flex-col gap-2.5">
+          <div id="contact" className="flex scroll-mt-24 flex-col gap-2.5">
             <div className="mb-1 font-manrope text-[11.5px] font-bold tracking-[.12em] text-canvas/60 uppercase">
               {t.footer.contact}
             </div>

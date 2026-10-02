@@ -28,6 +28,17 @@ function describeViolations(violations: Awaited<ReturnType<AxeBuilder["analyze"]
   return violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.map((n) => n.target.join(" ")).join(" | ")}`);
 }
 
+// Scan the settled page: a contrast check taken mid-fade measures half-transparent
+// text, not what anyone reads. Infinite loops (marquee, float) and scroll-linked
+// timelines never finish, so only finite time-based animations are awaited.
+async function waitForEntrances(page: Page) {
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity || !(a.timeline instanceof DocumentTimeline)),
+  );
+}
+
 async function scan(page: Page) {
   const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
   return describeViolations(results.violations);
@@ -59,9 +70,29 @@ test.describe("axe: interactive and motion states", () => {
       await page.locator("header button[aria-controls]").click();
       await expect(page.getByRole("dialog")).toBeVisible();
       await page.waitForTimeout(400);
+      await waitForEntrances(page);
       expect(await scan(page)).toEqual([]);
       expect(external).toEqual([]);
     });
+
+    for (const [name, width, height] of [["desktop", 1280, 900], ["mobile", 390, 844]] as const) {
+      test(`${locale}: open Contact panel (${name}) has no violations`, async ({ page, baseURL }) => {
+        await page.setViewportSize({ width, height });
+        const external = await guardOrigin(page, baseURL!);
+        await page.goto(`/${locale}`, { waitUntil: "networkidle" });
+        if (name === "desktop") {
+          await page.locator('header nav a[href="#contact"]').click();
+        } else {
+          await page.locator("header button[aria-controls]").click();
+          await page.locator('#mobile-menu a[href="#contact"]').click();
+        }
+        await expect(page.locator("#contact-panel")).toBeVisible();
+        await page.waitForTimeout(400);
+        await waitForEntrances(page);
+        expect(await scan(page)).toEqual([]);
+        expect(external).toEqual([]);
+      });
+    }
 
     test(`${locale}: homepage in normal motion, after every section has revealed`, async ({ page, baseURL }) => {
       await page.setViewportSize({ width: 1280, height: 900 });
