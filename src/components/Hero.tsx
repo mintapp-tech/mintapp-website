@@ -15,14 +15,16 @@ const enterDelay = (seconds: number) => ({ "--mt-delay": `${seconds}s` }) as CSS
 const HERO_GRID = "grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.12fr_.88fr] lg:gap-14";
 
 // Where each question fragment starts before it settles into the board: loose,
-// tilted, drifting above it. Offsets are in px/deg and mirrored for RTL in CSS.
+// tilted, drifting above and beside it. Offsets are in px/deg (scaled down on
+// small screens and mirrored for RTL in CSS). Alternating sides and heights keep
+// the longer questions from piling onto each other while they are loose.
 const SCATTER: [number, number, number][] = [
-  [-36, -150, -9],
-  [74, -196, 7],
-  [150, -126, -5],
-  [-12, -96, 6],
-  [112, -70, -8],
-  [36, -170, 11],
+  [-28, -158, -8],
+  [96, -204, 6],
+  [-54, -150, 5],
+  [118, -128, -7],
+  [-40, -142, 7],
+  [84, -96, -5],
 ];
 
 // Not rendered under reduced motion: Framer drives this fade with a native scroll
@@ -102,7 +104,7 @@ function DirectionBoard() {
           <div className="hb-group font-manrope text-[11.5px] font-bold tracking-[.1em] text-ink-faint uppercase rtl:text-[13px]" style={enterDelay(0.6)}>
             {b.questions}
           </div>
-          <div className="mt-2.5 flex flex-wrap gap-2">
+          <div className="mt-2.5 grid grid-cols-1 gap-2 sm:grid-cols-[auto_auto] lg:grid-cols-1 xl:grid-cols-[auto_auto]">
             {b.fragments.map((fragment, i) => {
               const [x, y, r] = SCATTER[i % SCATTER.length];
               const style = { "--sx": `${x}px`, "--sy": `${y}px`, "--sr": `${r}deg`, "--mt-delay": `${(0.15 + i * 0.09).toFixed(2)}s` } as CSSProperties;
@@ -110,7 +112,7 @@ function DirectionBoard() {
                 <span
                   key={fragment}
                   style={style}
-                  className="hb-chip pointer-events-none rounded-full border border-ink/[.1] bg-canvas px-3 py-1.5 text-[13px] leading-tight text-ink"
+                  className="hb-chip pointer-events-none max-w-full rounded-[14px] border border-ink/[.1] bg-canvas px-3 py-1.5 text-[13px] leading-snug text-ink"
                 >
                   {fragment}
                 </span>
@@ -224,7 +226,7 @@ export default function Hero() {
         className="mt-enter-scale relative mx-auto w-full max-w-[520px] pt-[clamp(8px,2vw,24px)] pb-[clamp(40px,5vw,64px)] lg:max-w-none"
         style={{ perspective: 1200, ...enterDelay(0.2) }}
       >
-        <ParallaxLayer mvX={springX} mvY={springY} depth={6} className="relative z-10 w-[min(100%,460px)]">
+        <ParallaxLayer mvX={springX} mvY={springY} depth={6} className="relative z-10 w-[min(100%,500px)]">
           <DirectionBoard />
         </ParallaxLayer>
 

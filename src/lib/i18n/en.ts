@@ -13,7 +13,7 @@ export const en: HomeContent = {
     board: {
       idea: "Your idea",
       direction: "First-call direction",
-      fragments: ["Who is it for?", "Web or mobile?", "What launches first?", "Arabic, English or both?", "What already exists?", "Where is the risk?"],
+      fragments: ["Who is it for?", "What problem are we solving?", "What already exists?", "What matters most first?", "What could block progress?", "What does success look like?"],
       context: "Context",
       contextText: "Business, users and constraints",
       questions: "Questions",

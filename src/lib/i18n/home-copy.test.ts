@@ -14,6 +14,38 @@ describe("homepage positioning copy", () => {
     expect(en.work.title).toBe("Selected work");
   });
 
+  test("the direction board asks the six first-call discovery questions", () => {
+    expect(en.hero.board.fragments).toEqual([
+      "Who is it for?",
+      "What problem are we solving?",
+      "What already exists?",
+      "What matters most first?",
+      "What could block progress?",
+      "What does success look like?",
+    ]);
+    expect(ar.hero.board.fragments).toEqual([
+      "لمن هذا المنتج؟",
+      "ما المشكلة التي نحلّها؟",
+      "ما الموجود حاليًا؟",
+      "ما الأهم في البداية؟",
+      "ما الذي قد يعيق التقدّم؟",
+      "كيف يبدو النجاح؟",
+    ]);
+    for (const t of [en, ar]) {
+      expect(t.hero.board.idea).toBeTruthy();
+      expect(t.hero.board.direction).toBeTruthy();
+      expect(t.hero.board.context).toBeTruthy();
+      expect(t.hero.board.next).toBeTruthy();
+    }
+  });
+
+  test("the old tactical questions are gone", () => {
+    const all = [...en.hero.board.fragments, ...ar.hero.board.fragments].join(" | ");
+    for (const old of ["Web or mobile?", "What launches first?", "Arabic, English or both?", "Where is the risk?", "ويب أم موبايل؟", "ما الذي يُطلق أولًا؟", "عربي، إنجليزي أم الاثنان؟", "أين تكمن المخاطرة؟"]) {
+      expect(all).not.toContain(old);
+    }
+  });
+
   test("How it works has the four approved steps, in order", () => {
     expect(en.proc.steps.map((s) => s.title)).toEqual(["Share your idea", "We review and prepare", "Meet with direction", "Build together"]);
     expect(ar.proc.steps).toHaveLength(4);
