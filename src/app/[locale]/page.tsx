@@ -4,6 +4,8 @@ import HashScrollHandler from "@/components/HashScrollHandler";
 import Hero from "@/components/Hero";
 import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
+import { publishableTestimonials } from "@/content/testimonials";
 import ProcessSection from "@/components/ProcessSection";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
@@ -38,6 +40,7 @@ export default function Home() {
         <Hero />
         <ProcessSection />
         <WorkSection />
+        <TestimonialsSection items={publishableTestimonials()} />
         <ServicesSection />
         <FinalCta />
       </main>

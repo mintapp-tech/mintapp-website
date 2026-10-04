@@ -31,6 +31,11 @@ export const en: HomeContent = {
       nextText: "A clear first step to discuss",
     },
   },
+  testimonials: {
+    eyebrow: "In their words",
+    title: "What our clients say",
+    quotedIn: { en: "Quoted in English", ar: "Quoted in Arabic" },
+  },
   work: {
     eyebrow: "Our work",
     title: "Selected work",

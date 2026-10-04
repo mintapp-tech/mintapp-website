@@ -31,6 +31,11 @@ export const ar: HomeContent = {
       nextText: "خطوة أولى واضحة للنقاش",
     },
   },
+  testimonials: {
+    eyebrow: "بكلماتهم",
+    title: "ماذا يقول عملاؤنا",
+    quotedIn: { en: "مقتبس بالإنجليزية", ar: "مقتبس بالعربية" },
+  },
   work: {
     eyebrow: "أعمالنا",
     title: "أعمال مختارة",

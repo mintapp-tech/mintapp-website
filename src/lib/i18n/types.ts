@@ -71,6 +71,12 @@ export interface HomeContent {
       nextText: string;
     };
   };
+  testimonials: {
+    eyebrow: string;
+    title: string;
+    // Shown under a quote displayed in its original language (no approved translation).
+    quotedIn: { en: string; ar: string };
+  };
   work: {
     eyebrow: string;
     title: string;
