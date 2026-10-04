@@ -8,7 +8,7 @@
 
 import assert from "node:assert/strict";
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -38,15 +38,46 @@ function freePort() {
   });
 }
 
+const alive = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+// Removes clusters left behind by a process that was killed before it could
+// clean up (each cluster records the pid that owns it).
+export function sweepOrphanedClusters() {
+  for (const name of readdirSync(tmpdir())) {
+    if (!name.startsWith("mintapp-pg-test-")) continue;
+    const dir = join(tmpdir(), name);
+    const owner = Number(existsSync(join(dir, "owner.pid")) ? readFileSync(join(dir, "owner.pid"), "utf8") : NaN);
+    if (Number.isInteger(owner) && alive(owner)) continue;
+    try {
+      execFileSync(bin("pg_ctl"), ["-D", join(dir, "data"), "-m", "fast", "-w", "stop"], { stdio: "ignore" });
+    } catch {
+      // not running
+    }
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 export async function startCluster() {
+  sweepOrphanedClusters();
   const dir = mkdtempSync(join(tmpdir(), "mintapp-pg-test-"));
+  writeFileSync(join(dir, "owner.pid"), String(process.pid));
   const data = join(dir, "data");
   execFileSync(bin("initdb"), ["-D", data, "-U", "postgres", "-A", "trust", "-E", "UTF8", "--no-locale"], { stdio: "ignore" });
   const port = await freePort();
   execFileSync(bin("pg_ctl"), ["-D", data, "-l", join(dir, "server.log"), "-o", `-p ${port} -c listen_addresses=127.0.0.1`, "-w", "start"], { stdio: "ignore" });
 
-  const args = (sql) => ["-h", "127.0.0.1", "-p", String(port), "-U", "postgres", "-d", "postgres", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1", "-c", sql];
-  const psql = (sql) => execFileSync(bin("psql"), args(sql), { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  // SQL goes in on stdin as UTF-8: passing it as a command-line argument
+  // corrupts non-ASCII text (e.g. Arabic) on Windows.
+  const env = { ...process.env, PGCLIENTENCODING: "UTF8" };
+  const baseArgs = ["-h", "127.0.0.1", "-p", String(port), "-U", "postgres", "-d", "postgres", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1"];
+  const psql = (sql) => execFileSync(bin("psql"), baseArgs, { input: sql, encoding: "utf8", env, stdio: ["pipe", "pipe", "pipe"] }).trim();
   const psqlExpectError = (sql) => {
     try {
       psql(sql);
@@ -57,7 +88,8 @@ export async function startCluster() {
   };
   const psqlAsync = (sql) =>
     new Promise((resolve) => {
-      const child = spawn(bin("psql"), args(sql));
+      const child = spawn(bin("psql"), baseArgs, { env });
+      child.stdin.end(sql, "utf8");
       let out = "";
       let errOut = "";
       child.stdout.on("data", (d) => (out += d));
@@ -78,7 +110,7 @@ export async function startCluster() {
     }
   };
 
-  return { psql, psqlExpectError, psqlAsync, applyMigration, migrations, stop };
+  return { port, psql, psqlExpectError, psqlAsync, applyMigration, migrations, stop };
 }
 
 export const lit = (v) => (v === null || v === undefined ? "null" : `'${String(v).replace(/'/g, "''")}'`);
