@@ -5,6 +5,7 @@ import { defineConfig, devices } from "@playwright/test";
 // Supabase, Resend, or Cloudflare endpoint. See tests/e2e/README.md.
 export default defineConfig({
   testDir: "./tests/e2e",
+  globalSetup: "./tests/e2e/global-setup.ts",
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -18,5 +19,10 @@ export default defineConfig({
   use: {
     baseURL: "http://localhost:3000",
     ...devices["Desktop Chrome"],
+    // Enforced, not just conventional: no hostname except localhost resolves
+    // in the test browser, so a test that forgets a mock fails closed instead
+    // of loading real Turnstile or Cal.com. Mocked routes still work because
+    // Playwright intercepts them before any lookup.
+    launchOptions: { args: ["--host-resolver-rules=MAP * ~NOTFOUND, EXCLUDE localhost"] },
   },
 });
