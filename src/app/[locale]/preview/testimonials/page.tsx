@@ -21,7 +21,7 @@ export default async function TestimonialsPreview() {
         >
           Development preview with FIXTURE content. These are not client testimonials and this page does not exist in production.
         </p>
-        <TestimonialsSection items={TESTIMONIAL_FIXTURES} />
+        <TestimonialsSection items={TESTIMONIAL_FIXTURES} sample />
         <div className="h-24" />
       </main>
     </>

@@ -35,6 +35,7 @@ export const ar: HomeContent = {
     eyebrow: "بكلماتهم",
     title: "ماذا يقول عملاؤنا",
     quotedIn: { en: "مقتبس بالإنجليزية", ar: "مقتبس بالعربية" },
+    sampleNotice: "محتوى تجريبي — لمراجعة التصميم فقط.",
   },
   work: {
     eyebrow: "أعمالنا",

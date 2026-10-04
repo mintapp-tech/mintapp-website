@@ -18,7 +18,7 @@ describe("real testimonials", () => {
     expect(new Set(TESTIMONIALS.map((t) => t.id)).size).toBe(TESTIMONIALS.length);
   });
 
-  test("fixtures are only imported by the development preview page", () => {
+  test("fixtures are only imported by the development preview page and the review switch", () => {
     const importers: string[] = [];
     const walk = (dir: string) => {
       for (const name of readdirSync(dir)) {
@@ -28,7 +28,10 @@ describe("real testimonials", () => {
       }
     };
     walk(join(process.cwd(), "src"));
-    expect(importers).toEqual([expect.stringMatching(/src\/app\/\[locale\]\/preview\/testimonials\/page\.tsx$/)]);
+    expect(importers.sort()).toEqual([
+      expect.stringMatching(/src\/app\/\[locale\]\/preview\/testimonials\/page\.tsx$/),
+      expect.stringMatching(/src\/content\/review-samples\.ts$/),
+    ]);
   });
 });
 

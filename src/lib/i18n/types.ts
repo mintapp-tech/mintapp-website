@@ -76,6 +76,8 @@ export interface HomeContent {
     title: string;
     // Shown under a quote displayed in its original language (no approved translation).
     quotedIn: { en: string; ar: string };
+    // Shown only with labelled sample content on a review Preview.
+    sampleNotice: string;
   };
   work: {
     eyebrow: string;

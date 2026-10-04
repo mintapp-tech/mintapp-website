@@ -23,7 +23,7 @@ export const TESTIMONIAL_FIXTURES: Testimonial[] = [
     quote: "FIXTURE: a short sample quote for layout review. Not a real client testimonial.",
     quoteLanguage: "en",
     translation: { ar: "عيّنة اختبار: اقتباس قصير لمراجعة التصميم. ليس رأي عميل حقيقي." },
-    author: { name: "Sample Client A", role: { en: "Founder", ar: "مؤسس" }, company: { en: "Example Co.", ar: "شركة مثال" } },
+    author: { name: "Sample Client A (fictional)", role: { en: "Founder", ar: "مؤسس" }, company: { en: "Example Co. (fictional)", ar: "شركة مثال (وهمية)" } },
     project: "rentop",
     approval: approved,
   },
@@ -32,14 +32,14 @@ export const TESTIMONIAL_FIXTURES: Testimonial[] = [
     quote:
       "عيّنة اختبار: اقتباس أطول بالعربية لاختبار طول النص وتدفّقه في البطاقة على الشاشات الصغيرة والكبيرة، دون ترجمة معتمدة إلى الإنجليزية. ليس رأي عميل حقيقي.",
     quoteLanguage: "ar",
-    author: { name: "Sample Client B", role: { en: "Operations lead", ar: "مسؤولة العمليات" }, company: { en: "Example Group", ar: "مجموعة مثال" } },
+    author: { name: "Sample Client B (fictional)", role: { en: "Operations lead", ar: "مسؤولة العمليات" }, company: { en: "Example Group (fictional)", ar: "مجموعة مثال (وهمية)" } },
     approval: { ...approved, translation: false },
   },
   {
     id: "fixture-role-only",
     quote: "FIXTURE: attributed by role and company only, without a personal name. Not a real client testimonial.",
     quoteLanguage: "en",
-    author: { role: { en: "Product manager", ar: "مدير منتج" }, company: { en: "Example Studio", ar: "استوديو مثال" } },
+    author: { role: { en: "Product manager", ar: "مدير منتج" }, company: { en: "Example Studio (fictional)", ar: "استوديو مثال (وهمي)" } },
     approval: { ...approved, name: false, translation: false },
   },
 ];

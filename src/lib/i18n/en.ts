@@ -35,6 +35,7 @@ export const en: HomeContent = {
     eyebrow: "In their words",
     title: "What our clients say",
     quotedIn: { en: "Quoted in English", ar: "Quoted in Arabic" },
+    sampleNotice: "Sample content — design review only.",
   },
   work: {
     eyebrow: "Our work",

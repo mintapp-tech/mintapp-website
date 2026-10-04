@@ -18,6 +18,8 @@ for (const locale of ["en", "ar"] as const) {
     await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
     const section = page.locator("#testimonials");
     await expect(section.getByRole("heading", { level: 2 })).toHaveText(locale === "en" ? "What our clients say" : "ماذا يقول عملاؤنا");
+    await expect(section.locator("[data-sample-notice]")).toHaveText(locale === "en" ? "Sample content — design review only." : "محتوى تجريبي — لمراجعة التصميم فقط.");
+    await expect(section).toHaveAttribute("data-sample", "true");
     const figures = section.locator("figure");
     await expect(figures).toHaveCount(3);
     for (let i = 0; i < 3; i++) {
