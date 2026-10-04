@@ -1,7 +1,7 @@
 import "server-only";
-import { getSupabaseServerClient } from "@/lib/supabase-server";
+import { getSqlGateway } from "@/lib/sql-gateway";
 import { selectGenerator, type Env } from "./config";
-import { createSupabasePreparationStore } from "./supabase-store";
+import { createSqlPreparationStore } from "./sql-store";
 import { runPreparationBatch, type BatchSummary } from "./worker";
 
 export type RunOutcome = { ran: false; reason: string } | { ran: true; summary: BatchSummary };
@@ -12,7 +12,7 @@ export async function runConfiguredPreparation(limit = 3, env: Env = process.env
   const selection = selectGenerator(env);
   if (!selection.enabled) return { ran: false, reason: selection.reason };
   const summary = await runPreparationBatch({
-    store: createSupabasePreparationStore(getSupabaseServerClient()),
+    store: createSqlPreparationStore(getSqlGateway()),
     generator: selection.generator,
     monthlyTokenBudget: selection.monthlyTokenBudget,
     limit,

@@ -10,6 +10,8 @@ import { validateDraft } from "./draft";
 
 export interface PreparationStore {
   claim(provider: string, limit: number, leaseSeconds: number): Promise<{ inquiryId: string; attempts: number }[]>;
+  // Claims one specific inquiry's waiting job ("prepare this inquiry now").
+  claimInquiry(provider: string, inquiryId: string, leaseSeconds: number): Promise<{ inquiryId: string; attempts: number }[]>;
   loadInquiry(inquiryId: string): Promise<InquiryForPreparation | null>;
   complete(inquiryId: string, content: unknown, source: string, model: string | null): Promise<number | null>;
   fail(inquiryId: string, error: string, retryable: boolean, retryAfterSeconds: number | null): Promise<string | null>;
@@ -33,12 +35,16 @@ export async function runPreparationBatch(opts: {
   monthlyTokenBudget: number;
   limit?: number;
   leaseSeconds?: number;
+  // Only this inquiry, if its job is waiting.
+  inquiryId?: string;
 }): Promise<BatchSummary> {
   const { store, generator } = opts;
   const summary: BatchSummary = { claimed: 0, succeeded: 0, retrying: 0, failed: 0, paused: 0, outcomes: {} };
   const count = (outcome: string) => (summary.outcomes[outcome] = (summary.outcomes[outcome] ?? 0) + 1);
 
-  const jobs = await store.claim(generator.id, opts.limit ?? 3, opts.leaseSeconds ?? 300);
+  const jobs = opts.inquiryId
+    ? await store.claimInquiry(generator.id, opts.inquiryId, opts.leaseSeconds ?? 300)
+    : await store.claim(generator.id, opts.limit ?? 3, opts.leaseSeconds ?? 300);
   summary.claimed = jobs.length;
 
   for (const job of jobs) {

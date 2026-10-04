@@ -23,6 +23,18 @@ function resolveTargetLocale(request: NextRequest): SupportedLocale {
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
+  // Private team dashboard. Defence in depth only: every dashboard page and
+  // action verifies the signed session itself. Without even a session cookie,
+  // go straight to sign-in; internal pages are never indexed.
+  if (pathname.startsWith("/internal")) {
+    if (pathname.startsWith("/internal/inquiries") && !request.cookies.get("__Host-mintapp_team")) {
+      return NextResponse.redirect(new URL("/internal/login", request.url));
+    }
+    const response = NextResponse.next();
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return response;
+  }
+
   // Never touch: Next internals, the hidden internal tool, API routes, SEO
   // files, or any request for a file (has an extension) such as favicon.ico/icon.svg.
   if (

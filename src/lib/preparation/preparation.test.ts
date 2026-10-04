@@ -201,6 +201,7 @@ function fakeStore(over: Partial<PreparationStore> = {}) {
   const calls: string[] = [];
   const store: PreparationStore = {
     claim: async () => [{ inquiryId: "inq-1", attempts: 1 }],
+    claimInquiry: async (_provider, id) => (calls.push(`claimInquiry:${id}`), [{ inquiryId: id, attempts: 1 }]),
     loadInquiry: async () => clinic.inquiry,
     complete: async (id, _content, source) => (calls.push(`complete:${id}:${source}`), 1),
     fail: async (id, error, retryable) => (calls.push(`fail:${id}:${error}:${retryable}`), retryable ? "retry_scheduled" : "failed"),
@@ -265,6 +266,12 @@ describe("worker", () => {
     await runPreparationBatch({ store, generator, monthlyTokenBudget: 600_000 });
     expect(generator.generate).not.toHaveBeenCalled();
     expect(calls).toEqual(["fail:inq-1:inquiry_missing:false"]);
+  });
+
+  test("can be limited to one inquiry", async () => {
+    const { store, calls } = fakeStore();
+    await runPreparationBatch({ store, generator: createMockGenerator(), monthlyTokenBudget: 0, inquiryId: "inq-9" });
+    expect(calls).toEqual(["claimInquiry:inq-9", "complete:inq-9:mock"]);
   });
 
   test("the mock generator runs end to end without usage or budget", async () => {

@@ -53,7 +53,18 @@ export function normalizeForMatch(input: string): string {
     .trim();
 }
 
-const numbersIn = (value: string) => normalizeForMatch(value).match(/\d+/g) ?? [];
+// Figures in a text, as digit strings with separators removed: "4,000",
+// "4000" and "٤٬٠٠٠" are all "4000"; decimals stay whole ("2.5"). Separators
+// inside one number stay together, so "$4,000" is one figure, not "4" and "000".
+export function figuresIn(value: string): string[] {
+  const western = value
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/٬/g, ",")
+    .replace(/٫/g, ".");
+  return (western.match(/\d+(?:,\d{3})*(?:\.\d+)?/g) ?? []).map((n) => n.replace(/,/g, ""));
+}
+
+const numbersIn = figuresIn;
 
 // Every way a draft can be unacceptable for this brief. Empty means it may be saved.
 export function draftProblems(draft: PreparationDraft, brief: string, language: BriefLanguage): DraftProblem[] {

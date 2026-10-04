@@ -1,0 +1,143 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { requireTeamMember } from "@/lib/team-auth/guard";
+import * as data from "@/lib/dashboard/data";
+import { getSqlGateway, isLocalDashboardDemo } from "@/lib/sql-gateway";
+import { selectGenerator } from "@/lib/preparation/config";
+import { createSqlPreparationStore } from "@/lib/preparation/sql-store";
+import { runPreparationBatch } from "@/lib/preparation/worker";
+import { createMockGenerator } from "@/lib/preparation/mock-generator";
+import type { PreparationGenerator } from "@/lib/preparation/generator";
+
+// Every action re-checks the team session before touching anything, and
+// validates its input. Next.js additionally rejects cross-origin action calls.
+
+const id = z.string().uuid();
+const text = (max: number) => z.string().max(max);
+const refresh = (inquiryId: string) => {
+  revalidatePath(`/internal/inquiries/${inquiryId}`);
+  revalidatePath("/internal/inquiries");
+};
+
+export async function assignAction(form: FormData) {
+  await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const owner = text(320).parse(form.get("owner") ?? "");
+  const nextAction = text(500).parse(form.get("nextAction") ?? "");
+  await data.assign(inquiryId, owner || null, nextAction || null);
+  refresh(inquiryId);
+}
+
+export async function addNoteAction(form: FormData) {
+  const member = await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const body = z.string().trim().min(1).max(4000).safeParse(form.get("body"));
+  if (!body.success) return;
+  await data.addNote(inquiryId, member.email, body.data);
+  refresh(inquiryId);
+}
+
+export async function saveDraftAction(form: FormData) {
+  const member = await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const body = z.string().trim().min(1).max(20000).safeParse(form.get("body"));
+  if (!body.success) return;
+  const source = form.get("source") === "edited" ? "edited" : "manual";
+  await data.saveDraft(inquiryId, body.data, source, member.email);
+  refresh(inquiryId);
+}
+
+export async function reviewAction(form: FormData) {
+  const member = await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const version = z.coerce.number().int().min(1).parse(form.get("version"));
+  const to = z.enum(["in_review", "approved", "draft"]).parse(form.get("to"));
+  await data.review(inquiryId, version, to, member.email);
+  refresh(inquiryId);
+}
+
+export async function retryAction(form: FormData) {
+  await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  await data.retryPreparation(inquiryId);
+  refresh(inquiryId);
+}
+
+export async function markManualAction(form: FormData) {
+  await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  await data.markManual(inquiryId);
+  refresh(inquiryId);
+}
+
+export async function resumeAutomationAction(form: FormData) {
+  await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const provider = z.enum(["mock", "codecraft"]).parse(form.get("provider"));
+  await data.resumeAutomation(provider);
+  refresh(inquiryId);
+}
+
+// "Prepare this inquiry now" with the configured generator (off by default).
+export async function prepareNowAction(form: FormData) {
+  await requireTeamMember();
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const selection = selectGenerator();
+  if (!selection.enabled) return;
+  await runPreparationBatch({
+    store: createSqlPreparationStore(getSqlGateway()),
+    generator: selection.generator,
+    monthlyTokenBudget: selection.monthlyTokenBudget,
+    inquiryId,
+  });
+  refresh(inquiryId);
+}
+
+// ---------------------------------------------------------------------------
+// LOCAL DEMO ONLY. Simulations of booking webhooks and generator outcomes,
+// available only with the local demo database outside production.
+
+const demoGenerator = (outcome: "mock" | "invalid" | "quota"): PreparationGenerator =>
+  outcome === "mock"
+    ? createMockGenerator()
+    : {
+        id: "mock",
+        model: "simulated-failure",
+        estimateTokens: () => 0,
+        generate: async () =>
+          outcome === "quota"
+            ? { ok: false, failure: "quota_exhausted", retryable: false, pauseAutomation: true }
+            : { ok: false, failure: "invalid_output", retryable: false, pauseAutomation: false },
+      };
+
+export async function demoGenerateAction(form: FormData) {
+  await requireTeamMember();
+  if (!isLocalDashboardDemo()) return;
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const outcome = z.enum(["mock", "invalid", "quota"]).parse(form.get("outcome"));
+  await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: demoGenerator(outcome), monthlyTokenBudget: 0, inquiryId });
+  refresh(inquiryId);
+}
+
+export async function demoBookingAction(form: FormData) {
+  await requireTeamMember();
+  if (!isLocalDashboardDemo()) return;
+  const inquiryId = id.parse(form.get("inquiryId"));
+  const kind = z.enum(["book", "reschedule", "cancel"]).parse(form.get("kind"));
+  const detail = await data.getInquiry(inquiryId);
+  if (!detail) return;
+  const sql = getSqlGateway();
+  const now = Date.now();
+  const at = (days: number) => new Date(now + days * 86_400_000).toISOString();
+  const uid = detail.meeting.cal_booking_id;
+  if (kind === "book") {
+    await sql.call("apply_booking_created", { p_inquiry_id: inquiryId, p_uid: `demo-${now}`, p_start_time: at(3), p_timezone: "Africa/Cairo", p_event_at: new Date(now).toISOString() });
+  } else if (kind === "reschedule" && uid) {
+    await sql.call("apply_booking_rescheduled", { p_inquiry_id: inquiryId, p_reschedule_uid: uid, p_new_uid: `demo-${now}`, p_start_time: at(5), p_timezone: "Africa/Cairo", p_event_at: new Date(now).toISOString() });
+  } else if (kind === "cancel" && uid) {
+    await sql.call("apply_booking_cancelled", { p_inquiry_id: inquiryId, p_uid: uid, p_start_time: detail.meeting.meeting_start_at ?? at(3), p_timezone: "Africa/Cairo", p_event_at: new Date(now).toISOString() });
+  }
+  refresh(inquiryId);
+}

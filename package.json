@@ -10,6 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:dashboard": "node scripts/run-dashboard-tests.mjs",
     "test:db": "node --test --test-concurrency=1 \"tests/db/*.test.mjs\""
   },
   "dependencies": {
