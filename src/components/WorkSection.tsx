@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
+import { CardCover } from "./work/ScreenFrames";
 
 export default function WorkSection() {
   const { t, lang, arrow } = useLanguage();
@@ -139,24 +140,26 @@ export default function WorkSection() {
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-nazarih-bg p-7">
             <span className="absolute -start-10 -bottom-10 block h-[170px] w-[170px] rounded-[36px] bg-nazarih/35" />
-            <div className="relative flex items-center gap-3.5">
-              <div className="w-[96px] rounded-[20px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18" }}>
-                <div className="flex h-full flex-col gap-1.5 rounded-[15px] bg-canvas p-2.5">
-                  <span className="block h-1.5 w-[60%] rounded-sm bg-dark" />
-                  <div className="h-[38px] rounded-lg bg-nazarih-2" />
-                  <div className="h-[22px] rounded-md bg-surface" />
-                  <div className="h-[22px] rounded-md bg-surface" />
+            <CardCover slug="nazarih">
+              <div className="relative flex items-center gap-3.5">
+                <div className="w-[96px] rounded-[20px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18" }}>
+                  <div className="flex h-full flex-col gap-1.5 rounded-[15px] bg-canvas p-2.5">
+                    <span className="block h-1.5 w-[60%] rounded-sm bg-dark" />
+                    <div className="h-[38px] rounded-lg bg-nazarih-2" />
+                    <div className="h-[22px] rounded-md bg-surface" />
+                    <div className="h-[22px] rounded-md bg-surface" />
+                  </div>
+                </div>
+                <div className="flex w-[min(160px,36vw)] flex-col gap-2.5 rounded-xl bg-canvas p-3.5 shadow-[0_22px_44px_-30px_rgba(0,0,0,.55)]">
+                  <span className="block h-[7px] w-1/2 rounded-sm bg-dark" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="h-[46px] rounded-[9px] bg-surface" />
+                    <div className="h-[46px] rounded-[9px] bg-nazarih" />
+                  </div>
+                  <span className="block h-1.5 w-[76%] rounded-sm bg-ink/[.14]" />
                 </div>
               </div>
-              <div className="flex w-[min(160px,36vw)] flex-col gap-2.5 rounded-xl bg-canvas p-3.5 shadow-[0_22px_44px_-30px_rgba(0,0,0,.55)]">
-                <span className="block h-[7px] w-1/2 rounded-sm bg-dark" />
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="h-[46px] rounded-[9px] bg-surface" />
-                  <div className="h-[46px] rounded-[9px] bg-nazarih" />
-                </div>
-                <span className="block h-1.5 w-[76%] rounded-sm bg-ink/[.14]" />
-              </div>
-            </div>
+            </CardCover>
           </div>
           <div className="p-[clamp(24px,2.6vw,32px)]">
             <div className="flex items-baseline gap-2.5">
@@ -179,20 +182,22 @@ export default function WorkSection() {
 
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="flex min-h-[250px] items-center justify-center border-b border-ink/[.07] bg-taskaty-bg p-7">
-            <div className="w-[150px] rounded-[24px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
-              <div className="flex h-full flex-col gap-2 rounded-[18px] bg-canvas p-3">
-                <span className="block h-1.5 w-[55%] rounded-sm bg-dark" />
-                {[0, 1, 2].map((i) => (
-                  <div key={i} className="flex items-center gap-1.5 rounded-lg bg-surface p-1.5">
-                    <span className={`block h-3 w-3 rounded-[4px] ${i === 0 ? "bg-taskaty" : "bg-ink/[.14]"}`} />
-                    <span className="block h-1.5 flex-1 rounded-sm bg-ink/[.16]" />
+            <CardCover slug="taskaty">
+              <div className="w-[150px] rounded-[24px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
+                <div className="flex h-full flex-col gap-2 rounded-[18px] bg-canvas p-3">
+                  <span className="block h-1.5 w-[55%] rounded-sm bg-dark" />
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="flex items-center gap-1.5 rounded-lg bg-surface p-1.5">
+                      <span className={`block h-3 w-3 rounded-[4px] ${i === 0 ? "bg-taskaty" : "bg-ink/[.14]"}`} />
+                      <span className="block h-1.5 flex-1 rounded-sm bg-ink/[.16]" />
+                    </div>
+                  ))}
+                  <div className="mt-auto flex h-8 items-center justify-center rounded-full bg-taskaty">
+                    <span className="block h-1.5 w-[34%] rounded-sm bg-white/90" />
                   </div>
-                ))}
-                <div className="mt-auto flex h-8 items-center justify-center rounded-full bg-taskaty">
-                  <span className="block h-1.5 w-[34%] rounded-sm bg-white/90" />
                 </div>
               </div>
-            </div>
+            </CardCover>
           </div>
           <div className="p-[clamp(24px,2.6vw,32px)]">
             <div className="flex items-baseline gap-2.5">
@@ -216,19 +221,21 @@ export default function WorkSection() {
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-tanglevibe-bg p-7">
             <span className="absolute -end-10 -top-10 block h-[160px] w-[160px] rounded-full bg-tanglevibe/[.18]" />
-            <div className="relative w-[150px] -rotate-3 overflow-hidden rounded-[24px] bg-[#0A0D0C] p-1.5 shadow-[0_26px_50px_-30px_rgba(0,0,0,.5)]" style={{ aspectRatio: "9 / 18.6" }}>
-              <div className="flex h-full flex-col overflow-hidden rounded-[18px] bg-canvas">
-                <div className="flex-1 bg-tanglevibe-2" />
-                <div className="flex flex-col gap-1.5 p-2.5">
-                  <span className="block h-1.5 w-[50%] rounded-sm bg-dark" />
-                  <span className="block h-1 w-[70%] rounded-sm bg-ink/[.14]" />
-                  <div className="mt-1 flex justify-center gap-2">
-                    <span className="block h-6 w-6 rounded-full border border-ink/[.14] bg-surface" />
-                    <span className="block h-6 w-6 rounded-full bg-tanglevibe" />
+            <CardCover slug="tanglevibe">
+              <div className="relative w-[150px] -rotate-3 overflow-hidden rounded-[24px] bg-[#0A0D0C] p-1.5 shadow-[0_26px_50px_-30px_rgba(0,0,0,.5)]" style={{ aspectRatio: "9 / 18.6" }}>
+                <div className="flex h-full flex-col overflow-hidden rounded-[18px] bg-canvas">
+                  <div className="flex-1 bg-tanglevibe-2" />
+                  <div className="flex flex-col gap-1.5 p-2.5">
+                    <span className="block h-1.5 w-[50%] rounded-sm bg-dark" />
+                    <span className="block h-1 w-[70%] rounded-sm bg-ink/[.14]" />
+                    <div className="mt-1 flex justify-center gap-2">
+                      <span className="block h-6 w-6 rounded-full border border-ink/[.14] bg-surface" />
+                      <span className="block h-6 w-6 rounded-full bg-tanglevibe" />
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </CardCover>
           </div>
           <div className="p-[clamp(24px,2.6vw,32px)]">
             <div className="flex items-baseline gap-2.5">
@@ -251,21 +258,23 @@ export default function WorkSection() {
 
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="flex min-h-[250px] items-center justify-center border-b border-ink/[.07] bg-kwayes-bg p-7">
-            <div className="w-[132px] rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
-              <div className="flex h-full flex-col gap-1.5 rounded-[16px] bg-canvas p-2">
-                <span className="block h-1.5 w-[45%] rounded-sm bg-dark" />
-                <div className="grid flex-1 grid-cols-2 gap-1.5">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className={`rounded-md ${i % 2 === 0 ? "bg-kwayes-2" : "bg-surface"}`} />
-                  ))}
-                </div>
-                <div className="relative flex h-7 items-center justify-around rounded-full bg-surface px-1.5">
-                  <span className="block h-2 w-2 rounded-full border border-ink/[.16]" />
-                  <span className="absolute start-1/2 top-1/2 block h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-kwayes" />
-                  <span className="block h-2 w-2 rounded-full border border-ink/[.16]" />
+            <CardCover slug="kwayes">
+              <div className="w-[132px] rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "9 / 18.6" }}>
+                <div className="flex h-full flex-col gap-1.5 rounded-[16px] bg-canvas p-2">
+                  <span className="block h-1.5 w-[45%] rounded-sm bg-dark" />
+                  <div className="grid flex-1 grid-cols-2 gap-1.5">
+                    {[0, 1, 2, 3].map((i) => (
+                      <div key={i} className={`rounded-md ${i % 2 === 0 ? "bg-kwayes-2" : "bg-surface"}`} />
+                    ))}
+                  </div>
+                  <div className="relative flex h-7 items-center justify-around rounded-full bg-surface px-1.5">
+                    <span className="block h-2 w-2 rounded-full border border-ink/[.16]" />
+                    <span className="absolute start-1/2 top-1/2 block h-6 w-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-kwayes" />
+                    <span className="block h-2 w-2 rounded-full border border-ink/[.16]" />
+                  </div>
                 </div>
               </div>
-            </div>
+            </CardCover>
           </div>
           <div className="p-[clamp(24px,2.6vw,32px)]">
             <div className="flex items-baseline gap-2.5">
