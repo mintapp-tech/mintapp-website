@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 import { CardCover } from "./work/ScreenFrames";
@@ -63,7 +64,7 @@ export default function WorkSection() {
             </div>
             <Image
               src="/work/arrentio/home.jpg"
-              alt="Arrentio marketplace homepage"
+              alt={localAlt("Arrentio marketplace homepage", lang)}
               width={1600}
               height={1084}
               className="h-auto w-full"
@@ -71,7 +72,7 @@ export default function WorkSection() {
           </div>
           <Image
             src="/work/arrentio/logo.png"
-            alt="Arrentio logo"
+            alt={localAlt("Arrentio logo", lang)}
             width={64}
             height={52}
             style={{ "--mt-delay": "0.65s" } as React.CSSProperties}
@@ -86,7 +87,7 @@ export default function WorkSection() {
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-rentop/[.16]" />
             <div className="relative w-[132px] overflow-hidden rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "1290 / 2796" }}>
               <div className="relative h-full w-full overflow-hidden rounded-[16px]">
-                <Image src="/work/rentop/home.jpg" alt="Rentop home screen" fill sizes="132px" className="object-cover" />
+                <Image src="/work/rentop/home.jpg" alt={localAlt("Rentop home screen", lang)} fill sizes="132px" className="object-cover" />
               </div>
             </div>
           </div>
@@ -114,7 +115,7 @@ export default function WorkSection() {
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-jameel/[.16]" />
             <div className="relative w-[132px] overflow-hidden rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "375 / 812" }}>
               <div className="relative h-full w-full overflow-hidden rounded-[16px]">
-                <Image src="/work/jameel/home.png" alt="Jameel home screen" fill sizes="132px" className="object-cover" />
+                <Image src="/work/jameel/home.png" alt={localAlt("Jameel home screen", lang)} fill sizes="132px" className="object-cover" />
               </div>
             </div>
           </div>

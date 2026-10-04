@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
@@ -72,10 +73,10 @@ export default function RentopCaseStudy() {
           <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-rentop/[.16]" />
           <div className="relative flex items-end justify-center gap-[clamp(16px,3vw,28px)] py-[clamp(20px,4vw,50px)]">
             <div className="w-[min(38%,220px)] -rotate-3">
-              <PhoneFrame src="/work/rentop/home.jpg" alt="Rentop home screen with brand and category browsing" priority />
+              <PhoneFrame src="/work/rentop/home.jpg" alt={localAlt("Rentop home screen with brand and category browsing", lang)} priority />
             </div>
             <div className="w-[min(42%,240px)] translate-y-2 rotate-2">
-              <PhoneFrame src="/work/rentop/car-detail.jpg" alt="Rentop car detail page with specs, host and booking" />
+              <PhoneFrame src="/work/rentop/car-detail.jpg" alt={localAlt("Rentop car detail page with specs, host and booking", lang)} />
             </div>
           </div>
         </Reveal>
@@ -132,16 +133,16 @@ export default function RentopCaseStudy() {
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <RevealItem>
-            <PhoneFrame src="/work/rentop/home.jpg" alt="Rentop home screen" />
+            <PhoneFrame src="/work/rentop/home.jpg" alt={localAlt("Rentop home screen", lang)} />
           </RevealItem>
           <RevealItem>
-            <PhoneFrame src="/work/rentop/explore.jpg" alt="Rentop explore feed with listings" />
+            <PhoneFrame src="/work/rentop/explore.jpg" alt={localAlt("Rentop explore feed with listings", lang)} />
           </RevealItem>
           <RevealItem>
-            <PhoneFrame src="/work/rentop/car-detail.jpg" alt="Rentop car detail and host page" />
+            <PhoneFrame src="/work/rentop/car-detail.jpg" alt={localAlt("Rentop car detail and host page", lang)} />
           </RevealItem>
           <RevealItem>
-            <PhoneFrame src="/work/rentop/booking.jpg" alt="Rentop calendar booking and price breakdown" />
+            <PhoneFrame src="/work/rentop/booking.jpg" alt={localAlt("Rentop calendar booking and price breakdown", lang)} />
           </RevealItem>
         </RevealGroup>
       </section>
