@@ -9,7 +9,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:db": "node --test --test-concurrency=1 \"tests/db/*.test.mjs\""
   },
   "dependencies": {
     "@calcom/embed-react": "1.5.3",
