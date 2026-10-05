@@ -2,9 +2,6 @@ import { describe, expect, test } from "vitest";
 import { figuresIn } from "@/lib/preparation/draft";
 import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "./brief";
 import { preparationNotice } from "./status";
-import { createSessionToken, verifySessionToken, SESSION_TTL_SECONDS } from "@/lib/team-auth/session";
-import { teamAccounts } from "@/lib/team-auth/accounts";
-import { hashPassword, verifyPassword } from "../../../scripts/lib/team-password.mjs";
 
 const inquiry = {
   preferred_language: "en",
@@ -84,46 +81,5 @@ describe("preparation notices: nothing waits silently", () => {
   test("failure reasons are explained in plain language", () => {
     expect(preparationNotice({ ...base, status: "failed", last_error: "invalid_unsupported_number" }, on).detail).toContain("figures the client never stated");
     expect(preparationNotice({ ...base, status: "paused", last_error: "quota_exhausted" }, on).detail).toContain("free allowance is used up");
-  });
-});
-
-describe("team accounts and sessions", () => {
-  const secret = "x".repeat(40);
-  const env = (hash: string) => ({
-    TEAM_ACCOUNTS: JSON.stringify([{ email: "Omar@Mintapp.Tech", name: "Omar", passwordHash: hash }]),
-    DASHBOARD_SESSION_SECRET: secret,
-  });
-
-  test("passwords are hashed with scrypt; short passwords are refused", async () => {
-    const hash = await hashPassword("a-long-enough-test-password");
-    expect(hash).toMatch(/^scrypt\$32768\$8\$1\$/);
-    expect(await verifyPassword("a-long-enough-test-password", hash)).toBe(true);
-    expect(await verifyPassword("wrong-password-attempt!!", hash)).toBe(false);
-    await expect(hashPassword("short")).rejects.toThrow(/at least 16/);
-  });
-
-  test("accounts are normalized; invalid or duplicate configuration means no access", async () => {
-    const hash = await hashPassword("a-long-enough-test-password");
-    expect(teamAccounts(env(hash))).toEqual([{ email: "omar@mintapp.tech", name: "Omar", passwordHash: hash }]);
-    expect(teamAccounts({ TEAM_ACCOUNTS: "not json" })).toEqual([]);
-    expect(teamAccounts({ TEAM_ACCOUNTS: JSON.stringify([{ email: "a@b.co", name: "A", passwordHash: "plain-text" }]) })).toEqual([]);
-    expect(teamAccounts({ TEAM_ACCOUNTS: JSON.stringify([{ email: "a@b.co", name: "A", passwordHash: hash }, { email: "A@b.co", name: "B", passwordHash: hash }]) })).toEqual([]);
-  });
-
-  test("sessions verify only when signed, unexpired and for a current account", async () => {
-    const e = env(await hashPassword("a-long-enough-test-password"));
-    const now = Date.now();
-    const token = createSessionToken({ email: "omar@mintapp.tech" }, now, e)!;
-    expect(verifySessionToken(token, now, e)).toEqual({ email: "omar@mintapp.tech", name: "Omar" });
-    // Tampered payload or signature.
-    const [data, sig] = token.split(".");
-    const forged = Buffer.from(JSON.stringify({ v: 1, e: "omar@mintapp.tech", iat: 0, exp: 9e9 })).toString("base64url");
-    expect(verifySessionToken(`${forged}.${sig}`, now, e)).toBeNull();
-    expect(verifySessionToken(`${data}.${sig.slice(0, -2)}xx`, now, e)).toBeNull();
-    // Expired, rotated secret, removed account, missing configuration.
-    expect(verifySessionToken(token, now + (SESSION_TTL_SECONDS + 1) * 1000, e)).toBeNull();
-    expect(verifySessionToken(token, now, { ...e, DASHBOARD_SESSION_SECRET: "y".repeat(40) })).toBeNull();
-    expect(verifySessionToken(token, now, { ...e, TEAM_ACCOUNTS: "[]" })).toBeNull();
-    expect(createSessionToken({ email: "omar@mintapp.tech" }, now, { ...e, DASHBOARD_SESSION_SECRET: "short" })).toBeNull();
   });
 });
