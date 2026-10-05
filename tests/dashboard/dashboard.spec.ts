@@ -215,7 +215,8 @@ test("shared ownership and follow-ups: names only, one responsible person and a 
   await page.goto("/inquiries");
   const row = page.locator("tbody tr", { hasText: "Synthetic Clinic Group" });
   await expect(row).toContainText("Omar & Adam");
-  await expect(row).toContainText("Next: Send the meeting questions · Adam");
+  await expect(row.locator("[data-next-follow-up]")).toContainText("Next: Adam ·");
+  await expect(row.locator("[data-next-follow-up]")).toContainText("Send the meeting questions");
   // Routine views never show team sign-in emails.
   expect(await page.locator("body").innerText()).not.toContain("mintapp.local");
 

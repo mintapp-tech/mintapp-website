@@ -18,7 +18,7 @@ const STUCK = new Set(["failed", "paused"]);
 interface Row extends InquiryRow {
   attention: boolean;
   owner: string;
-  followUp: { text: string; overdue: boolean } | null;
+  followUp: { action: string; who: string; due: string; overdue: boolean } | null;
   review: { text: string; tone: ChipTone; approved: boolean; inReview: boolean };
 }
 
@@ -60,12 +60,19 @@ function Client({ r, c }: { r: Row; c: Ctx }) {
   );
 }
 
+// The next open follow-up: who and when on one line, the action on its own
+// line in its own direction, so English and Arabic mix cleanly.
 function FollowUpLine({ f, c, className }: { f: NonNullable<Row["followUp"]>; c: Ctx; className: string }) {
   return (
-    <p dir="auto" className={`mb-0 text-[12.5px] ${f.overdue ? "font-semibold text-red-700" : "text-ink-soft"} ${className}`}>
-      {f.overdue && <span className="me-1">{c.t.detail.followUps.overdue} ·</span>}
-      {f.text}
-    </p>
+    <div className={`text-[12.5px] ${className}`} data-next-follow-up>
+      <p className={`m-0 ${f.overdue ? "font-semibold text-red-700" : "text-ink-faint"}`}>
+        {c.t.list.nextLabel} <bdi>{f.who}</bdi> · <bdi>{f.due}</bdi>
+        {f.overdue && <span className="ms-1">· {c.t.detail.followUps.overdue}</span>}
+      </p>
+      <p dir="auto" className="m-0 text-ink-soft">
+        {f.action}
+      </p>
+    </div>
   );
 }
 
@@ -96,7 +103,9 @@ export default async function InquiriesPage() {
       owner: ownersLabel(r.owners, members, t.list.unassigned),
       followUp: r.next_follow_up
         ? {
-            text: t.list.followUp(r.next_follow_up.action, ownersLabel([r.next_follow_up.owner], members, "?"), formatDay(r.next_follow_up.due_on, locale)),
+            action: r.next_follow_up.action,
+            who: ownersLabel([r.next_follow_up.owner], members, "?"),
+            due: formatDay(r.next_follow_up.due_on, locale),
             overdue: r.next_follow_up.due_on < today,
           }
         : null,
