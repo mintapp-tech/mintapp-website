@@ -1,0 +1,179 @@
+import { test, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
+import AxeBuilder from "@axe-core/playwright";
+import { AUTH_DEMO_PASSWORD } from "../../playwright.admin-auth.config";
+import { totp } from "../admin/totp.mjs";
+
+// Supabase Auth sign-in for the admin application, against the local test
+// stand-in, with synthetic accounts and data only.
+
+const OMAR = "omar.demo@mintapp.local";
+const ADAM = "adam.demo@mintapp.local";
+const OUTSIDER = "outsider.demo@mintapp.local"; // has a password, not on the allowlist
+const CLINIC = "11111111-0000-4000-8000-000000000001";
+const secrets = new Map<string, string>();
+
+test.describe.configure({ mode: "serial" });
+
+async function passwordStep(browser: Browser, email: string, password = AUTH_DEMO_PASSWORD): Promise<Page> {
+  const page = await (await browser.newContext()).newPage();
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password").fill(password);
+  await page.getByRole("button", { name: "Sign in" }).click();
+  return page;
+}
+
+async function enterCode(page: Page, secret: string) {
+  await page.getByLabel("6-digit code").fill(totp(secret));
+  await page.getByRole("button", { name: "Verify" }).click();
+  await page.waitForURL("**/inquiries");
+}
+
+// Full sign-in, enrolling an authenticator the first time.
+async function signIn(browser: Browser, email: string): Promise<Page> {
+  const page = await passwordStep(browser, email);
+  await page.waitForURL("**/login/mfa");
+  if (!secrets.has(email)) {
+    await page.getByRole("button", { name: "Set up authenticator" }).click();
+    secrets.set(email, (await page.locator("code").textContent())!.trim());
+  }
+  await enterCode(page, secrets.get(email)!);
+  return page;
+}
+
+const authCookies = async (context: BrowserContext) => (await context.cookies()).filter((c) => c.name.startsWith("__Host-mintapp-admin"));
+
+async function replay(browser: Browser, cookies: Awaited<ReturnType<typeof authCookies>>, path = "/inquiries") {
+  const context = await browser.newContext();
+  await context.addCookies(cookies);
+  const page = await context.newPage();
+  await page.goto(path);
+  const url = new URL(page.url()).pathname + new URL(page.url()).search;
+  await context.close();
+  return url;
+}
+
+test("nothing private is served without signing in, and only on the admin host", async ({ page, request }) => {
+  for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login$/);
+    const raw = await request.get(path, { maxRedirects: 0 });
+    expect([302, 303, 307, 308]).toContain(raw.status());
+    expect(await raw.text()).not.toContain("physiotherapy");
+  }
+  // Public pages and APIs are not part of the admin application.
+  for (const path of ["/en", "/api/inquiries"]) expect((await request.get(path, { maxRedirects: 0 })).status()).toBe(404);
+  // Another hostname pointed at the admin deployment gets nothing.
+  expect((await request.get("/login", { headers: { Host: "www.example.com" } })).status()).toBe(404);
+  // The admin application is never indexed.
+  expect((await request.get("/login")).headers()["x-robots-tag"]).toBe("noindex, nofollow");
+});
+
+test("a wrong password, or the right password for an account outside the allowlist, gets the same refusal", async ({ browser }) => {
+  for (const [email, password] of [
+    [OMAR, "not-the-password-at-all"],
+    [OUTSIDER, AUTH_DEMO_PASSWORD],
+  ]) {
+    const page = await passwordStep(browser, email, password);
+    await expect(page.locator('p[role="alert"]')).toHaveText("That email and password do not match a Mintapp team account.");
+    await page.goto("/inquiries");
+    await expect(page).toHaveURL(/\/login$/);
+    // The outsider's session was ended on the auth server, not just hidden.
+    expect(await authCookies(page.context())).toEqual([]);
+  }
+});
+
+test("first sign-in requires setting up an authenticator; the password alone opens nothing", async ({ browser }) => {
+  const page = await passwordStep(browser, OMAR);
+  await page.waitForURL("**/login/mfa");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Set up your authenticator");
+  // With only the password, every private page sends you back to the code step.
+  for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+    await page.goto(path);
+    await expect(page).toHaveURL(/\/login\/mfa$/);
+  }
+  await page.getByRole("button", { name: "Set up authenticator" }).click();
+  await expect(page.getByRole("img", { name: "QR code for your authenticator app" })).toBeVisible();
+  const secret = (await page.locator("code").textContent())!.trim();
+  expect(secret).toMatch(/^[A-Z2-7]{32}$/);
+
+  await page.getByLabel("6-digit code").fill("000000");
+  await page.getByRole("button", { name: "Verify" }).click();
+  await expect(page.locator('p[role="alert"]')).toContainText("That code did not work");
+  await enterCode(page, secret);
+  secrets.set(OMAR, secret);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inquiries");
+  await expect(page.locator("tbody tr")).toHaveCount(4);
+
+  // Session cookies: host-only, HttpOnly, Secure, SameSite=Strict, at most 12 hours.
+  const cookies = await authCookies(page.context());
+  expect(cookies.map((c) => c.name).sort()).toEqual(expect.arrayContaining(["__Host-mintapp-admin-activity"]));
+  expect(cookies.some((c) => c.name.startsWith("__Host-mintapp-admin-auth"))).toBe(true);
+  for (const c of cookies) {
+    expect(c, c.name).toMatchObject({ path: "/", secure: true, httpOnly: true, sameSite: "Strict", domain: "localhost" });
+    expect(c.expires - Date.now() / 1000, c.name).toBeLessThanOrEqual(12 * 3600 + 5);
+  }
+});
+
+test("every later sign-in asks for the current code", async ({ browser }) => {
+  const page = await passwordStep(browser, OMAR);
+  await page.waitForURL("**/login/mfa");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Enter your authentication code");
+  await page.goto("/inquiries");
+  await expect(page).toHaveURL(/\/login\/mfa$/);
+  await page.getByLabel("6-digit code").fill("123456");
+  await page.getByRole("button", { name: "Verify" }).click();
+  await expect(page.locator('p[role="alert"]')).toContainText("That code did not work");
+  await enterCode(page, secrets.get(OMAR)!);
+  await page.goto(`/inquiries/${CLINIC}`);
+  await expect(page.locator('[data-brief="description"]')).toContainText("physiotherapy");
+});
+
+test("sign-out ends the session on the auth server: a copied cookie stops working", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  const copied = await authCookies(page.context());
+  expect(await replay(browser, copied)).toBe("/inquiries");
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await authCookies(page.context())).toEqual([]);
+  expect(await replay(browser, copied)).toMatch(/^\/login/);
+});
+
+test("an idle or expired activity record ends the session, with a notice", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  const copied = await authCookies(page.context());
+  // Without its activity record (as after 2 idle hours), the next request revokes the session.
+  await page.context().clearCookies({ name: "__Host-mintapp-admin-activity" });
+  await page.goto("/inquiries");
+  await expect(page).toHaveURL(/\/login\?expired=1$/);
+  await expect(page.getByRole("status")).toHaveText("Your session ended. Sign in again.");
+  expect(await replay(browser, copied)).toMatch(/^\/login/);
+});
+
+test("sign out everywhere ends that person's other sessions only", async ({ browser }) => {
+  const laptop = await signIn(browser, ADAM);
+  const phone = await signIn(browser, ADAM);
+  const omar = await signIn(browser, OMAR);
+  await phone.getByRole("button", { name: "Sign out everywhere" }).click();
+  await expect(phone).toHaveURL(/\/login$/);
+  await laptop.goto("/inquiries");
+  await expect(laptop).toHaveURL(/\/login/);
+  await omar.goto("/inquiries");
+  await expect(omar).toHaveURL(/\/inquiries$/);
+});
+
+test("the interface works in Arabic, right to left", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("الطلبات");
+  await expect(page.locator("tbody")).toContainText("منصة حرفيين تجريبية");
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(results.violations.map((v) => v.id)).toEqual([]);
+  await page.goto(`/inquiries/${CLINIC}`);
+  await expect(page.getByRole("heading", { name: "الملخص" })).toBeVisible();
+  // Switch back for the rest of the team's tests.
+  await page.getByRole("button", { name: "التبديل إلى الواجهة الإنجليزية" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+});
