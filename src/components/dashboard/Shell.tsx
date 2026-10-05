@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { logoutAction } from "@/app/internal/login/actions";
+import { logoutAction, logoutEverywhereAction } from "@/app/internal/login/actions";
 import type { TeamMember } from "@/lib/team-auth/session";
 
 // Dashboard chrome: English, left-to-right; inquiry content inside uses dir="auto".
@@ -22,6 +22,11 @@ export default function Shell({ member, demo, children }: { member: TeamMember; 
             <form action={logoutAction}>
               <button type="submit" className="cursor-pointer rounded-full border border-ink/20 px-4 py-1.5 font-semibold">
                 Sign out
+              </button>
+            </form>
+            <form action={logoutEverywhereAction}>
+              <button type="submit" className="cursor-pointer text-ink-soft underline underline-offset-4">
+                Sign out everywhere
               </button>
             </form>
           </div>

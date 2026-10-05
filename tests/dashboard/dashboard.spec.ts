@@ -1,4 +1,4 @@
-import { test, expect, type Browser, type Page } from "@playwright/test";
+import { test, expect, type Browser, type BrowserContext, type Page, type Response } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { DEMO_PASSWORD } from "../../playwright.dashboard.config";
 
@@ -161,10 +161,70 @@ test("owner and next action show in the list; signing out ends access", async ({
   ]);
   await page.goto("/internal/inquiries");
   await expect(page.locator("tbody")).toContainText(ADAM);
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/internal\/login$/);
   await page.goto(`/internal/inquiries/${CLINIC}`);
   await expect(page).toHaveURL(/\/internal\/login$/);
+});
+
+const isLoginPost = (r: Response) => r.request().method() === "POST" && new URL(r.url()).pathname === "/internal/login";
+const isActionPost = (r: Response) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined;
+const setCookieOf = async (r: Response) => (await r.headersArray()).filter((h) => h.name.toLowerCase() === "set-cookie").map((h) => h.value).join("\n");
+const sessionCookie = async (context: BrowserContext) => (await context.cookies()).find((c) => c.name === "__Host-mintapp_team");
+
+// Opens the dashboard in a fresh browser holding only a copy of the cookie.
+async function replay(browser: Browser, cookie: NonNullable<Awaited<ReturnType<typeof sessionCookie>>>) {
+  const context = await browser.newContext();
+  await context.addCookies([cookie]);
+  const page = await context.newPage();
+  await page.goto("/internal/inquiries");
+  const url = page.url();
+  await context.close();
+  return url;
+}
+
+test("the session cookie is host-only, HttpOnly, Secure and SameSite=Strict; a copied cookie dies at sign-out", async ({ browser }) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto("/internal/login");
+  await page.getByLabel("Email").fill(OMAR);
+  await page.getByLabel("Password").fill(DEMO_PASSWORD);
+  const [login] = await Promise.all([page.waitForResponse(isLoginPost), page.getByRole("button", { name: "Sign in" }).click()]);
+  await page.waitForURL("**/internal/inquiries");
+
+  const issued = await setCookieOf(login);
+  expect(issued).toMatch(/^__Host-mintapp_team=[^;]{40,};/);
+  for (const attribute of [/; Path=\/(;|$)/, /; Max-Age=43200(;|$)/, /; Secure(;|$)/i, /; HttpOnly(;|$)/i, /; SameSite=Strict(;|$)/i]) expect(issued).toMatch(attribute);
+  expect(issued).not.toMatch(/; Domain=/i);
+  const cookie = (await sessionCookie(context))!;
+  expect(cookie).toMatchObject({ path: "/", secure: true, httpOnly: true, sameSite: "Strict" });
+  expect(cookie.expires - Date.now() / 1000).toBeGreaterThan(43_100);
+
+  // A copy works while the session is live...
+  expect(await replay(browser, cookie)).toMatch(/\/internal\/inquiries$/);
+
+  const [logout] = await Promise.all([page.waitForResponse(isActionPost), page.getByRole("button", { name: "Sign out", exact: true }).click()]);
+  await expect(page).toHaveURL(/\/internal\/login$/);
+  const cleared = await setCookieOf(logout);
+  expect(cleared).toMatch(/^__Host-mintapp_team=;/);
+  for (const attribute of [/; Path=\/(;|$)/, /; Max-Age=0(;|$)/, /; Secure(;|$)/i]) expect(cleared).toMatch(attribute);
+  expect(await sessionCookie(context)).toBeUndefined();
+
+  // ...and is refused after sign-out, because the session was revoked on the server.
+  expect(await replay(browser, cookie)).toMatch(/\/internal\/login$/);
+  await context.close();
+});
+
+test("sign out everywhere ends that person's other sessions only", async ({ browser }) => {
+  const laptop = await signIn(browser, ADAM);
+  const phone = await signIn(browser, ADAM);
+  const omar = await signIn(browser, OMAR);
+  await phone.getByRole("button", { name: "Sign out everywhere" }).click();
+  await expect(phone).toHaveURL(/\/internal\/login$/);
+  await laptop.goto("/internal/inquiries");
+  await expect(laptop).toHaveURL(/\/internal\/login$/);
+  await omar.goto("/internal/inquiries");
+  await expect(omar).toHaveURL(/\/internal\/inquiries$/);
 });
 
 test("repeated wrong passwords lock sign-in for that account", async ({ page }) => {
