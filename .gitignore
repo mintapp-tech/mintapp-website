@@ -20,6 +20,9 @@
 # next.js
 /.next/
 /.next-admin/
+
+# local review screenshots of the admin demo
+/review/
 /out/
 
 # production
