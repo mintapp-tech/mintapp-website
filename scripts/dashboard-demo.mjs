@@ -6,56 +6,55 @@
 // values, so the demo cannot reach the real Supabase project or send mail.
 // Ctrl+C stops everything and deletes the cluster.
 //
-//   node scripts/dashboard-demo.mjs [--port 3200] [--auth demo|supabase]
+//   node scripts/dashboard-demo.mjs [--port 3200] [--auth demo|supabase|supabase-live]
 //
 //   --auth demo      (default) the custom team login, for this local demo only.
 //   --auth supabase  the deployed sign-in path (Supabase Auth with a required
 //                    authenticator app and the ADMIN_TEAM allowlist), against a
 //                    LOCAL TEST STAND-IN for Supabase Auth
 //                    (tests/admin/fake-supabase-auth.mjs), not a real project.
+//   --auth supabase-live  the same sign-in path against REAL Supabase Auth in the
+//                    isolated synthetic review project (REVIEW_SUPABASE_*; see
+//                    scripts/lib/review-auth.mjs). Its synthetic review
+//                    accounts are recreated on start. Data stays local.
 //
 //   DASHBOARD_DEMO_PASSWORD may set the demo password (e.g. for tests).
 
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
-import { startCluster, lit } from "../tests/db/pg-harness.mjs";
+import { join } from "node:path";
+import { startCluster } from "../tests/db/pg-harness.mjs";
 import { startFakeAuth } from "../tests/admin/fake-supabase-auth.mjs";
 import { hashPassword } from "./lib/team-password.mjs";
+import { REVIEW_ACCOUNTS, assertReviewProject, resetReviewAccounts, reviewProjectFromEnv } from "./lib/review-auth.mjs";
 
 const arg = (name, fallback) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : fallback);
 const port = Number(arg("--port")) || 3200;
 const auth = arg("--auth", "demo");
-if (auth !== "demo" && auth !== "supabase") throw new Error("--auth must be demo or supabase");
+if (!["demo", "supabase", "supabase-live"].includes(auth)) throw new Error("--auth must be demo, supabase or supabase-live");
+if (auth === "supabase-live" && !process.env.DASHBOARD_DEMO_PASSWORD) throw new Error("--auth supabase-live needs DASHBOARD_DEMO_PASSWORD for the synthetic review accounts");
 const password = process.env.DASHBOARD_DEMO_PASSWORD || randomBytes(12).toString("base64url");
 
 const db = await startCluster();
 for (const file of db.migrations) db.applyMigration(file);
 db.applyLocalDemo();
 
-// SYNTHETIC inquiries. Invented projects and people.
-const inquiries = [
-  ["11111111-0000-4000-8000-000000000001", "Synthetic Clinic Group", "clinic@example.com", "en", "web_app", "Not sure yet", "Within 3 months", "Egypt",
-    "We run three physiotherapy clinics in Cairo. Patients book by phone and we lose track of cancellations. We want an online booking system where patients pick a therapist and time, and our receptionists see the day's schedule. We already use Google Sheets for schedules."],
-  ["11111111-0000-4000-8000-000000000002", "مدرسة تجريبية", "school@example.com", "ar", "website", "غير محدد", "خلال شهرين", "مصر",
-    "لدينا مدرسة خاصة في الإسكندرية. أولياء الأمور يسألون عن المصروفات والمواعيد عبر الهاتف طوال الوقت. نريد موقعًا يعرض معلومات المدرسة ويتيح التقديم أونلاين."],
-  ["11111111-0000-4000-8000-000000000003", "Synthetic Restaurant", "food@example.com", "en", "mobile_app", null, null, null, "An app for my restaurant."],
-  ["11111111-0000-4000-8000-000000000004", "منصة حرفيين تجريبية", "crafts@example.com", "ar", "other", null, null, "الأردن",
-    "فكرتنا منصة تربط الحرفيين بالعملاء، لكن لسنا متأكدين هل نبدأ بتطبيق أو بموقع. بعض الحرفيين لا يستخدمون الهواتف الذكية."],
-];
-for (const [id, name, email, lang, type, budget, timeline, country, desc] of inquiries) {
-  db.psql(`insert into public.project_inquiries (id, full_name, email, preferred_language, project_type, budget_range, timeline, country, project_description, consent_given, consent_at)
-           values (${[id, name, email, lang, type, budget, timeline, country, desc].map(lit).join(", ")}, true, now())`);
-}
-// One is already booked (through the real booking function).
-db.psql(`select public.apply_booking_created('11111111-0000-4000-8000-000000000002', 'demo-seed-booking', now() + interval '4 days', 'Africa/Cairo', now())`);
+// SYNTHETIC inquiries (the same seed as the isolated review project).
+db.applyFile(join(process.cwd(), "supabase", "review", "02_synthetic_inquiries.sql"));
 
 // Synthetic sign-ins for the two team members (ids are what ownership stores).
-const team = [
-  { id: "omar", email: "omar.demo@mintapp.local", name: "Omar" },
-  { id: "adam", email: "adam.demo@mintapp.local", name: "Adam" },
-];
-// Synthetic account that exists in the auth stand-in but is not on the allowlist.
-const outsider = "outsider.demo@mintapp.local";
+const live = auth === "supabase-live";
+const team = live
+  ? [
+      { id: "omar", ...REVIEW_ACCOUNTS.omar },
+      { id: "adam", ...REVIEW_ACCOUNTS.adam },
+    ]
+  : [
+      { id: "omar", email: "omar.demo@mintapp.local", name: "Omar" },
+      { id: "adam", email: "adam.demo@mintapp.local", name: "Adam" },
+    ];
+// Synthetic account that exists in the auth service but is not on the allowlist.
+const outsider = live ? REVIEW_ACCOUNTS.outsider.email : "outsider.demo@mintapp.local";
 
 let authEnv;
 let fakeAuth;
@@ -65,6 +64,16 @@ if (auth === "demo") {
     TEAM_ACCOUNTS: JSON.stringify(await Promise.all(team.map(async ({ email, name }) => ({ email, name, passwordHash: await hashPassword(password) })))),
     DASHBOARD_SESSION_SECRET: randomBytes(32).toString("base64url"),
     SUPABASE_URL: "http://127.0.0.1:9",
+  };
+} else if (live) {
+  const project = reviewProjectFromEnv();
+  await assertReviewProject(project);
+  await resetReviewAccounts(project, password);
+  authEnv = {
+    SUPABASE_URL: project.url,
+    SUPABASE_PUBLISHABLE_KEY: project.publishableKey,
+    ADMIN_TEAM: JSON.stringify(team),
+    ADMIN_SESSION_SECRET: randomBytes(32).toString("base64url"),
   };
 } else {
   fakeAuth = await startFakeAuth({ port: Number(arg("--auth-port")) || 0, users: [...team.map((m) => m.email), outsider].map((email) => ({ email, password })) });
@@ -88,11 +97,13 @@ const env = {
   EMAIL_SENDING_MODE: "disabled",
   ...authEnv,
 };
+// The review project's service key is only needed above, never by the app.
+delete env.REVIEW_SUPABASE_SECRET_KEY;
 
 console.log(`\nLocal admin demo (synthetic data only)
   URL:      http://localhost:${port}/login
-  Sign-in:  ${auth === "demo" ? "custom demo login (local only)" : `Supabase Auth flow against a LOCAL STAND-IN on port ${fakeAuth.port}, authenticator app required`}
-  Accounts: ${team.map((a) => a.email).join(", ")}${auth === "supabase" ? ` (and ${outsider}, not allowlisted)` : ""}
+  Sign-in:  ${auth === "demo" ? "custom demo login (local only)" : live ? "REAL Supabase Auth in the synthetic review project, authenticator app required" : `Supabase Auth flow against a LOCAL STAND-IN on port ${fakeAuth.port}, authenticator app required`}
+  Accounts: ${team.map((a) => a.email).join(", ")}${auth !== "demo" ? ` (and ${outsider}, not allowlisted)` : ""}
   Password: ${process.env.DASHBOARD_DEMO_PASSWORD ? "(from DASHBOARD_DEMO_PASSWORD)" : password}
   Database: 127.0.0.1:${db.port} (throwaway)
   Stop:     Ctrl+C (the database is deleted)\n`);

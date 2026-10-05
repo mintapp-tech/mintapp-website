@@ -1,14 +1,15 @@
 import { test, expect, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { AUTH_DEMO_PASSWORD } from "../../playwright.admin-auth.config";
+import { ACCOUNTS, AUTH_DEMO_PASSWORD } from "../../playwright.admin-auth.config";
 import { totp } from "../admin/totp.mjs";
 
 // Supabase Auth sign-in for the admin application, against the local test
-// stand-in, with synthetic accounts and data only.
+// stand-in or (ADMIN_AUTH_LIVE=1) real Supabase Auth in the isolated review
+// project, with synthetic accounts and data only.
 
-const OMAR = "omar.demo@mintapp.local";
-const ADAM = "adam.demo@mintapp.local";
-const OUTSIDER = "outsider.demo@mintapp.local"; // has a password, not on the allowlist
+const OMAR = ACCOUNTS.omar;
+const ADAM = ACCOUNTS.adam;
+const OUTSIDER = ACCOUNTS.outsider; // has a password, not on the allowlist
 const CLINIC = "11111111-0000-4000-8000-000000000001";
 const secrets = new Map<string, string>();
 
