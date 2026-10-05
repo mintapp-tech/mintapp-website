@@ -69,6 +69,25 @@ test("list: all synthetic inquiries, Arabic intact, and stalled preparation flag
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
+test("phones get cards instead of the table, with nothing wider than the screen", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.reload();
+  await expect(page.locator("table")).toBeHidden();
+  const cards = page.getByRole("list", { name: "Inquiries, newest first" }).getByRole("listitem");
+  await expect(cards).toHaveCount(4);
+  await expect(cards.first()).toContainText("Needs attention");
+  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(await overflow()).toBe(0);
+  for (const id of [CLINIC, CRAFTS]) {
+    await page.goto(`/internal/inquiries/${id}`);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect(await overflow()).toBe(0);
+  }
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(results.violations.map((v) => v.id)).toEqual([]);
+});
+
 test("an inquiry with no booking is prepared, marked ready by one teammate and approved by the other", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
   await omar.goto(`/internal/inquiries/${RESTAURANT}`);
@@ -83,13 +102,14 @@ test("an inquiry with no booking is prepared, marked ready by one teammate and a
   await adam.goto(`/internal/inquiries/${RESTAURANT}`);
   await adam.getByRole("button", { name: "Approve for the meeting" }).click();
   await expect(adam.locator('[data-review="approved"]')).toHaveText("Approved for the meeting");
-  await expect(adam.getByText(`Last review change by ${ADAM}`)).toBeVisible();
+  await expect(adam.getByText("Last review change by Adam (demo)")).toBeVisible();
 });
 
 test("manual path: copy a brief without contact details, paste the result, review", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.goto(`/internal/inquiries/${CLINIC}`);
-  await expect(page.locator('[data-brief="provided"]')).toContainText("Budget range (client-stated): Not sure yet");
+  await expect(page.locator('[data-brief="provided"]')).toContainText("Budget range (client-stated)Not sure yet");
+  await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeWeb app");
   await page.getByRole("button", { name: "Copy brief for Claude" }).click();
   await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
@@ -103,7 +123,7 @@ test("manual path: copy a brief without contact details, paste the result, revie
   const draft = page.locator('[data-draft-version="1"]');
   await expect(draft).toContainText("Pasted by the team");
   await expect(draft).toContainText("figures not stated by the client (4000)");
-  await expect(page.locator('[data-status="preparation"]')).toHaveText("manual");
+  await expect(page.locator('[data-status="preparation"]')).toHaveText("Manual");
 });
 
 test("booking, reschedule, generator failure, quota pause, manual recovery and cancellation keep everything", async ({ browser }) => {
@@ -132,7 +152,7 @@ test("booking, reschedule, generator failure, quota pause, manual recovery and c
   await expect(page.getByRole("button", { name: /Resume automation/ })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Prepare manually instead" }).click();
-  await expect(page.locator('[data-status="preparation"]')).toHaveText("manual");
+  await expect(page.locator('[data-status="preparation"]')).toHaveText("Manual");
   await openPastePanel(page);
   await page.getByLabel(/Paste the result/).fill("## الملخص\nمنصة تربط الحرفيين بالعملاء.");
   await page.getByRole("button", { name: "Save as new draft" }).click();
@@ -155,12 +175,15 @@ test("owner and next action show in the list; signing out ends access", async ({
   await page.goto(`/internal/inquiries/${CLINIC}`);
   await page.getByLabel("Owner", { exact: true }).selectOption(ADAM);
   await page.getByLabel("Next action", { exact: true }).fill("Review the pasted draft");
-  await Promise.all([
+  const [saved] = await Promise.all([
     page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes(`/internal/inquiries/${CLINIC}`)),
     page.getByRole("button", { name: "Save", exact: true }).click(),
   ]);
+  // Let the refreshed page finish streaming before navigating away.
+  await saved.finished();
   await page.goto("/internal/inquiries");
-  await expect(page.locator("tbody")).toContainText(ADAM);
+  await expect(page.locator("tbody")).toContainText("Adam (demo)");
+  await expect(page.locator("tbody")).toContainText("Review the pasted draft");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/internal\/login$/);
   await page.goto(`/internal/inquiries/${CLINIC}`);

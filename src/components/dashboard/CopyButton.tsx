@@ -1,20 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { primary } from "./ui";
 
 export default function CopyButton({ text, label }: { text: string; label: string }) {
-  const [copied, setCopied] = useState(false);
+  const [state, setState] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <button
       type="button"
       onClick={async () => {
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2500);
+        try {
+          await navigator.clipboard.writeText(text);
+          setState("copied");
+        } catch {
+          setState("failed");
+        }
+        setTimeout(() => setState("idle"), 2500);
       }}
-      className="cursor-pointer rounded-full bg-ink px-5 py-2.5 text-[14px] font-semibold text-white"
+      className={`${primary} px-5 py-2.5 text-[14px]`}
     >
-      <span aria-live="polite">{copied ? "Copied" : label}</span>
+      <span aria-live="polite">{state === "copied" ? "Copied" : state === "failed" ? "Copy failed. Allow clipboard access and try again." : label}</span>
     </button>
   );
 }
