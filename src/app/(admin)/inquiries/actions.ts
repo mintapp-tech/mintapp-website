@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth/state";
 import { teamMembers } from "@/lib/admin/auth/config";
+import { assertSyntheticReviewDatabase } from "@/lib/admin/review-guard";
 import * as data from "@/lib/dashboard/data";
 import { getSqlGateway, isLocalDashboardDemo } from "@/lib/sql-gateway";
 import { selectGenerator } from "@/lib/preparation/config";
@@ -115,6 +116,7 @@ export async function resumeAutomationAction(form: FormData) {
 // "Prepare this inquiry now" with the configured generator (off by default).
 export async function prepareNowAction(form: FormData) {
   await requireAdmin();
+  await assertSyntheticReviewDatabase();
   const inquiryId = id.parse(form.get("inquiryId"));
   const selection = selectGenerator();
   if (!selection.enabled) return;

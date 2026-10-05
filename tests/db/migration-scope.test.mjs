@@ -14,6 +14,16 @@ test("no remote migration creates the local demo's login tables or functions", (
   for (const [file, body] of sql("migrations")) assert.doesNotMatch(body, /team_login|team_session/i, file);
 });
 
+test("no remote migration contains the review marker or synthetic seed", () => {
+  for (const [file, body] of sql("migrations")) assert.doesNotMatch(body, /review_environment|example\.com/i, file);
+});
+
+test("the review SQL says it must never be applied to the live database", () => {
+  const files = sql("review");
+  assert.ok(files.length >= 2);
+  for (const [file, body] of files) assert.match(body.split("\n")[0], /SYNTHETIC REVIEW DATABASE ONLY\. Never apply to the live \(production\) database\./, file);
+});
+
 test("the local demo SQL says it must never be applied remotely", () => {
   const files = sql("local-demo");
   assert.ok(files.length >= 2);

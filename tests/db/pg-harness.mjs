@@ -117,7 +117,7 @@ export async function startCluster() {
     }
   };
 
-  return { port, psql, psqlExpectError, psqlAsync, applyMigration, applyLocalDemo, migrations, stop };
+  return { port, psql, psqlExpectError, psqlAsync, applyFile, applyMigration, applyLocalDemo, migrations, stop };
 }
 
 export const lit = (v) => (v === null || v === undefined ? "null" : `'${String(v).replace(/'/g, "''")}'`);

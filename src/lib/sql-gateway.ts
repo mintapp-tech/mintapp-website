@@ -27,6 +27,8 @@ export const SQL_FUNCTIONS = {
   monthly_generation_tokens: { params: [["p_provider", "text"]] },
   preparation_input: { params: [["p_inquiry_id", "uuid"]] },
   dashboard_inquiries: { params: [] },
+  // Exists only in the synthetic review database (supabase/review/).
+  review_environment: { params: [] },
   dashboard_inquiry: { params: [["p_inquiry_id", "uuid"]] },
   dashboard_set_owners: { params: [["p_inquiry_id", "uuid"], ["p_owners", "jsonb"]] },
   dashboard_add_follow_up: { params: [["p_inquiry_id", "uuid"], ["p_action", "text"], ["p_owner", "text"], ["p_due_on", "date"], ["p_created_by", "text"]] },
