@@ -43,7 +43,8 @@ export async function adminState(): Promise<AdminState> {
   const mode = authMode();
   if (mode === "off") return { status: "off" };
   if (mode === "demo") {
-    const member = await currentTeamMember();
+    const session = await currentTeamMember();
+    const member = session ? findMember(session.email) : null;
     return member ? { status: "ok", member } : { status: "signed_out" };
   }
 

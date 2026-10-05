@@ -6,19 +6,41 @@
 -- is called (signed team session); nothing here is reachable by anon or
 -- authenticated database roles.
 --
--- Nothing existing is altered except: two nullable columns on
--- project_inquiries, and the draft review states widened with 'superseded'.
+-- Nothing existing is altered except: one column on project_inquiries
+-- (owners, empty by default), and the draft review states widened with
+-- 'superseded'.
 
 -- ============================================================
--- 1. Owner and next action on the inquiry (sales side, not meeting side)
+-- 1. Ownership and follow-ups (sales side, not meeting side)
+--    An inquiry may be owned by one or more team members (by member id,
+--    e.g. 'omar', 'adam'; never by email). Every follow-up has exactly one
+--    responsible member and a due date.
 -- ============================================================
 
-alter table public.project_inquiries add column if not exists assigned_to text;
-alter table public.project_inquiries add column if not exists next_action text;
-alter table public.project_inquiries drop constraint if exists assigned_to_length;
-alter table public.project_inquiries add constraint assigned_to_length check (assigned_to is null or char_length(assigned_to) <= 320);
-alter table public.project_inquiries drop constraint if exists next_action_length;
-alter table public.project_inquiries add constraint next_action_length check (next_action is null or char_length(next_action) <= 500);
+alter table public.project_inquiries add column if not exists owners text[] not null default '{}';
+alter table public.project_inquiries drop constraint if exists owners_shape;
+alter table public.project_inquiries add constraint owners_shape
+  check (cardinality(owners) <= 5 and array_to_string(owners, ',') ~ '^([a-z][a-z0-9-]{0,31}(,|$))*$');
+
+create table if not exists public.inquiry_follow_ups (
+  id          uuid primary key default gen_random_uuid(),
+  inquiry_id  uuid not null references public.project_inquiries (id),
+  action      text not null,
+  owner       text not null,
+  due_on      date not null,
+  created_by  text not null,
+  created_at  timestamptz not null default now(),
+  done_at     timestamptz,
+  done_by     text,
+  constraint inquiry_follow_ups_action_length check (char_length(btrim(action)) between 1 and 500),
+  constraint inquiry_follow_ups_owner_shape check (owner ~ '^[a-z][a-z0-9-]{0,31}$'),
+  constraint inquiry_follow_ups_people_length check (char_length(created_by) between 1 and 320 and (done_by is null or char_length(done_by) between 1 and 320)),
+  constraint inquiry_follow_ups_done_together check ((done_at is null) = (done_by is null))
+);
+create index if not exists inquiry_follow_ups_open_idx on public.inquiry_follow_ups (inquiry_id, due_on) where done_at is null;
+alter table public.inquiry_follow_ups enable row level security;
+revoke all privileges on table public.inquiry_follow_ups from anon, authenticated, service_role;
+grant select, insert, update on table public.inquiry_follow_ups to service_role;
 
 -- ============================================================
 -- 2. Draft review: draft -> in_review -> approved; approving a version
@@ -100,8 +122,13 @@ as $$
         'booking_status', i.booking_status,
         'meeting_start_at', i.meeting_start_at,
         'lead_status', i.lead_status,
-        'assigned_to', i.assigned_to,
-        'next_action', i.next_action,
+        'owners', to_jsonb(i.owners),
+        'next_follow_up', (
+          select jsonb_build_object('action', f.action, 'owner', f.owner, 'due_on', f.due_on)
+          from public.inquiry_follow_ups as f
+          where f.inquiry_id = i.id and f.done_at is null
+          order by f.due_on, f.created_at limit 1),
+        'open_follow_ups', (select count(*) from public.inquiry_follow_ups as f where f.inquiry_id = i.id and f.done_at is null),
         'preparation_status', p.status,
         'preparation_error', p.last_error,
         'latest_draft', (
@@ -131,14 +158,15 @@ as $$
       'language', i.preferred_language, 'project_type', i.project_type,
       'project_description', i.project_description, 'budget_range', i.budget_range,
       'timeline', i.timeline, 'country', i.country,
-      'lead_status', i.lead_status, 'assigned_to', i.assigned_to, 'next_action', i.next_action),
+      'lead_status', i.lead_status, 'owners', to_jsonb(i.owners)),
     'meeting', jsonb_build_object(
       'booking_status', i.booking_status, 'meeting_start_at', i.meeting_start_at,
       'meeting_timezone', i.meeting_timezone, 'cal_booking_id', i.cal_booking_id),
     'preparation', (select to_jsonb(p) - 'inquiry_id' from public.inquiry_preparations as p where p.inquiry_id = i.id),
     'automation', (select coalesce(jsonb_agg(to_jsonb(c)), '[]'::jsonb) from public.automation_control as c where c.paused),
     'drafts', (select coalesce(jsonb_agg(to_jsonb(d) - 'inquiry_id' order by d.version desc), '[]'::jsonb) from public.preparation_drafts as d where d.inquiry_id = i.id),
-    'notes', (select coalesce(jsonb_agg(to_jsonb(n) - 'inquiry_id' order by n.created_at desc), '[]'::jsonb) from public.inquiry_notes as n where n.inquiry_id = i.id))
+    'notes', (select coalesce(jsonb_agg(to_jsonb(n) - 'inquiry_id' order by n.created_at desc), '[]'::jsonb) from public.inquiry_notes as n where n.inquiry_id = i.id),
+    'follow_ups', (select coalesce(jsonb_agg(to_jsonb(f) - 'inquiry_id' order by f.done_at is not null, f.due_on, f.created_at), '[]'::jsonb) from public.inquiry_follow_ups as f where f.inquiry_id = i.id))
   from public.project_inquiries as i
   where i.id = p_inquiry_id and i.deleted_at is null;
 $$;
@@ -147,16 +175,52 @@ $$;
 -- 5. Writes (each returns true when it changed something)
 -- ============================================================
 
-create or replace function public.dashboard_assign(p_inquiry_id uuid, p_owner text, p_next_action text)
+-- Owners as a JSON array of member ids (empty = unassigned). Duplicates are
+-- dropped; the shape is enforced by owners_shape.
+create or replace function public.dashboard_set_owners(p_inquiry_id uuid, p_owners jsonb)
 returns boolean
 language plpgsql
 security invoker
 set search_path = ''
 as $$
 begin
+  if jsonb_typeof(p_owners) <> 'array' then
+    raise exception 'owners_must_be_array';
+  end if;
   update public.project_inquiries
-  set assigned_to = nullif(btrim(p_owner), ''), next_action = nullif(btrim(p_next_action), ''), updated_at = now()
+  set owners = array(select distinct value from jsonb_array_elements_text(p_owners) as value order by value), updated_at = now()
   where id = p_inquiry_id and deleted_at is null;
+  return found;
+end;
+$$;
+
+create or replace function public.dashboard_add_follow_up(p_inquiry_id uuid, p_action text, p_owner text, p_due_on date, p_created_by text)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if not exists (select 1 from public.project_inquiries where id = p_inquiry_id and deleted_at is null) then
+    return false;
+  end if;
+  insert into public.inquiry_follow_ups (inquiry_id, action, owner, due_on, created_by)
+  values (p_inquiry_id, btrim(p_action), p_owner, p_due_on, p_created_by);
+  return true;
+end;
+$$;
+
+-- Marks an open follow-up done; the inquiry id must match (no cross-inquiry edits).
+create or replace function public.dashboard_complete_follow_up(p_inquiry_id uuid, p_follow_up_id uuid, p_done_by text)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  update public.inquiry_follow_ups
+  set done_at = now(), done_by = p_done_by
+  where id = p_follow_up_id and inquiry_id = p_inquiry_id and done_at is null;
   return found;
 end;
 $$;
@@ -308,7 +372,9 @@ begin
     'public.preparation_input(uuid)',
     'public.dashboard_inquiries()',
     'public.dashboard_inquiry(uuid)',
-    'public.dashboard_assign(uuid, text, text)',
+    'public.dashboard_set_owners(uuid, jsonb)',
+    'public.dashboard_add_follow_up(uuid, text, text, date, text)',
+    'public.dashboard_complete_follow_up(uuid, uuid, text)',
     'public.dashboard_add_note(uuid, text, text)',
     'public.dashboard_save_draft(uuid, jsonb, text, text)',
     'public.dashboard_review(uuid, integer, text, text)',

@@ -49,9 +49,10 @@ for (const [id, name, email, lang, type, budget, timeline, country, desc] of inq
 // One is already booked (through the real booking function).
 db.psql(`select public.apply_booking_created('11111111-0000-4000-8000-000000000002', 'demo-seed-booking', now() + interval '4 days', 'Africa/Cairo', now())`);
 
+// Synthetic sign-ins for the two team members (ids are what ownership stores).
 const team = [
-  { email: "omar.demo@mintapp.local", name: "Omar (demo)" },
-  { email: "adam.demo@mintapp.local", name: "Adam (demo)" },
+  { id: "omar", email: "omar.demo@mintapp.local", name: "Omar" },
+  { id: "adam", email: "adam.demo@mintapp.local", name: "Adam" },
 ];
 // Synthetic account that exists in the auth stand-in but is not on the allowlist.
 const outsider = "outsider.demo@mintapp.local";
@@ -61,7 +62,7 @@ let fakeAuth;
 if (auth === "demo") {
   authEnv = {
     ADMIN_AUTH: "demo",
-    TEAM_ACCOUNTS: JSON.stringify(await Promise.all(team.map(async (m) => ({ ...m, passwordHash: await hashPassword(password) })))),
+    TEAM_ACCOUNTS: JSON.stringify(await Promise.all(team.map(async ({ email, name }) => ({ email, name, passwordHash: await hashPassword(password) })))),
     DASHBOARD_SESSION_SECRET: randomBytes(32).toString("base64url"),
     SUPABASE_URL: "http://127.0.0.1:9",
   };

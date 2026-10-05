@@ -113,7 +113,7 @@ test("an inquiry with no booking is prepared, marked ready by one teammate and a
   await adam.goto(`/inquiries/${RESTAURANT}`);
   await adam.getByRole("button", { name: "Approve for the meeting" }).click();
   await expect(adam.locator('[data-review="approved"]')).toHaveText("Approved for the meeting");
-  await expect(adam.getByText("Last review change by Adam (demo)")).toBeVisible();
+  await expect(adam.getByText("Last review change by Adam")).toBeVisible();
 });
 
 test("manual path: copy a brief without contact details, paste the result, review", async ({ browser }) => {
@@ -181,20 +181,50 @@ test("booking, reschedule, generator failure, quota pause, manual recovery and c
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
-test("owner and next action show in the list; signing out ends access", async ({ browser }) => {
+// Clicks a form button and waits until the refreshed page has finished streaming.
+async function submit(page: Page, name: string) {
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined),
+    page.getByRole("button", { name, exact: true }).click(),
+  ]);
+  await response.finished();
+}
+
+test("shared ownership and follow-ups: names only, one responsible person and a due date each", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.goto(`/inquiries/${CLINIC}`);
-  await page.getByLabel("Owner", { exact: true }).selectOption(ADAM);
-  await page.getByLabel("Next action", { exact: true }).fill("Review the pasted draft");
-  const [saved] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes(`/inquiries/${CLINIC}`)),
-    page.getByRole("button", { name: "Save", exact: true }).click(),
-  ]);
-  // Let the refreshed page finish streaming before navigating away.
-  await saved.finished();
+  // Selectors offer people by name, never by sign-in email.
+  const choices = await page.getByLabel("Owner", { exact: true }).locator("option").allTextContents();
+  expect(choices).toEqual(["Unassigned", "Omar", "Adam", "Omar & Adam"]);
+  await page.getByLabel("Owner", { exact: true }).selectOption({ label: "Omar & Adam" });
+  await submit(page, "Save owner");
+  await expect(page.locator("[data-owners]")).toHaveText("Omar & Adam");
+
+  // A follow-up cannot be added without a responsible person and a due date.
+  await page.getByLabel("What needs to happen").fill("Send the meeting questions");
+  await page.getByRole("button", { name: "Add follow-up" }).click();
+  await expect(page.locator("[data-follow-up]")).toHaveCount(0);
+  const due = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
+  await page.getByLabel("Responsible").selectOption({ label: "Adam" });
+  await page.getByLabel("Due").fill(due);
+  await submit(page, "Add follow-up");
+  const item = page.locator('[data-follow-up="Send the meeting questions"]');
+  await expect(item).toContainText("Adam");
+  await expect(item).toContainText("Due");
+
   await page.goto("/inquiries");
-  await expect(page.locator("tbody")).toContainText("Adam (demo)");
-  await expect(page.locator("tbody")).toContainText("Review the pasted draft");
+  const row = page.locator("tbody tr", { hasText: "Synthetic Clinic Group" });
+  await expect(row).toContainText("Omar & Adam");
+  await expect(row).toContainText("Next: Send the meeting questions · Adam");
+  // Routine views never show team sign-in emails.
+  expect(await page.locator("body").innerText()).not.toContain("mintapp.local");
+
+  await page.goto(`/inquiries/${CLINIC}`);
+  expect(await page.locator("body").innerText()).not.toContain("mintapp.local");
+  await submit(page, "Mark done");
+  await expect(page.locator("[data-follow-up]")).toHaveCount(0);
+  await expect(page.getByText("Completed (1)")).toBeVisible();
+
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   await page.goto(`/inquiries/${CLINIC}`);

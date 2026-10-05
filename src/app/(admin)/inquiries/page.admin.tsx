@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/admin/auth/state";
-import { teamMembers } from "@/lib/admin/auth/config";
+import { ownersLabel, teamMembers, type TeamMember } from "@/lib/admin/auth/config";
 import { adminText } from "@/lib/admin/locale";
 import type { AdminLocale, AdminMessages } from "@/lib/admin/messages";
 import { listInquiries, type InquiryRow } from "@/lib/dashboard/data";
 import { selectGenerator } from "@/lib/preparation/config";
 import { excerpt, label, labelsFor } from "@/lib/dashboard/status";
-import { Chip, MEETING_TONES, REVIEW_TONES, card, eyebrow, formatDate, type ChipTone } from "@/components/dashboard/ui";
+import { Chip, MEETING_TONES, REVIEW_TONES, card, eyebrow, formatDate, formatDay, todayInCairo, type ChipTone } from "@/components/dashboard/ui";
 import { LogoMark } from "@/components/Logo";
 
 export const dynamic = "force-dynamic";
@@ -18,6 +18,7 @@ const STUCK = new Set(["failed", "paused"]);
 interface Row extends InquiryRow {
   attention: boolean;
   owner: string;
+  followUp: { text: string; overdue: boolean } | null;
   review: { text: string; tone: ChipTone; approved: boolean; inReview: boolean };
 }
 
@@ -59,6 +60,15 @@ function Client({ r, c }: { r: Row; c: Ctx }) {
   );
 }
 
+function FollowUpLine({ f, c, className }: { f: NonNullable<Row["followUp"]>; c: Ctx; className: string }) {
+  return (
+    <p dir="auto" className={`mb-0 text-[12.5px] ${f.overdue ? "font-semibold text-red-700" : "text-ink-soft"} ${className}`}>
+      {f.overdue && <span className="me-1">{c.t.detail.followUps.overdue} ·</span>}
+      {f.text}
+    </p>
+  );
+}
+
 function Stat({ value, title, tone }: { value: number; title: string; tone?: "attention" }) {
   return (
     <div className={`${card} flex flex-col-reverse px-4 py-3.5`}>
@@ -74,7 +84,8 @@ export default async function InquiriesPage() {
   const c: Ctx = { locale, t, labels: labelsFor(locale) };
   const [raw, generator] = [await listInquiries(), selectGenerator()];
   const automationLabel = generator.enabled ? `on (${generator.generator.id})` : generator.reason === "off" ? t.list.automationOff : `${t.list.automationOff} (${generator.reason.replaceAll("_", " ")})`;
-  const names = new Map(teamMembers().map((m) => [m.email, m.name]));
+  const members: TeamMember[] = teamMembers();
+  const today = todayInCairo();
 
   const rows: Row[] = raw.map((r) => {
     const waiting = (r.preparation_status === "queued" || r.preparation_status === "retry_scheduled") && !generator.enabled;
@@ -82,7 +93,13 @@ export default async function InquiriesPage() {
     return {
       ...r,
       attention: STUCK.has(r.preparation_status ?? "") || waiting || !r.preparation_status,
-      owner: r.assigned_to ? (names.get(r.assigned_to) ?? r.assigned_to) : t.list.unassigned,
+      owner: ownersLabel(r.owners, members, t.list.unassigned),
+      followUp: r.next_follow_up
+        ? {
+            text: t.list.followUp(r.next_follow_up.action, ownersLabel([r.next_follow_up.owner], members, "?"), formatDay(r.next_follow_up.due_on, locale)),
+            overdue: r.next_follow_up.due_on < today,
+          }
+        : null,
       review: r.approved_version
         ? { text: t.list.approved(r.approved_version), tone: "ok", approved: true, inReview: false }
         : latest
@@ -160,12 +177,8 @@ export default async function InquiriesPage() {
                       <Chip tone={r.review.tone}>{r.review.text}</Chip>
                     </td>
                     <td className="py-4 ps-4 pe-5">
-                      <span className={`whitespace-nowrap ${r.assigned_to ? "" : "text-ink-faint"}`}>{r.owner}</span>
-                      {r.next_action && (
-                        <div dir="auto" className="mt-1 max-w-[24ch] text-[12.5px] text-ink-soft">
-                          {r.next_action}
-                        </div>
-                      )}
+                      <span className={`whitespace-nowrap ${r.owners.length ? "" : "text-ink-faint"}`}>{r.owner}</span>
+                      {r.followUp && <FollowUpLine f={r.followUp} c={c} className="mt-1 max-w-[26ch]" />}
                     </td>
                   </tr>
                 ))}
@@ -188,11 +201,7 @@ export default async function InquiriesPage() {
                   <Chip tone={r.review.tone}>{r.review.text}</Chip>
                 </div>
                 {meetingTime(r, c) && <p className="mt-2 mb-0 text-[12.5px] text-ink-soft">{t.list.meetingAt(meetingTime(r, c)!)}</p>}
-                {r.next_action && (
-                  <p dir="auto" className="mt-1 mb-0 text-[12.5px] text-ink-soft">
-                    {t.list.next(r.next_action)}
-                  </p>
-                )}
+                {r.followUp && <FollowUpLine f={r.followUp} c={c} className="mt-1" />}
               </li>
             ))}
           </ul>

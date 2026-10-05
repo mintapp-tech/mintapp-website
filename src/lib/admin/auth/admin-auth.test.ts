@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { adminTeam, authMode, findMember } from "./config";
+import { adminTeam, authMode, findMember, memberIdFrom, ownerChoices, ownersLabel, withIds } from "./config";
 import { ABSOLUTE_SECONDS, IDLE_SECONDS, activityToken, checkActivity } from "./activity";
 import { enforceCookieOptions, tokenClaims } from "./supabase-client";
 import { adminHosts, isAdminHost, isAdminPage } from "../surface";
@@ -37,6 +37,33 @@ describe("sign-in mode", () => {
     expect(findMember("someone@example.com", { ...SUPABASE, NODE_ENV: "production" })).toBeNull();
     expect(adminTeam({ ADMIN_TEAM: JSON.stringify([{ email: "a@b.co", name: "A" }, { email: "A@b.co", name: "B" }]) })).toEqual([]);
     expect(adminTeam({ ADMIN_TEAM: "not json" })).toEqual([]);
+  });
+});
+
+describe("team members and ownership", () => {
+  const team = withIds([
+    { email: "omar@mintapp.tech", name: "Omar" },
+    { email: "adam@mintapp.tech", name: "Adam" },
+  ]);
+  test("members get stable ids; invalid or duplicate ids allow nobody", () => {
+    expect(team.map((m) => m.id)).toEqual(["omar", "adam"]);
+    expect(memberIdFrom("Omar (demo)")).toBe("omar");
+    expect(withIds([{ email: "a@b.co", name: "عمر" }])).toEqual([]); // needs an explicit id
+    expect(withIds([{ id: "omar", email: "a@b.co", name: "عمر" }]).map((m) => m.id)).toEqual(["omar"]);
+    expect(withIds([{ id: "x", email: "a@b.co", name: "A" }, { id: "x", email: "c@d.co", name: "C" }])).toEqual([]);
+    expect(adminTeam({ ADMIN_TEAM: TEAM })[0].id).toBe("omar");
+  });
+
+  test("owners read as names: Omar, Adam, Omar & Adam; choices never show emails", () => {
+    expect(ownersLabel([], team, "Unassigned")).toBe("Unassigned");
+    expect(ownersLabel(["adam"], team, "")).toBe("Adam");
+    expect(ownersLabel(["adam", "omar"], team, "")).toBe("Omar & Adam");
+    expect(ownerChoices(team)).toEqual([
+      { value: "omar", label: "Omar" },
+      { value: "adam", label: "Adam" },
+      { value: "adam,omar", label: "Omar & Adam" },
+    ]);
+    expect(JSON.stringify(ownerChoices(team))).not.toContain("@");
   });
 });
 
@@ -154,7 +181,7 @@ describe("admin state (Supabase mode)", () => {
     signedIn("omar@mintapp.tech", "aal2", TOTP);
     expect(await adminState()).toEqual({ status: "expired" }); // no activity recorded
     jar.set("__Host-mintapp-admin-activity", activityToken("sess-1", SECRET));
-    expect(await adminState()).toEqual({ status: "ok", member: { email: "omar@mintapp.tech", name: "Omar" } });
+    expect(await adminState()).toEqual({ status: "ok", member: { id: "omar", email: "omar@mintapp.tech", name: "Omar" } });
 
     auth.getUser.mockRejectedValue(new Error("network"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});

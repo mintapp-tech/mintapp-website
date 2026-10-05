@@ -27,7 +27,7 @@ before(async () => {
 });
 after(() => db?.stop());
 beforeEach(() => {
-  db.psql(`delete from public.inquiry_notes; delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
+  db.psql(`delete from public.inquiry_follow_ups; delete from public.inquiry_notes; delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
            delete from public.team_login_attempts; delete from public.inquiry_preparations; delete from public.project_inquiries;`);
 });
 
@@ -90,14 +90,44 @@ describe("drafts and review", () => {
 });
 
 describe("owner, notes, retry", () => {
-  test("owner and next action are stored; notes keep history and reject empty text", () => {
+  test("an inquiry can be shared by both team members; owners are member ids, never emails", () => {
     insertInquiry(A);
-    assert.equal(svc(`select public.dashboard_assign(${lit(A)}, 'adam@mintapp.tech', 'Call after reviewing the draft')`), "t");
+    const owners = (list) => svc(`select public.dashboard_set_owners(${lit(A)}, ${lit(JSON.stringify(list))}::jsonb)`);
+    assert.equal(owners(["omar", "adam", "omar"]), "t");
+    assert.deepEqual(detail(A).inquiry.owners, ["adam", "omar"], "duplicates dropped, stable order");
+    assert.equal(owners([]), "t");
+    assert.deepEqual(detail(A).inquiry.owners, []);
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_set_owners(${lit(A)}, '["omar@mintapp.tech"]'::jsonb)`), /owners_shape/);
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_set_owners(${lit(A)}, '"omar"'::jsonb)`), /owners_must_be_array/);
+  });
+
+  test("each follow-up has one responsible person and a due date; the list shows the next open one", () => {
+    insertInquiry(A);
+    const add = (action, owner, due) => svc(`select public.dashboard_add_follow_up(${lit(A)}, ${lit(action)}, ${lit(owner)}, ${due === null ? "null" : `${lit(due)}::date`}, 'omar@mintapp.tech')`);
+    assert.equal(add("Send meeting questions", "adam", "2026-10-09"), "t");
+    assert.equal(add("Call to confirm scope", "omar", "2026-10-07"), "t");
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'No owner', null, '2026-10-08'::date, 'x')`), /null value in column "owner"/);
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'No date', 'omar', null, 'x')`), /null value in column "due_on"/);
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'Two people', 'omar,adam', '2026-10-08'::date, 'x')`), /inquiry_follow_ups_owner_shape/);
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, '   ', 'omar', '2026-10-08'::date, 'x')`), /inquiry_follow_ups_action_length/);
+    assert.equal(svc(`select public.dashboard_add_follow_up(${lit(B)}, 'Unknown inquiry', 'omar', '2026-10-08'::date, 'x')`), "f");
+
+    const row = () => json(`select public.dashboard_inquiries()`)[0];
+    assert.deepEqual(row().next_follow_up, { action: "Call to confirm scope", owner: "omar", due_on: "2026-10-07" });
+    assert.equal(row().open_follow_ups, 2);
+    const first = detail(A).follow_ups[0];
+    assert.equal(svc(`select public.dashboard_complete_follow_up(${lit(B)}, ${lit(first.id)}, 'adam@mintapp.tech')`), "f", "no cross-inquiry edits");
+    assert.equal(svc(`select public.dashboard_complete_follow_up(${lit(A)}, ${lit(first.id)}, 'adam@mintapp.tech')`), "t");
+    assert.equal(svc(`select public.dashboard_complete_follow_up(${lit(A)}, ${lit(first.id)}, 'adam@mintapp.tech')`), "f", "already done");
+    assert.deepEqual(row().next_follow_up.action, "Send meeting questions");
+    assert.deepEqual(detail(A).follow_ups.map((f) => [f.action, f.done_by]), [["Send meeting questions", null], ["Call to confirm scope", "adam@mintapp.tech"]]);
+  });
+
+  test("notes keep history and reject empty text", () => {
+    insertInquiry(A);
     svc(`select public.dashboard_add_note(${lit(A)}, 'omar@mintapp.tech', 'First note')`);
     svc(`select public.dashboard_add_note(${lit(A)}, 'adam@mintapp.tech', 'Second note')`);
-    const d = detail(A);
-    assert.equal(d.inquiry.assigned_to, "adam@mintapp.tech");
-    assert.deepEqual(d.notes.map((n) => n.body), ["Second note", "First note"]);
+    assert.deepEqual(detail(A).notes.map((n) => n.body), ["Second note", "First note"]);
     assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_note(${lit(A)}, 'x', '   ')`), /inquiry_notes_body_length/);
   });
 
@@ -183,10 +213,13 @@ describe("one inquiry, end to end through the real booking functions", () => {
 });
 
 describe("access", () => {
-  test("anon and authenticated cannot call the dashboard functions or read notes", () => {
+  test("anon and authenticated cannot call the dashboard functions or read notes and follow-ups", () => {
     for (const role of ["anon", "authenticated"]) {
       assert.match(db.psqlExpectError(`set role ${role}; select public.dashboard_inquiries();`), /permission denied/);
       assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.inquiry_notes;`), /permission denied/);
+      assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.inquiry_follow_ups;`), /permission denied/);
+      assert.match(db.psqlExpectError(`set role ${role}; select public.dashboard_set_owners('${A}', '[]'::jsonb);`), /permission denied/);
+      assert.match(db.psqlExpectError(`set role ${role}; select public.dashboard_add_follow_up('${A}', 'x', 'omar', current_date, 'x');`), /permission denied/);
       assert.match(db.psqlExpectError(`set role ${role}; select public.team_login_locked('${"a".repeat(64)}');`), /permission denied/);
     }
   });

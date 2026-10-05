@@ -10,7 +10,7 @@ import { getSupabaseServerClient } from "@/lib/supabase-server";
 // demo only (never in production): the same SQL functions on a throwaway
 // local PostgreSQL started by scripts/dashboard-demo.mjs.
 
-type PgType = "uuid" | "text" | "integer" | "boolean" | "jsonb" | "timestamptz";
+type PgType = "uuid" | "text" | "integer" | "boolean" | "jsonb" | "timestamptz" | "date";
 type Signature = { params: [string, PgType][]; returnsSet?: boolean };
 
 // The only functions callable through the gateway, with their parameters in order.
@@ -28,7 +28,9 @@ export const SQL_FUNCTIONS = {
   preparation_input: { params: [["p_inquiry_id", "uuid"]] },
   dashboard_inquiries: { params: [] },
   dashboard_inquiry: { params: [["p_inquiry_id", "uuid"]] },
-  dashboard_assign: { params: [["p_inquiry_id", "uuid"], ["p_owner", "text"], ["p_next_action", "text"]] },
+  dashboard_set_owners: { params: [["p_inquiry_id", "uuid"], ["p_owners", "jsonb"]] },
+  dashboard_add_follow_up: { params: [["p_inquiry_id", "uuid"], ["p_action", "text"], ["p_owner", "text"], ["p_due_on", "date"], ["p_created_by", "text"]] },
+  dashboard_complete_follow_up: { params: [["p_inquiry_id", "uuid"], ["p_follow_up_id", "uuid"], ["p_done_by", "text"]] },
   dashboard_add_note: { params: [["p_inquiry_id", "uuid"], ["p_author", "text"], ["p_body", "text"]] },
   dashboard_save_draft: { params: [["p_inquiry_id", "uuid"], ["p_content", "jsonb"], ["p_source", "text"], ["p_author", "text"]] },
   dashboard_review: { params: [["p_inquiry_id", "uuid"], ["p_version", "integer"], ["p_to", "text"], ["p_reviewer", "text"]] },

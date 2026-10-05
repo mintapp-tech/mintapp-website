@@ -68,7 +68,7 @@ export default function Shell({ member, demo, locale, t, children }: { member: T
       </main>
       <footer className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-5 text-[12.5px] text-ink-faint sm:px-6">
         <span>
-          {t.common.signedInAs(member.name, member.email)} {t.common.privacy}
+          {t.common.signedInAs(member.name)} {t.common.privacy}
         </span>
         <form action={logoutEverywhereAction}>
           <SubmitButton className="cursor-pointer text-ink-soft underline underline-offset-4 hover:text-ink disabled:opacity-60">{t.common.signOutEverywhere}</SubmitButton>

@@ -16,8 +16,9 @@ export interface InquiryRow {
   booking_status: string;
   meeting_start_at: string | null;
   lead_status: string;
-  assigned_to: string | null;
-  next_action: string | null;
+  owners: string[];
+  next_follow_up: { action: string; owner: string; due_on: string } | null;
+  open_follow_ups: number;
   preparation_status: string | null;
   preparation_error: string | null;
   latest_draft: { version: number; review_status: string; source: string } | null;
@@ -53,8 +54,7 @@ export interface InquiryDetail {
     timeline: string | null;
     country: string | null;
     lead_status: string;
-    assigned_to: string | null;
-    next_action: string | null;
+    owners: string[];
   };
   meeting: { booking_status: string; meeting_start_at: string | null; meeting_timezone: string | null; cal_booking_id: string | null };
   preparation: {
@@ -70,6 +70,18 @@ export interface InquiryDetail {
   automation: { provider: string; paused_reason: string | null; paused_at: string | null }[];
   drafts: DraftRow[];
   notes: { id: string; author: string; body: string; created_at: string }[];
+  follow_ups: FollowUp[];
+}
+
+export interface FollowUp {
+  id: string;
+  action: string;
+  owner: string;
+  due_on: string;
+  created_by: string;
+  created_at: string;
+  done_at: string | null;
+  done_by: string | null;
 }
 
 const sql = () => getSqlGateway();
@@ -78,7 +90,11 @@ export const listInquiries = async () => (await sql().call<InquiryRow[] | null>(
 export const getInquiry = (id: string) => sql().call<InquiryDetail | null>("dashboard_inquiry", { p_inquiry_id: id });
 export const getPreparationInput = (id: string) => sql().call<InquiryForPreparation | null>("preparation_input", { p_inquiry_id: id });
 
-export const assign = (id: string, owner: string | null, nextAction: string | null) => sql().call<boolean>("dashboard_assign", { p_inquiry_id: id, p_owner: owner, p_next_action: nextAction });
+export const setOwners = (id: string, owners: string[]) => sql().call<boolean>("dashboard_set_owners", { p_inquiry_id: id, p_owners: owners });
+export const addFollowUp = (id: string, action: string, owner: string, dueOn: string, createdBy: string) =>
+  sql().call<boolean>("dashboard_add_follow_up", { p_inquiry_id: id, p_action: action, p_owner: owner, p_due_on: dueOn, p_created_by: createdBy });
+export const completeFollowUp = (id: string, followUpId: string, doneBy: string) =>
+  sql().call<boolean>("dashboard_complete_follow_up", { p_inquiry_id: id, p_follow_up_id: followUpId, p_done_by: doneBy });
 export const addNote = (id: string, author: string, body: string) => sql().call<boolean>("dashboard_add_note", { p_inquiry_id: id, p_author: author, p_body: body });
 export const saveDraft = (id: string, body: string, source: "manual" | "edited", author: string) =>
   sql().call<number | null>("dashboard_save_draft", { p_inquiry_id: id, p_content: { format: "text", body }, p_source: source, p_author: author });

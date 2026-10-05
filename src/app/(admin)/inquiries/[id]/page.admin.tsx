@@ -5,9 +5,9 @@ import type { ReactNode } from "react";
 import CopyButton from "@/components/dashboard/CopyButton";
 import DraftBody from "@/components/dashboard/DraftBody";
 import SubmitButton from "@/components/dashboard/SubmitButton";
-import { Chip, MEETING_TONES, REVIEW_TONES, button, card, eyebrow, field, formatDate, primary } from "@/components/dashboard/ui";
+import { Chip, MEETING_TONES, REVIEW_TONES, button, card, eyebrow, field, formatDate, formatDay, primary, todayInCairo } from "@/components/dashboard/ui";
 import { requireAdmin } from "@/lib/admin/auth/state";
-import { teamMembers } from "@/lib/admin/auth/config";
+import { ownerChoices, ownersLabel, teamMembers } from "@/lib/admin/auth/config";
 import { adminText } from "@/lib/admin/locale";
 import { getInquiry } from "@/lib/dashboard/data";
 import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "@/lib/dashboard/brief";
@@ -16,7 +16,9 @@ import { isLocalDashboardDemo } from "@/lib/sql-gateway";
 import { selectGenerator } from "@/lib/preparation/config";
 import {
   addNoteAction,
-  assignAction,
+  addFollowUpAction,
+  completeFollowUpAction,
+  setOwnersAction,
   demoBookingAction,
   demoGenerateAction,
   markManualAction,
@@ -81,7 +83,13 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
   const when = (iso: string) => formatDate(iso, true, locale);
   const { inquiry, meeting, preparation, drafts, notes } = detail;
   const members = teamMembers();
-  const nameOf = (email: string | null) => (email ? (members.find((m) => m.email === email)?.name ?? email) : "");
+  // People are shown by name; an unknown sign-in (a former member) by its local part only.
+  const nameOf = (email: string | null) => (email ? (members.find((m) => m.email === email)?.name ?? email.split("@")[0]) : "");
+  const memberName = (memberId: string) => ownersLabel([memberId], members, memberId);
+  const today = todayInCairo();
+  const openFollowUps = detail.follow_ups.filter((f) => !f.done_at);
+  const doneFollowUps = detail.follow_ups.filter((f) => f.done_at);
+  const ownersValue = [...inquiry.owners].sort().join(",");
   const generator = selectGenerator();
   const demo = isLocalDashboardDemo();
   const prepNotice = preparationNotice(preparation, { enabled: generator.enabled, provider: generator.enabled ? generator.generator.id : undefined, paused: detail.automation }, locale);
@@ -336,30 +344,116 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
         </div>
 
         <div className="flex flex-col gap-5">
-          <Section title={d.owner.title} id="owner">
-            <form action={assignAction} className="flex flex-col gap-3">
+          <Section title={d.owner.title} id="owner" aside={<span className="text-[13px] font-semibold" data-owners>{ownersLabel(inquiry.owners, members, d.owner.unassigned)}</span>}>
+            <form action={setOwnersAction} className="flex flex-col gap-3">
               <Hidden inquiryId={id} />
               <div className="flex flex-col gap-1.5">
                 <label htmlFor="owner-select" className="text-[13px] font-semibold">
                   {d.owner.owner}
                 </label>
-                <select id="owner-select" name="owner" defaultValue={inquiry.assigned_to ?? ""} className={field}>
+                <select id="owner-select" name="owners" defaultValue={ownersValue} className={field}>
                   <option value="">{d.owner.unassigned}</option>
-                  {members.map((m) => (
-                    <option key={m.email} value={m.email}>
-                      {m.name} ({m.email})
+                  {ownerChoices(members).map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
                     </option>
                   ))}
                 </select>
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label htmlFor="next-action" className="text-[13px] font-semibold">
-                  {d.owner.next}
-                </label>
-                <input id="next-action" name="nextAction" defaultValue={inquiry.next_action ?? ""} maxLength={500} dir="auto" placeholder={d.owner.placeholder} className={field} />
+                <p className="m-0 text-[12.5px] text-ink-faint">{d.owner.help}</p>
               </div>
               <SubmitButton className={`${button} self-start`}>{d.owner.save}</SubmitButton>
             </form>
+          </Section>
+
+          <Section title={d.followUps.title} id="follow-ups" aside={openFollowUps.length ? <span className="text-[12.5px] text-ink-faint">{openFollowUps.length}</span> : null}>
+            {openFollowUps.length > 0 ? (
+              <ul className="m-0 mb-4 list-none p-0" data-follow-ups>
+                {openFollowUps.map((f) => {
+                  const overdue = f.due_on < today;
+                  return (
+                    <li key={f.id} className="flex items-start justify-between gap-3 border-b border-line py-3 first:pt-0" data-follow-up={f.action}>
+                      <div className="min-w-0">
+                        <p dir="auto" className="m-0 text-[14px] font-medium">
+                          {f.action}
+                        </p>
+                        <p className="m-0 mt-1 flex flex-wrap items-center gap-1.5 text-[12.5px] text-ink-soft">
+                          <span className="font-semibold text-ink">{memberName(f.owner)}</span>
+                          <span aria-hidden>·</span>
+                          {overdue ? (
+                            <Chip tone="attention">
+                              {d.followUps.overdue} · {formatDay(f.due_on, locale)}
+                            </Chip>
+                          ) : f.due_on === today ? (
+                            <Chip tone="warn">{d.followUps.today}</Chip>
+                          ) : (
+                            <span>{d.followUps.dueOn(formatDay(f.due_on, locale))}</span>
+                          )}
+                        </p>
+                      </div>
+                      <form action={completeFollowUpAction} className="flex-none">
+                        <Hidden inquiryId={id} extra={{ followUpId: f.id }} />
+                        <SubmitButton className={`${button} px-3 py-1.5 text-[12.5px]`}>{d.followUps.done}</SubmitButton>
+                      </form>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="mt-0 mb-4 text-[13px] text-ink-faint">{d.followUps.none}</p>
+            )}
+            <form action={addFollowUpAction} className="flex flex-col gap-3 rounded-xl bg-surface-2/60 p-3.5">
+              <Hidden inquiryId={id} />
+              <div className="flex flex-col gap-1.5">
+                <label htmlFor="follow-up-action" className="text-[13px] font-semibold">
+                  {d.followUps.action}
+                </label>
+                <input id="follow-up-action" name="action" required maxLength={500} dir="auto" placeholder={d.followUps.placeholder} className={field} />
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="follow-up-owner" className="text-[13px] font-semibold">
+                    {d.followUps.responsible}
+                  </label>
+                  <select id="follow-up-owner" name="owner" required defaultValue="" className={field}>
+                    <option value="" disabled>
+                      {d.followUps.choose}
+                    </option>
+                    {members.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label htmlFor="follow-up-due" className="text-[13px] font-semibold">
+                    {d.followUps.due}
+                  </label>
+                  <input id="follow-up-due" name="dueOn" type="date" required min={today} className={field} />
+                </div>
+              </div>
+              <SubmitButton className={`${primary} self-start`}>{d.followUps.add}</SubmitButton>
+            </form>
+            {doneFollowUps.length > 0 && (
+              <details className="group mt-4 border-t border-line pt-3">
+                <summary className={summary}>
+                  <Chevron />
+                  {d.followUps.completed(doneFollowUps.length)}
+                </summary>
+                <ul className="mt-2 mb-0 list-none p-0 text-[13px]">
+                  {doneFollowUps.map((f) => (
+                    <li key={f.id} className="border-t border-line py-2 first:border-t-0">
+                      <span dir="auto" className="line-through decoration-ink/30">
+                        {f.action}
+                      </span>
+                      <span className="block text-[12px] text-ink-faint">
+                        {memberName(f.owner)} · {d.followUps.doneBy(nameOf(f.done_by), when(f.done_at!))}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
           </Section>
 
           <Section title={d.notes.title} id="notes" aside={notes.length ? <span className="text-[12.5px] text-ink-faint">{notes.length}</span> : null}>

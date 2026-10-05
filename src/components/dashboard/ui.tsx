@@ -17,6 +17,14 @@ export function formatDate(iso: string, withTime = true, locale: "en" | "ar" = "
   }).format(new Date(iso));
 }
 
+// A calendar date (YYYY-MM-DD), shown without any time-zone shift.
+export function formatDay(day: string, locale: "en" | "ar" = "en"): string {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG-u-nu-latn" : "en-GB", { timeZone: "UTC", day: "numeric", month: "short", year: "numeric" }).format(new Date(`${day}T00:00:00Z`));
+}
+
+// Today's date in Cairo, as YYYY-MM-DD.
+export const todayInCairo = (now = new Date()) => new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
+
 export type ChipTone = "neutral" | "attention" | "warn" | "info" | "ok";
 
 const CHIP_TONES: Record<ChipTone, string> = {
