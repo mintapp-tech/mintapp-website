@@ -307,6 +307,10 @@ test("repeated wrong passwords lock sign-in for that account", async ({ page }) 
   // Even the right password is refused while locked.
   await page.getByLabel("Email").fill(ADAM);
   await page.getByLabel("Password").fill(DEMO_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
+  // Wait for this attempt's own answer: the alert is already showing from before.
+  const [answer] = await Promise.all([page.waitForResponse(isLoginPost), page.getByRole("button", { name: "Sign in" }).click()]);
+  await answer.finished();
+  await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
+  await expect(page).toHaveURL(/\/login$/);
   await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
 });
