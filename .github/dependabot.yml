@@ -1,0 +1,14 @@
+# Dependency maintenance (see docs/security-baseline.md). Weekly npm update
+# pull requests, grouped so routine minor and patch updates arrive together;
+# security updates are raised separately as soon as GitHub knows of them.
+# Takes effect once this file is on the default branch.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      minor-and-patch:
+        update-types: [minor, patch]
