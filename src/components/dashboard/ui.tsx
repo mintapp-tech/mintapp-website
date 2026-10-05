@@ -1,17 +1,14 @@
 import clsx from "clsx";
 import type { ReactNode } from "react";
 
-// Shared building blocks for the private team dashboard.
+// Shared building blocks for the private admin application.
 
-// Latin text in Manrope, Arabic in Alexandria; the browser picks per
-// character. --font-team is defined in src/app/internal/layout.tsx.
-export const TEAM_FONT = { fontFamily: "var(--font-team, system-ui, sans-serif)" };
-
-// The team works in Cairo time; all dashboard times are shown in it.
+// The team works in Cairo time; all dashboard times are shown in it, in the
+// interface language (Arabic with Western digits, matching the public site).
 export const TIME_ZONE = "Africa/Cairo";
 
-export function formatDate(iso: string, withTime = true): string {
-  return new Intl.DateTimeFormat("en-GB", {
+export function formatDate(iso: string, withTime = true, locale: "en" | "ar" = "en"): string {
+  return new Intl.DateTimeFormat(locale === "ar" ? "ar-EG-u-nu-latn" : "en-GB", {
     timeZone: TIME_ZONE,
     day: "numeric",
     month: "short",
@@ -47,4 +44,4 @@ export const button =
 export const primary =
   "inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-dark px-4 py-2 text-[13.5px] font-semibold text-white transition-colors hover:bg-mint-deep disabled:cursor-wait disabled:opacity-60";
 export const field = "w-full rounded-xl border border-ink/15 bg-surface px-3.5 py-2.5 text-[14.5px] transition-colors focus:border-mint-deep focus:outline-none focus:ring-2 focus:ring-mint/40";
-export const eyebrow = "m-0 text-[11.5px] font-bold tracking-[0.08em] text-ink-faint uppercase";
+export const eyebrow = "m-0 text-[11.5px] font-bold tracking-[0.08em] text-ink-faint uppercase rtl:text-[12.5px] rtl:tracking-normal";

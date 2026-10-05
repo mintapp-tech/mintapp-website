@@ -3,7 +3,7 @@ import { getSqlGateway } from "@/lib/sql-gateway";
 import type { InquiryForPreparation } from "@/lib/preparation/input";
 
 // Typed access to the dashboard's database functions. Callers must have
-// passed requireTeamMember() first.
+// passed requireAdmin() first.
 
 export interface InquiryRow {
   id: string;

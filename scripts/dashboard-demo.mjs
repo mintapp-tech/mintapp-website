@@ -1,20 +1,31 @@
-// LOCAL DEMO of the private team dashboard, on synthetic data only.
+// LOCAL DEMO of the private admin application, on synthetic data only.
 //
 // Starts a throwaway PostgreSQL cluster with every migration, seeds synthetic
-// inquiries, creates a local demo account and runs `next dev` against it.
-// Supabase and email settings are overridden with dead local values, so the
-// demo cannot reach the real Supabase project or send mail. Ctrl+C stops
-// everything and deletes the cluster.
+// inquiries and runs the admin application (APP_SURFACE=admin) with `next dev`
+// against it. Supabase data and email settings are overridden with dead local
+// values, so the demo cannot reach the real Supabase project or send mail.
+// Ctrl+C stops everything and deletes the cluster.
 //
-//   node scripts/dashboard-demo.mjs [--port 3200]
-//   (DASHBOARD_DEMO_PASSWORD may set the demo password, e.g. for tests)
+//   node scripts/dashboard-demo.mjs [--port 3200] [--auth demo|supabase]
+//
+//   --auth demo      (default) the custom team login, for this local demo only.
+//   --auth supabase  the deployed sign-in path (Supabase Auth with a required
+//                    authenticator app and the ADMIN_TEAM allowlist), against a
+//                    LOCAL TEST STAND-IN for Supabase Auth
+//                    (tests/admin/fake-supabase-auth.mjs), not a real project.
+//
+//   DASHBOARD_DEMO_PASSWORD may set the demo password (e.g. for tests).
 
 import { spawn } from "node:child_process";
 import { randomBytes } from "node:crypto";
 import { startCluster, lit } from "../tests/db/pg-harness.mjs";
+import { startFakeAuth } from "../tests/admin/fake-supabase-auth.mjs";
 import { hashPassword } from "./lib/team-password.mjs";
 
-const port = Number(process.argv[process.argv.indexOf("--port") + 1]) || 3200;
+const arg = (name, fallback) => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : fallback);
+const port = Number(arg("--port")) || 3200;
+const auth = arg("--auth", "demo");
+if (auth !== "demo" && auth !== "supabase") throw new Error("--auth must be demo or supabase");
 const password = process.env.DASHBOARD_DEMO_PASSWORD || randomBytes(12).toString("base64url");
 
 const db = await startCluster();
@@ -38,36 +49,64 @@ for (const [id, name, email, lang, type, budget, timeline, country, desc] of inq
 // One is already booked (through the real booking function).
 db.psql(`select public.apply_booking_created('11111111-0000-4000-8000-000000000002', 'demo-seed-booking', now() + interval '4 days', 'Africa/Cairo', now())`);
 
-const accounts = [
-  { email: "omar.demo@mintapp.local", name: "Omar (demo)", passwordHash: await hashPassword(password) },
-  { email: "adam.demo@mintapp.local", name: "Adam (demo)", passwordHash: await hashPassword(password) },
+const team = [
+  { email: "omar.demo@mintapp.local", name: "Omar (demo)" },
+  { email: "adam.demo@mintapp.local", name: "Adam (demo)" },
 ];
+// Synthetic account that exists in the auth stand-in but is not on the allowlist.
+const outsider = "outsider.demo@mintapp.local";
+
+let authEnv;
+let fakeAuth;
+if (auth === "demo") {
+  authEnv = {
+    ADMIN_AUTH: "demo",
+    TEAM_ACCOUNTS: JSON.stringify(await Promise.all(team.map(async (m) => ({ ...m, passwordHash: await hashPassword(password) })))),
+    DASHBOARD_SESSION_SECRET: randomBytes(32).toString("base64url"),
+    SUPABASE_URL: "http://127.0.0.1:9",
+  };
+} else {
+  fakeAuth = await startFakeAuth({ port: Number(arg("--auth-port")) || 0, users: [...team.map((m) => m.email), outsider].map((email) => ({ email, password })) });
+  authEnv = {
+    SUPABASE_URL: `http://127.0.0.1:${fakeAuth.port}`,
+    SUPABASE_PUBLISHABLE_KEY: "local-stand-in-publishable-key",
+    ADMIN_TEAM: JSON.stringify(team),
+    ADMIN_SESSION_SECRET: randomBytes(32).toString("base64url"),
+  };
+}
 
 const env = {
   ...process.env,
+  APP_SURFACE: "admin",
   DASHBOARD_DEMO: "1",
   DASHBOARD_LOCAL_PG_PORT: String(db.port),
-  TEAM_ACCOUNTS: JSON.stringify(accounts),
-  DASHBOARD_SESSION_SECRET: randomBytes(32).toString("base64url"),
   PREPARATION_GENERATOR: process.env.PREPARATION_GENERATOR ?? "off",
   // Dead values: nothing in the demo can reach the real project or send mail.
-  SUPABASE_URL: "http://127.0.0.1:9",
   SUPABASE_SECRET_KEY: "demo-not-a-key",
   RESEND_API_KEY: "",
   EMAIL_SENDING_MODE: "disabled",
+  ...authEnv,
 };
 
-console.log(`\nLocal dashboard demo (synthetic data only)\n  URL:      http://localhost:${port}/internal/login\n  Accounts: ${accounts.map((a) => a.email).join(", ")}\n  Password: ${process.env.DASHBOARD_DEMO_PASSWORD ? "(from DASHBOARD_DEMO_PASSWORD)" : password}\n  Stop:     Ctrl+C (the database is deleted)\n`);
+console.log(`\nLocal admin demo (synthetic data only)
+  URL:      http://localhost:${port}/login
+  Sign-in:  ${auth === "demo" ? "custom demo login (local only)" : `Supabase Auth flow against a LOCAL STAND-IN on port ${fakeAuth.port}, authenticator app required`}
+  Accounts: ${team.map((a) => a.email).join(", ")}${auth === "supabase" ? ` (and ${outsider}, not allowlisted)` : ""}
+  Password: ${process.env.DASHBOARD_DEMO_PASSWORD ? "(from DASHBOARD_DEMO_PASSWORD)" : password}
+  Database: 127.0.0.1:${db.port} (throwaway)
+  Stop:     Ctrl+C (the database is deleted)\n`);
 
 const next = spawn(process.platform === "win32" ? "npx.cmd" : "npx", ["next", "dev", "-p", String(port)], { env, stdio: "inherit", shell: process.platform === "win32" });
 const stop = () => {
   next.kill();
+  fakeAuth?.close();
   db.stop();
   process.exit(0);
 };
 process.on("SIGINT", stop);
 process.on("SIGTERM", stop);
 next.on("exit", () => {
+  fakeAuth?.close();
   db.stop();
   process.exit(0);
 });

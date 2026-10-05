@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireTeamMember } from "@/lib/team-auth/guard";
+import { requireAdmin } from "@/lib/admin/auth/state";
 import * as data from "@/lib/dashboard/data";
 import { getSqlGateway, isLocalDashboardDemo } from "@/lib/sql-gateway";
 import { selectGenerator } from "@/lib/preparation/config";
@@ -17,12 +17,12 @@ import type { PreparationGenerator } from "@/lib/preparation/generator";
 const id = z.string().uuid();
 const text = (max: number) => z.string().max(max);
 const refresh = (inquiryId: string) => {
-  revalidatePath(`/internal/inquiries/${inquiryId}`);
-  revalidatePath("/internal/inquiries");
+  revalidatePath(`/inquiries/${inquiryId}`);
+  revalidatePath("/inquiries");
 };
 
 export async function assignAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   const owner = text(320).parse(form.get("owner") ?? "");
   const nextAction = text(500).parse(form.get("nextAction") ?? "");
@@ -31,7 +31,7 @@ export async function assignAction(form: FormData) {
 }
 
 export async function addNoteAction(form: FormData) {
-  const member = await requireTeamMember();
+  const member = await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   const body = z.string().trim().min(1).max(4000).safeParse(form.get("body"));
   if (!body.success) return;
@@ -40,7 +40,7 @@ export async function addNoteAction(form: FormData) {
 }
 
 export async function saveDraftAction(form: FormData) {
-  const member = await requireTeamMember();
+  const member = await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   const body = z.string().trim().min(1).max(20000).safeParse(form.get("body"));
   if (!body.success) return;
@@ -50,7 +50,7 @@ export async function saveDraftAction(form: FormData) {
 }
 
 export async function reviewAction(form: FormData) {
-  const member = await requireTeamMember();
+  const member = await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   const version = z.coerce.number().int().min(1).parse(form.get("version"));
   const to = z.enum(["in_review", "approved", "draft"]).parse(form.get("to"));
@@ -59,21 +59,21 @@ export async function reviewAction(form: FormData) {
 }
 
 export async function retryAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   await data.retryPreparation(inquiryId);
   refresh(inquiryId);
 }
 
 export async function markManualAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   await data.markManual(inquiryId);
   refresh(inquiryId);
 }
 
 export async function resumeAutomationAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   const provider = z.enum(["mock", "codecraft"]).parse(form.get("provider"));
   await data.resumeAutomation(provider);
@@ -82,7 +82,7 @@ export async function resumeAutomationAction(form: FormData) {
 
 // "Prepare this inquiry now" with the configured generator (off by default).
 export async function prepareNowAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   const inquiryId = id.parse(form.get("inquiryId"));
   const selection = selectGenerator();
   if (!selection.enabled) return;
@@ -113,7 +113,7 @@ const demoGenerator = (outcome: "mock" | "invalid" | "quota"): PreparationGenera
       };
 
 export async function demoGenerateAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   if (!isLocalDashboardDemo()) return;
   const inquiryId = id.parse(form.get("inquiryId"));
   const outcome = z.enum(["mock", "invalid", "quota"]).parse(form.get("outcome"));
@@ -122,7 +122,7 @@ export async function demoGenerateAction(form: FormData) {
 }
 
 export async function demoBookingAction(form: FormData) {
-  await requireTeamMember();
+  await requireAdmin();
   if (!isLocalDashboardDemo()) return;
   const inquiryId = id.parse(form.get("inquiryId"));
   const kind = z.enum(["book", "reschedule", "cancel"]).parse(form.get("kind"));

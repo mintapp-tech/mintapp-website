@@ -1,10 +1,11 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { logoutAction, logoutEverywhereAction } from "@/app/internal/login/actions";
-import type { TeamMember } from "@/lib/team-auth/session";
+import { logoutAction, logoutEverywhereAction } from "@/app/(admin)/login/actions";
+import type { TeamMember } from "@/lib/admin/auth/config";
+import type { AdminLocale, AdminMessages } from "@/lib/admin/messages";
 import { LogoMark } from "@/components/Logo";
+import LanguageSwitch from "./LanguageSwitch";
 import SubmitButton from "./SubmitButton";
-import { TEAM_FONT } from "./ui";
 
 const initials = (name: string) =>
   name
@@ -16,32 +17,39 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase();
 
-// Dashboard chrome: English, left-to-right; inquiry content inside uses dir="auto".
-export default function Shell({ member, demo, children }: { member: TeamMember; demo: boolean; children: ReactNode }) {
+// Admin chrome in the chosen interface language; inquiry content inside keeps
+// its own direction (dir="auto").
+export default function Shell({ member, demo, locale, t, children }: { member: TeamMember; demo: boolean; locale: AdminLocale; t: AdminMessages; children: ReactNode }) {
   return (
-    <div lang="en" dir="ltr" style={TEAM_FONT} className="min-h-screen bg-canvas text-ink">
+    <div className="min-h-screen bg-canvas text-ink">
       <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:start-3 focus:top-3 focus:z-10 focus:rounded-full focus:bg-surface focus:px-4 focus:py-2">
-        Skip to content
+        {t.common.skip}
       </a>
       {demo && (
         <div role="note" className="bg-amber-100 px-4 py-2 text-center text-[12.5px] font-semibold text-amber-900">
-          Local demo: synthetic inquiries on a throwaway local database. Simulated actions are marked as such.
+          {t.common.demoBanner}
         </div>
       )}
       <header className="bg-dark text-white">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3.5 sm:px-6">
-          <Link href="/internal/inquiries" className="flex items-center gap-2.5 rounded-md text-white">
+          <Link href="/inquiries" className="flex items-center gap-2.5 rounded-md text-white" dir="ltr">
             <LogoMark size={24} variant="white" />
             <span className="text-[18px] font-bold tracking-[-0.03em]">mintapp</span>
-            <span className="rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-bold tracking-[0.08em] text-mint uppercase">Team</span>
+            <span className="rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-bold tracking-[0.08em] text-mint uppercase">Admin</span>
           </Link>
-          <nav aria-label="Dashboard" className="order-3 w-full sm:order-none sm:w-auto">
-            <Link href="/internal/inquiries" aria-current="page" className="inline-block border-b-2 border-mint pb-0.5 text-[14px] font-semibold text-white">
-              Inquiries
+          <nav aria-label={t.common.nav} className="order-3 w-full sm:order-none sm:w-auto">
+            <Link href="/inquiries" aria-current="page" className="inline-block border-b-2 border-mint pb-0.5 text-[14px] font-semibold text-white">
+              {t.common.inquiries}
             </Link>
           </nav>
-          <div className="ms-auto flex items-center gap-3 text-[13.5px]">
-            <span className="hidden items-center gap-2 text-white/80 sm:flex">
+          <div className="ms-auto flex items-center gap-2.5 text-[13.5px] sm:gap-3">
+            <LanguageSwitch
+              to={locale === "ar" ? "en" : "ar"}
+              label={t.common.switchLanguage}
+              title={t.common.switchLanguageLabel}
+              className="cursor-pointer rounded-full px-2.5 py-1.5 font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+            />
+            <span className="hidden items-center gap-2 text-white/80 md:flex">
               <span aria-hidden className="grid size-7 place-items-center rounded-full bg-mint text-[11.5px] font-bold text-dark">
                 {initials(member.name)}
               </span>
@@ -49,7 +57,7 @@ export default function Shell({ member, demo, children }: { member: TeamMember; 
             </span>
             <form action={logoutAction}>
               <SubmitButton className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-white/25 px-3.5 py-1.5 font-semibold text-white hover:border-white/60 disabled:opacity-60">
-                Sign out
+                {t.common.signOut}
               </SubmitButton>
             </form>
           </div>
@@ -60,10 +68,10 @@ export default function Shell({ member, demo, children }: { member: TeamMember; 
       </main>
       <footer className="mx-auto flex max-w-[1200px] flex-wrap items-center justify-between gap-3 border-t border-line px-4 py-5 text-[12.5px] text-ink-faint sm:px-6">
         <span>
-          Signed in as {member.name} ({member.email}). Private to the Mintapp team. Times are Cairo time.
+          {t.common.signedInAs(member.name, member.email)} {t.common.privacy}
         </span>
         <form action={logoutEverywhereAction}>
-          <SubmitButton className="cursor-pointer text-ink-soft underline underline-offset-4 hover:text-ink disabled:opacity-60">Sign out everywhere</SubmitButton>
+          <SubmitButton className="cursor-pointer text-ink-soft underline underline-offset-4 hover:text-ink disabled:opacity-60">{t.common.signOutEverywhere}</SubmitButton>
         </form>
       </footer>
     </div>

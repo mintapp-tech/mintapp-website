@@ -1,12 +1,11 @@
 import "server-only";
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { getSqlGateway } from "@/lib/sql-gateway";
 import { SESSION_COOKIE, SESSION_IDLE_SECONDS, sessionIdHash, verifySessionToken, type TeamMember } from "./session";
 
-// Every dashboard page and every dashboard server action calls one of these
-// before reading or changing anything; layouts and the proxy are not relied on.
-// A session counts only if its signed cookie verifies AND its server-side
+// LOCAL DEMO ONLY: the custom team login's session check, used through
+// src/lib/admin/auth/state.ts when authMode() is "demo" (never in a
+// production build). A session counts only if its signed cookie verifies AND its server-side
 // record is live (not revoked, not expired, used within the idle limit). If
 // that record cannot be checked, access is refused.
 
@@ -24,10 +23,4 @@ export async function currentTeamMember(): Promise<TeamMember | null> {
     console.error("team_session_check_failed");
     return null;
   }
-}
-
-export async function requireTeamMember(): Promise<TeamMember> {
-  const member = await currentTeamMember();
-  if (!member) redirect("/internal/login");
-  return member;
 }

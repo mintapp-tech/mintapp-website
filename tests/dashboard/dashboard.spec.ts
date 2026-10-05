@@ -15,11 +15,11 @@ async function signIn(browser: Browser, email: string): Promise<Page> {
   const context = await browser.newContext();
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://localhost:3201" });
   const page = await context.newPage();
-  await page.goto("/internal/login");
+  await page.goto("/login");
   await page.getByLabel("Email").fill(email);
   await page.getByLabel("Password").fill(DEMO_PASSWORD);
   await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/internal/inquiries");
+  await page.waitForURL("**/inquiries");
   return page;
 }
 
@@ -32,9 +32,9 @@ async function openPastePanel(page: Page) {
 const status = (page: Page) => page.getByRole("status").filter({ has: page.locator("p") }).first();
 
 test("inquiry data is never served without a valid team session", async ({ page, request }) => {
-  for (const path of ["/internal/inquiries", `/internal/inquiries/${CLINIC}`]) {
+  for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
     await page.goto(path);
-    await expect(page).toHaveURL(/\/internal\/login$/);
+    await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator("body")).not.toContainText("physiotherapy");
     const raw = await request.get(path, { maxRedirects: 0 });
     expect([302, 303, 307, 308]).toContain(raw.status());
@@ -42,19 +42,19 @@ test("inquiry data is never served without a valid team session", async ({ page,
   }
   // A forged or tampered session is rejected by the page itself, not just the proxy.
   await page.context().addCookies([{ name: "__Host-mintapp_team", value: "eyJ2IjoxLCJlIjoib21hci5kZW1vQG1pbnRhcHAubG9jYWwifQ.forged", domain: "localhost", path: "/", secure: true, httpOnly: true, sameSite: "Strict" }]);
-  await page.goto(`/internal/inquiries/${CLINIC}`);
-  await expect(page).toHaveURL(/\/internal\/login$/);
+  await page.goto(`/inquiries/${CLINIC}`);
+  await expect(page).toHaveURL(/\/login$/);
   await expect(page.locator("body")).not.toContainText("physiotherapy");
 });
 
 test("a wrong password is refused with a generic message", async ({ page }) => {
-  await page.goto("/internal/login");
+  await page.goto("/login");
   await page.getByLabel("Email").fill(OMAR);
   await page.getByLabel("Password").fill("not-the-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.locator('p[role="alert"]')).toHaveText("That email and password do not match a Mintapp team account.");
-  await page.goto("/internal/inquiries");
-  await expect(page).toHaveURL(/\/internal\/login$/);
+  await page.goto("/inquiries");
+  await expect(page).toHaveURL(/\/login$/);
 });
 
 test("list: all synthetic inquiries, Arabic intact, and stalled preparation flagged", async ({ browser }) => {
@@ -80,7 +80,7 @@ test("phones get cards instead of the table, with nothing wider than the screen"
   const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(await overflow()).toBe(0);
   for (const id of [CLINIC, CRAFTS]) {
-    await page.goto(`/internal/inquiries/${id}`);
+    await page.goto(`/inquiries/${id}`);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect(await overflow()).toBe(0);
   }
@@ -92,16 +92,16 @@ test("an unknown inquiry shows a not-found page inside the dashboard", async ({ 
   const page = await signIn(browser, OMAR);
   // The page streams behind a loading state, so the status is already sent
   // (200) when the inquiry turns out not to exist; it stays noindex.
-  await page.goto("/internal/inquiries/99999999-0000-4000-8000-000000000000");
+  await page.goto("/inquiries/99999999-0000-4000-8000-000000000000");
   await expect(page.getByRole("heading", { name: "Inquiry not found" })).toBeVisible();
   await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
   await page.getByRole("link", { name: "Back to all inquiries" }).click();
-  await expect(page).toHaveURL(/\/internal\/inquiries$/);
+  await expect(page).toHaveURL(/\/inquiries$/);
 });
 
 test("an inquiry with no booking is prepared, marked ready by one teammate and approved by the other", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
-  await omar.goto(`/internal/inquiries/${RESTAURANT}`);
+  await omar.goto(`/inquiries/${RESTAURANT}`);
   await expect(omar.locator('[data-status="meeting"]')).toHaveText("Not booked");
   await omar.getByRole("button", { name: "Run mock generator" }).click();
   await expect(omar.locator('[data-draft-version="1"]')).toContainText("Mock generator (placeholder, not real analysis)");
@@ -110,7 +110,7 @@ test("an inquiry with no booking is prepared, marked ready by one teammate and a
   await expect(omar.locator('[data-review="in_review"]')).toBeVisible();
 
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/internal/inquiries/${RESTAURANT}`);
+  await adam.goto(`/inquiries/${RESTAURANT}`);
   await adam.getByRole("button", { name: "Approve for the meeting" }).click();
   await expect(adam.locator('[data-review="approved"]')).toHaveText("Approved for the meeting");
   await expect(adam.getByText("Last review change by Adam (demo)")).toBeVisible();
@@ -118,7 +118,7 @@ test("an inquiry with no booking is prepared, marked ready by one teammate and a
 
 test("manual path: copy a brief without contact details, paste the result, review", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/internal/inquiries/${CLINIC}`);
+  await page.goto(`/inquiries/${CLINIC}`);
   await expect(page.locator('[data-brief="provided"]')).toContainText("Budget range (client-stated)Not sure yet");
   await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeWeb app");
   await page.getByRole("button", { name: "Copy brief for Claude" }).click();
@@ -139,7 +139,7 @@ test("manual path: copy a brief without contact details, paste the result, revie
 
 test("booking, reschedule, generator failure, quota pause, manual recovery and cancellation keep everything", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/internal/inquiries/${CRAFTS}`);
+  await page.goto(`/inquiries/${CRAFTS}`);
   await expect(page.locator('[data-brief="description"]')).toContainText("الحرفيين");
 
   await page.getByRole("button", { name: "Simulate booking" }).click();
@@ -183,25 +183,25 @@ test("booking, reschedule, generator failure, quota pause, manual recovery and c
 
 test("owner and next action show in the list; signing out ends access", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/internal/inquiries/${CLINIC}`);
+  await page.goto(`/inquiries/${CLINIC}`);
   await page.getByLabel("Owner", { exact: true }).selectOption(ADAM);
   await page.getByLabel("Next action", { exact: true }).fill("Review the pasted draft");
   const [saved] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes(`/internal/inquiries/${CLINIC}`)),
+    page.waitForResponse((r) => r.request().method() === "POST" && r.url().includes(`/inquiries/${CLINIC}`)),
     page.getByRole("button", { name: "Save", exact: true }).click(),
   ]);
   // Let the refreshed page finish streaming before navigating away.
   await saved.finished();
-  await page.goto("/internal/inquiries");
+  await page.goto("/inquiries");
   await expect(page.locator("tbody")).toContainText("Adam (demo)");
   await expect(page.locator("tbody")).toContainText("Review the pasted draft");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page).toHaveURL(/\/internal\/login$/);
-  await page.goto(`/internal/inquiries/${CLINIC}`);
-  await expect(page).toHaveURL(/\/internal\/login$/);
+  await expect(page).toHaveURL(/\/login$/);
+  await page.goto(`/inquiries/${CLINIC}`);
+  await expect(page).toHaveURL(/\/login$/);
 });
 
-const isLoginPost = (r: Response) => r.request().method() === "POST" && new URL(r.url()).pathname === "/internal/login";
+const isLoginPost = (r: Response) => r.request().method() === "POST" && new URL(r.url()).pathname === "/login";
 const isActionPost = (r: Response) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined;
 const setCookieOf = async (r: Response) => (await r.headersArray()).filter((h) => h.name.toLowerCase() === "set-cookie").map((h) => h.value).join("\n");
 const sessionCookie = async (context: BrowserContext) => (await context.cookies()).find((c) => c.name === "__Host-mintapp_team");
@@ -211,7 +211,7 @@ async function replay(browser: Browser, cookie: NonNullable<Awaited<ReturnType<t
   const context = await browser.newContext();
   await context.addCookies([cookie]);
   const page = await context.newPage();
-  await page.goto("/internal/inquiries");
+  await page.goto("/inquiries");
   const url = page.url();
   await context.close();
   return url;
@@ -220,11 +220,11 @@ async function replay(browser: Browser, cookie: NonNullable<Awaited<ReturnType<t
 test("the session cookie is host-only, HttpOnly, Secure and SameSite=Strict; a copied cookie dies at sign-out", async ({ browser }) => {
   const context = await browser.newContext();
   const page = await context.newPage();
-  await page.goto("/internal/login");
+  await page.goto("/login");
   await page.getByLabel("Email").fill(OMAR);
   await page.getByLabel("Password").fill(DEMO_PASSWORD);
   const [login] = await Promise.all([page.waitForResponse(isLoginPost), page.getByRole("button", { name: "Sign in" }).click()]);
-  await page.waitForURL("**/internal/inquiries");
+  await page.waitForURL("**/inquiries");
 
   const issued = await setCookieOf(login);
   expect(issued).toMatch(/^__Host-mintapp_team=[^;]{40,};/);
@@ -235,17 +235,17 @@ test("the session cookie is host-only, HttpOnly, Secure and SameSite=Strict; a c
   expect(cookie.expires - Date.now() / 1000).toBeGreaterThan(43_100);
 
   // A copy works while the session is live...
-  expect(await replay(browser, cookie)).toMatch(/\/internal\/inquiries$/);
+  expect(await replay(browser, cookie)).toMatch(/\/inquiries$/);
 
   const [logout] = await Promise.all([page.waitForResponse(isActionPost), page.getByRole("button", { name: "Sign out", exact: true }).click()]);
-  await expect(page).toHaveURL(/\/internal\/login$/);
+  await expect(page).toHaveURL(/\/login$/);
   const cleared = await setCookieOf(logout);
   expect(cleared).toMatch(/^__Host-mintapp_team=;/);
   for (const attribute of [/; Path=\/(;|$)/, /; Max-Age=0(;|$)/, /; Secure(;|$)/i]) expect(cleared).toMatch(attribute);
   expect(await sessionCookie(context)).toBeUndefined();
 
   // ...and is refused after sign-out, because the session was revoked on the server.
-  expect(await replay(browser, cookie)).toMatch(/\/internal\/login$/);
+  expect(await replay(browser, cookie)).toMatch(/\/login$/);
   await context.close();
 });
 
@@ -254,21 +254,21 @@ test("sign out everywhere ends that person's other sessions only", async ({ brow
   const phone = await signIn(browser, ADAM);
   const omar = await signIn(browser, OMAR);
   await phone.getByRole("button", { name: "Sign out everywhere" }).click();
-  await expect(phone).toHaveURL(/\/internal\/login$/);
-  await laptop.goto("/internal/inquiries");
-  await expect(laptop).toHaveURL(/\/internal\/login$/);
-  await omar.goto("/internal/inquiries");
-  await expect(omar).toHaveURL(/\/internal\/inquiries$/);
+  await expect(phone).toHaveURL(/\/login$/);
+  await laptop.goto("/inquiries");
+  await expect(laptop).toHaveURL(/\/login$/);
+  await omar.goto("/inquiries");
+  await expect(omar).toHaveURL(/\/inquiries$/);
 });
 
 test("repeated wrong passwords lock sign-in for that account", async ({ page }) => {
-  await page.goto("/internal/login");
+  await page.goto("/login");
   for (let i = 0; i < 8; i++) {
     await page.getByLabel("Email").fill(ADAM);
     await page.getByLabel("Password").fill(`wrong-${i}`);
     // Wait for each attempt's server response before the next one.
     await Promise.all([
-      page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/internal/login"),
+      page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/login"),
       page.getByRole("button", { name: "Sign in" }).click(),
     ]);
     await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();

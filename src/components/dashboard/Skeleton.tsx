@@ -1,9 +1,9 @@
 // Loading placeholders that match the layout of the page being loaded.
 const bar = "animate-pulse rounded-md bg-ink/[0.07]";
 
-export function ListSkeleton() {
+export function ListSkeleton({ label }: { label: string }) {
   return (
-    <div role="status" aria-label="Loading inquiries">
+    <div role="status" aria-label={label}>
       <div className={`${bar} h-3 w-36`} />
       <div className={`${bar} mt-3 mb-7 h-8 w-44`} />
       <div className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
@@ -24,9 +24,9 @@ export function ListSkeleton() {
   );
 }
 
-export function DetailSkeleton() {
+export function DetailSkeleton({ label }: { label: string }) {
   return (
-    <div role="status" aria-label="Loading inquiry">
+    <div role="status" aria-label={label}>
       <div className={`${bar} h-3.5 w-28`} />
       <div className={`${bar} mt-6 h-3 w-40`} />
       <div className={`${bar} mt-3 h-8 w-72 max-w-full`} />

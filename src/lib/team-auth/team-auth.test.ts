@@ -124,6 +124,8 @@ describe("server-side session check", () => {
   beforeEach(async () => {
     env = envWith(await hashPassword(PASSWORD));
     for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
+    // The custom login is the local demo's; it is only active in demo mode.
+    for (const [k, v] of Object.entries({ ADMIN_AUTH: "demo", DASHBOARD_DEMO: "1", DASHBOARD_LOCAL_PG_PORT: "5999" })) vi.stubEnv(k, v);
     cookieJar.clear();
     sqlCall.mockReset();
   });
@@ -145,14 +147,14 @@ describe("server-side session check", () => {
   });
 
   test("every action that changes data refuses to run without a session", async () => {
-    const actions = await import("@/app/internal/inquiries/actions");
+    const actions = await import("@/app/(admin)/inquiries/actions");
     const form = new FormData();
     form.set("inquiryId", "11111111-0000-4000-8000-000000000001");
     const names = Object.keys(actions).filter((k) => typeof (actions as Record<string, unknown>)[k] === "function");
     expect(names.length).toBeGreaterThanOrEqual(10);
     for (const name of names) {
       sqlCall.mockReset();
-      await expect((actions as unknown as Record<string, (f: FormData) => Promise<void>>)[name](form), name).rejects.toThrow("REDIRECT:/internal/login");
+      await expect((actions as unknown as Record<string, (f: FormData) => Promise<void>>)[name](form), name).rejects.toThrow("REDIRECT:/login");
       expect(sqlCall, name).not.toHaveBeenCalled();
     }
     // A cookie whose server-side session is gone is refused the same way.
@@ -160,7 +162,7 @@ describe("server-side session check", () => {
     for (const name of names) {
       sqlCall.mockReset();
       sqlCall.mockResolvedValueOnce(false);
-      await expect((actions as unknown as Record<string, (f: FormData) => Promise<void>>)[name](form), name).rejects.toThrow("REDIRECT:/internal/login");
+      await expect((actions as unknown as Record<string, (f: FormData) => Promise<void>>)[name](form), name).rejects.toThrow("REDIRECT:/login");
       expect(sqlCall.mock.calls.map((c) => c[0]), name).toEqual(["team_session_touch"]);
     }
   });
