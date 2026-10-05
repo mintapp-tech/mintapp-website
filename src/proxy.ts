@@ -28,13 +28,32 @@ function resolveTargetLocale(request: NextRequest): SupportedLocale {
 // only the private admin pages, only on its configured hosts. Every admin
 // page and action still checks the signed-in team member itself.
 
+// Content Security Policy: everything from this origin only (fonts are
+// self-hosted by next/font; the authenticator QR is a data: image). Inline
+// scripts are allowed because Next.js bootstraps with them; no external
+// script, connection, frame, object or form target is.
+const ADMIN_CSP = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "production" ? "" : " 'unsafe-eval'"}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "font-src 'self'",
+  `connect-src 'self'${process.env.NODE_ENV === "production" ? "" : " ws:"}`,
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 const ADMIN_HEADERS: Record<string, string> = {
   "X-Robots-Tag": "noindex, nofollow",
   "Cache-Control": "private, no-store",
   "X-Frame-Options": "DENY",
-  "Content-Security-Policy": "frame-ancestors 'none'",
+  "Content-Security-Policy": ADMIN_CSP,
   "Referrer-Policy": "same-origin",
   "X-Content-Type-Options": "nosniff",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  "Cross-Origin-Opener-Policy": "same-origin",
 };
 
 function withAdminHeaders(response: NextResponse) {

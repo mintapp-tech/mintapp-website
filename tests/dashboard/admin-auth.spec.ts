@@ -66,7 +66,13 @@ test("nothing private is served without signing in, and only on the admin host",
   // Another hostname pointed at the admin deployment gets nothing.
   expect((await request.get("/login", { headers: { Host: "www.example.com" } })).status()).toBe(404);
   // The admin application is never indexed.
-  expect((await request.get("/login")).headers()["x-robots-tag"]).toBe("noindex, nofollow");
+  const headers = (await request.get("/login")).headers();
+  expect(headers["x-robots-tag"]).toBe("noindex, nofollow");
+  // Only this origin may supply scripts, connections, frames or form targets.
+  for (const directive of ["default-src 'self'", "object-src 'none'", "form-action 'self'", "frame-ancestors 'none'", "base-uri 'self'"]) expect(headers["content-security-policy"]).toContain(directive);
+  expect(headers["content-security-policy"]).not.toMatch(/https?:/);
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["permissions-policy"]).toContain("camera=()");
 });
 
 test("a wrong password, or the right password for an account outside the allowlist, gets the same refusal", async ({ browser }) => {
