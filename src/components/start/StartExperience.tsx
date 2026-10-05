@@ -271,7 +271,8 @@ export default function StartExperience() {
               <div className="mx-auto mt-8 max-w-[440px] text-start">
                 <div className="mb-3 text-[15px] font-semibold">{t.success.nextTitle}</div>
                 <div className="flex flex-col gap-2.5">
-                  {t.success.next.map((point) => (
+                  {/* The calendar is shown right below, so the first step is the client's: book a time. */}
+                  {[submitted.bookingContext ? t.success.nextBook : t.success.nextNoCalendar, ...t.success.next].map((point) => (
                     <div key={point} className="flex items-start gap-2.5 text-[14.5px] leading-[1.7] text-ink-soft">
                       <span className="mt-2 block h-[5px] w-[5px] flex-none rounded-full bg-mint-deep" />
                       {point}

@@ -176,6 +176,8 @@ export interface HomeContent {
     };
     nextTitle: string;
     next: string[];
+    nextBook: string;
+    nextNoCalendar: string;
     home: string;
     note: string;
   };

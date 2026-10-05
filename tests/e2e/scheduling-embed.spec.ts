@@ -52,6 +52,23 @@ test.describe("valid accepted response renders the scheduling section", () => {
     expect(calls.length).toBe(1);
     expect(calls[0].calLink).toBe("mintapp/mintapp-discovery-call");
     expect(calls[0].config["metadata[bookingContext]"]).toBe(FAKE_CONTEXT);
+
+    // The calendar is right there, so the next step is the client's: choose a time.
+    await expect(page.getByText("Choose an available time below for your discovery call")).toBeVisible();
+    await expect(page.getByText(/We reach out to arrange|We contact you to arrange/)).toHaveCount(0);
+  });
+
+  test("Arabic: the next step tells the client to choose an available time", async ({ page }) => {
+    await installTurnstileMock(page);
+    await installCalEmbedMock(page);
+    await mockInquiriesRoute(page, () => ({ status: 201, body: { id: FAKE_UUID, bookingContext: FAKE_CONTEXT } }));
+
+    await page.goto("/ar/start");
+    await fillMinimumValidForm(page);
+    await submitForm(page);
+
+    await expect(page.getByText("اختر وقتًا متاحًا أدناه لمكالمتك التعريفية")).toBeVisible();
+    await expect(page.getByText(/نتواصل معك لتحديد موعد اجتماع|نتواصل معك لتحديد وقت/)).toHaveCount(0);
   });
 });
 
@@ -68,6 +85,9 @@ test.describe("malformed or missing context shows the unavailable fallback, neve
     await expect(page.getByRole("heading", { name: "We have your idea" })).toBeVisible();
     await expect(page.getByText("Online scheduling is unavailable right now.")).toBeVisible();
     await expect(page.getByRole("region")).toHaveCount(0);
+    // Without a calendar, the next step stays with us.
+    await expect(page.getByText("We contact you to arrange a time for your discovery call")).toBeVisible();
+    await expect(page.getByText("Choose an available time below")).toHaveCount(0);
   });
 
   test("a non-string bookingContext (malformed shape) is treated the same as absent", async ({ page }) => {

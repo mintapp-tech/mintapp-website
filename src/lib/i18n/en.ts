@@ -157,7 +157,7 @@ export const en: HomeContent = {
     sidePoints: [
       { t: "We read your idea", d: "We go through what you sent and note what needs clarifying." },
       { t: "We prepare", d: "We put together an initial direction to anchor the conversation." },
-      { t: "We follow up", d: "We reach out to arrange next steps, including a meeting." },
+      { t: "You book the call", d: "Right after you send, you can pick an available time for a 30-minute discovery call." },
     ],
     prepClarify: "We review every idea internally first, and may sketch an initial direction before we speak — that stays with our team until then, where we'll walk you through it.",
     sideNote: "We won't send a proposal or pricing before we've spoken.",
@@ -177,11 +177,10 @@ export const en: HomeContent = {
       languageNote: "",
     },
     nextTitle: "What happens next",
-    next: [
-      "We review the idea and the intended users",
-      "We identify the right platform to start with",
-      "We reach out to arrange a meeting",
-    ],
+    next: ["We review the idea and the intended users", "We identify the right platform to start with"],
+    // Shown first, depending on whether the calendar below could be loaded.
+    nextBook: "Choose an available time below for your discovery call",
+    nextNoCalendar: "We contact you to arrange a time for your discovery call",
     home: "Back to home",
     note: "Questions in the meantime? Write to hello@mintapp.tech",
   },
