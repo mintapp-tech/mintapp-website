@@ -82,3 +82,44 @@ export const MEETING_LABELS: Record<string, string> = {
   completed: "Completed",
   no_show: "No show",
 };
+
+export const PREPARATION_LABELS: Record<string, string> = {
+  queued: "Queued",
+  running: "Preparing",
+  retry_scheduled: "Retrying",
+  succeeded: "Draft generated",
+  failed: "Failed",
+  paused: "Paused",
+  manual: "Manual",
+};
+
+export const LEAD_LABELS: Record<string, string> = {
+  new: "New",
+  reviewing: "Reviewing",
+  qualified: "Qualified",
+  converted: "Converted",
+  not_a_fit: "Not a fit",
+  archived: "Archived",
+};
+
+// The public form's controlled vocabulary (project_type_values constraint).
+export const PROJECT_TYPE_LABELS: Record<string, string> = {
+  website: "Website",
+  web_app: "Web app",
+  mobile_app: "Mobile app",
+  website_and_mobile: "Website and mobile app",
+  other: "Other",
+};
+
+export const label = (labels: Record<string, string>, value: string | null | undefined, fallback = "None") =>
+  value ? (labels[value] ?? value.replaceAll("_", " ")) : fallback;
+
+// The list receives the first `max` characters of each description; end a
+// cut-off excerpt at a word boundary with an ellipsis rather than mid-word.
+export function excerpt(text: string, max = 140): string {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length < max) return clean;
+  const cut = clean.slice(0, max);
+  const space = cut.lastIndexOf(" ");
+  return `${(space > max * 0.6 ? cut.slice(0, space) : cut).replace(/[\s.,،؛:;-]+$/u, "")}…`;
+}

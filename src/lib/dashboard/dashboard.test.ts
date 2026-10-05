@@ -1,7 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { figuresIn } from "@/lib/preparation/draft";
 import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "./brief";
-import { preparationNotice } from "./status";
+import { LEAD_LABELS, PREPARATION_LABELS, PROJECT_TYPE_LABELS, excerpt, label, preparationNotice } from "./status";
 
 const inquiry = {
   preferred_language: "en",
@@ -81,5 +81,22 @@ describe("preparation notices: nothing waits silently", () => {
   test("failure reasons are explained in plain language", () => {
     expect(preparationNotice({ ...base, status: "failed", last_error: "invalid_unsupported_number" }, on).detail).toContain("figures the client never stated");
     expect(preparationNotice({ ...base, status: "paused", last_error: "quota_exhausted" }, on).detail).toContain("free allowance is used up");
+  });
+});
+
+describe("display labels", () => {
+  test("excerpts end at a word boundary with an ellipsis, in English and Arabic", () => {
+    expect(excerpt("Short description.")).toBe("Short description.");
+    const en = "We run three physiotherapy clinics in Cairo. Patients book by phone and we lose track of cancellations. We want an online booking system whe";
+    expect(excerpt(en)).toBe("We run three physiotherapy clinics in Cairo. Patients book by phone and we lose track of cancellations. We want an online booking system…");
+    const ar = "لدينا مدرسة خاصة في الإسكندرية. أولياء الأمور يسألون عن المصروفات والمواعيد عبر الهاتف طوال الوقت. نريد موقعًا يعرض معلومات المدرسة ويتيح ال";
+    expect(excerpt(ar, ar.length)).toBe("لدينا مدرسة خاصة في الإسكندرية. أولياء الأمور يسألون عن المصروفات والمواعيد عبر الهاتف طوال الوقت. نريد موقعًا يعرض معلومات المدرسة ويتيح…");
+  });
+
+  test("every value the database allows has a label", () => {
+    for (const v of ["website", "web_app", "mobile_app", "website_and_mobile", "other"]) expect(PROJECT_TYPE_LABELS[v]).toBeTruthy();
+    for (const v of ["new", "reviewing", "qualified", "converted", "not_a_fit", "archived"]) expect(LEAD_LABELS[v]).toBeTruthy();
+    for (const v of ["queued", "running", "retry_scheduled", "succeeded", "failed", "paused", "manual"]) expect(PREPARATION_LABELS[v]).toBeTruthy();
+    expect(label(PROJECT_TYPE_LABELS, null, "Not stated")).toBe("Not stated");
   });
 });
