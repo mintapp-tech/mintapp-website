@@ -56,7 +56,7 @@ synthetic demo. `authMode()` refuses it in any production build.
 | `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_PUBLISHABLE_KEY` | publishable (anon) key, for Supabase Auth |
 | `SUPABASE_SECRET_KEY` | service key, for dashboard data (server only) |
-| `ADMIN_TEAM` | `[{"email":"…","name":"Omar"},{"email":"…","name":"Adam"}]` |
+| `ADMIN_TEAM` | `[{"id":"omar","email":"…","name":"Omar"},{"id":"adam","email":"…","name":"Adam"}]` (ids are what ownership stores; names are what people see) |
 | `ADMIN_SESSION_SECRET` | 32+ random characters |
 
 Leave `PREPARATION_GENERATOR` unset (off). Never set `TEAM_ACCOUNTS`,
@@ -73,13 +73,16 @@ applied in this order, on top of the five already on `main`
    `project_inquiries` that queues a job in the same transaction (tested
    through the live form's own insert path, as `service_role`); existing
    inquiries are backfilled as `manual`, never queued for automation.
-2. `20261006000000_add_preparation_dashboard.sql`: owner and next action on
-   `project_inquiries`, team notes, draft review states, and the
-   `dashboard_*` functions. All functions are `service_role` only.
+2. `20261006000000_add_preparation_dashboard.sql`: shared ownership
+   (`owners`, member ids, empty by default) on `project_inquiries`,
+   follow-ups (one responsible member and a due date each), team notes,
+   draft review states, and the `dashboard_*` functions. All functions are
+   `service_role` only.
 
 **Not for any remote database:** `supabase/local-demo/*` (the demo login's
-throttling and sessions). A test fails if those objects appear in
-`supabase/migrations/`.
+throttling and sessions). **Only for the isolated review project:**
+`supabase/review/*` (the synthetic-review marker and synthetic inquiries).
+Tests fail if either appears in `supabase/migrations/`.
 
 **Deferred booking work:** `20261001000000_add_cal_booking_event_ledger.sql`
 exists only on the unmerged branch `feat/pending-booking-workflow`. It is not
@@ -107,3 +110,11 @@ Take a backup before applying (the Free plan has no automatic backups).
 5. Run the admin suites against the first admin Preview (cookie attributes over
    real HTTPS, MFA, sign-out revocation), and confirm the public site's build
    still has no admin routes.
+
+## Related
+
+- `docs/admin-review-preview.md`: the synthetic review Preview and testing
+  sign-in against real Supabase Auth.
+- `docs/security-baseline.md`: the security baseline and Mintapp's status.
+- `docs/crm-roadmap.md`: what this release covers and the later CRM phases.
+- `docs/outreach-readiness.md`: the controlled live test of the client path.
