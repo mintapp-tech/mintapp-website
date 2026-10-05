@@ -50,6 +50,15 @@ describe("every inquiry gets a job", () => {
     assert.equal(prep(A).status, "queued");
   });
 
+  test("the live form's insert (as service_role, returning the id) still succeeds and queues a job", () => {
+    // Mirrors src/lib/insert-inquiry.ts: the trigger runs with the caller's
+    // privileges, so a missing grant would break public submissions.
+    const id = asService(`insert into public.project_inquiries (full_name, email, project_description, preferred_language, consent_given, consent_at, source_page, submission_token)
+                          values ('Form Client', 'form@example.com', 'Submitted through the public form.', 'ar', true, now(), '/ar/start', ${lit(B)}) returning id`).split("\n")[0];
+    assert.match(id, /^[0-9a-f-]{36}$/);
+    assert.equal(prep(id).status, "queued");
+  });
+
   test("if the inquiry insert rolls back, no orphan job remains; if it commits, the job exists", () => {
     db.psqlExpectError(`begin; insert into public.project_inquiries (id, full_name, email, preferred_language, project_description, consent_given, consent_at) values (${lit(A)}, 'X', 'x@example.com', 'en', 'Desc', true, now()); select 1/0; commit;`);
     assert.equal(Number(db.psql(`select count(*) from public.inquiry_preparations where inquiry_id = ${lit(A)}`)), 0);

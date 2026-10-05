@@ -1,4 +1,5 @@
-// Database-level tests for supabase/migrations/20261007000000_add_team_sessions.sql.
+// Database-level tests for supabase/local-demo/ (the local demo's custom team
+// login: sessions and throttling). Not part of any remote migration.
 //   npm run test:db
 
 import { after, before, beforeEach, describe, test } from "node:test";
@@ -16,6 +17,7 @@ const touch = (hash, email = EMAIL, idle = 7200) => svc(`select public.team_sess
 before(async () => {
   db = await startCluster();
   for (const file of db.migrations) db.applyMigration(file);
+  db.applyLocalDemo();
 });
 after(() => db?.stop());
 beforeEach(() => db.psql("delete from public.team_sessions; delete from public.team_login_attempts;"));

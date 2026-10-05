@@ -1,3 +1,6 @@
+-- LOCAL SYNTHETIC DEMO ONLY. Never apply to a remote database.
+-- Server-side sessions for the local demo's custom team login.
+
 -- Forward-only, additive. Server-side team sessions and fairer login throttling.
 --
 -- Until now a team session was only a signed cookie: signing out cleared the

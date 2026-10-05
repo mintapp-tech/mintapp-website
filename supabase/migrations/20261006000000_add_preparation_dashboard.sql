@@ -37,7 +37,7 @@ alter table public.preparation_drafts drop constraint if exists preparation_draf
 alter table public.preparation_drafts add constraint preparation_drafts_source_values check (source = any (array['mock', 'codecraft', 'manual', 'edited']));
 
 -- ============================================================
--- 3. Team notes (append-only history) and login throttling
+-- 3. Team notes (append-only history)
 -- ============================================================
 
 create table if not exists public.inquiry_notes (
@@ -51,20 +51,9 @@ create table if not exists public.inquiry_notes (
 );
 create index if not exists inquiry_notes_inquiry_idx on public.inquiry_notes (inquiry_id, created_at);
 
--- Keyed by an opaque hash computed by the application (never an email or IP).
-create table if not exists public.team_login_attempts (
-  key           text primary key,
-  failures      integer not null default 0,
-  window_start  timestamptz not null default now(),
-  locked_until  timestamptz,
-  constraint team_login_attempts_key_shape check (key ~ '^[0-9a-f]{64}$')
-);
-
 alter table public.inquiry_notes enable row level security;
-alter table public.team_login_attempts enable row level security;
-revoke all privileges on table public.inquiry_notes, public.team_login_attempts from anon, authenticated, service_role;
+revoke all privileges on table public.inquiry_notes from anon, authenticated, service_role;
 grant select, insert on table public.inquiry_notes to service_role;
-grant select, insert, update, delete on table public.team_login_attempts to service_role;
 
 -- ============================================================
 -- 4. Reads
@@ -308,51 +297,7 @@ end;
 $$;
 
 -- ============================================================
--- 6. Login throttling: at most 8 failures per key in 15 minutes, then a
---    15-minute lock. A success clears the key.
--- ============================================================
-
-create or replace function public.team_login_locked(p_key text)
-returns boolean
-language sql
-stable
-security invoker
-set search_path = ''
-as $$
-  select coalesce((select locked_until > now() from public.team_login_attempts where key = p_key), false);
-$$;
-
-create or replace function public.team_login_record(p_key text, p_success boolean)
-returns boolean
-language plpgsql
-security invoker
-set search_path = ''
-as $$
-declare
-  v_row public.team_login_attempts%rowtype;
-begin
-  if p_success then
-    delete from public.team_login_attempts where key = p_key;
-    return false;
-  end if;
-  insert into public.team_login_attempts (key) values (p_key) on conflict (key) do nothing;
-  select * into v_row from public.team_login_attempts where key = p_key for update;
-  if v_row.window_start < now() - interval '15 minutes' then
-    v_row.failures := 0;
-    v_row.window_start := now();
-  end if;
-  v_row.failures := v_row.failures + 1;
-  update public.team_login_attempts
-  set failures = v_row.failures,
-      window_start = v_row.window_start,
-      locked_until = case when v_row.failures >= 8 then now() + interval '15 minutes' else locked_until end
-  where key = p_key;
-  return v_row.failures >= 8;
-end;
-$$;
-
--- ============================================================
--- 7. Privileges: service_role only
+-- 6. Privileges: service_role only
 -- ============================================================
 
 do $$
@@ -369,9 +314,7 @@ begin
     'public.dashboard_review(uuid, integer, text, text)',
     'public.dashboard_retry_preparation(uuid)',
     'public.dashboard_mark_manual(uuid)',
-    'public.claim_preparation_job_for(text, uuid, integer)',
-    'public.team_login_locked(text)',
-    'public.team_login_record(text, boolean)'
+    'public.claim_preparation_job_for(text, uuid, integer)'
   ] loop
     execute format('revoke execute on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);

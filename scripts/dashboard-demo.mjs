@@ -19,6 +19,7 @@ const password = process.env.DASHBOARD_DEMO_PASSWORD || randomBytes(12).toString
 
 const db = await startCluster();
 for (const file of db.migrations) db.applyMigration(file);
+db.applyLocalDemo();
 
 // SYNTHETIC inquiries. Invented projects and people.
 const inquiries = [
