@@ -88,6 +88,17 @@ test("phones get cards instead of the table, with nothing wider than the screen"
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
+test("an unknown inquiry shows a not-found page inside the dashboard", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  // The page streams behind a loading state, so the status is already sent
+  // (200) when the inquiry turns out not to exist; it stays noindex.
+  await page.goto("/internal/inquiries/99999999-0000-4000-8000-000000000000");
+  await expect(page.getByRole("heading", { name: "Inquiry not found" })).toBeVisible();
+  await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
+  await page.getByRole("link", { name: "Back to all inquiries" }).click();
+  await expect(page).toHaveURL(/\/internal\/inquiries$/);
+});
+
 test("an inquiry with no booking is prepared, marked ready by one teammate and approved by the other", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
   await omar.goto(`/internal/inquiries/${RESTAURANT}`);
