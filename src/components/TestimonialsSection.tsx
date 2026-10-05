@@ -20,14 +20,14 @@ const initials = (name?: string) =>
 // "What our clients say": readable cards, never an auto-rotating carousel.
 // Receives only entries that passed the publication check; with none, the
 // section is not rendered at all (no empty or placeholder state).
-export default function TestimonialsSection({ items, sample = false }: { items: readonly Testimonial[]; sample?: boolean }) {
+export default function TestimonialsSection({ items }: { items: readonly Testimonial[] }) {
   const { t, lang, arrow } = useLanguage();
   if (items.length === 0) return null;
   const cards = items.map((item) => testimonialForLocale(item, lang));
   const columns = cards.length === 1 ? "max-w-[760px]" : cards.length === 2 ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-3";
 
   return (
-    <section id="testimonials" data-sample={sample ? "true" : undefined} className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
+    <section id="testimonials" className="mx-auto max-w-[1280px] scroll-mt-24 px-5 pt-[clamp(56px,8vw,116px)] sm:px-6">
       <Reveal className="mb-3.5 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
         {t.testimonials.eyebrow}
       </Reveal>
@@ -36,17 +36,6 @@ export default function TestimonialsSection({ items, sample = false }: { items: 
         text={t.testimonials.title}
         className="mb-[clamp(30px,4vw,52px)] max-w-[22ch] text-[clamp(29px,3.7vw,50px)] leading-[1.2] font-semibold tracking-[-0.02em] text-balance rtl:tracking-normal"
       />
-
-      {sample && (
-        <p
-          role="note"
-          data-sample-notice
-          className="m-0 mb-[clamp(20px,2.6vw,28px)] inline-flex items-center gap-2.5 rounded-full border-2 border-dashed border-amber-500 bg-amber-50 px-4 py-2 text-[14px] font-semibold text-amber-900"
-        >
-          <span aria-hidden className="block h-2 w-2 rounded-full bg-amber-500" />
-          {t.testimonials.sampleNotice}
-        </p>
-      )}
 
       <RevealGroup className={`grid grid-cols-1 gap-[clamp(18px,2.4vw,26px)] ${columns}`}>
         {cards.map((card, i) => {
@@ -74,16 +63,31 @@ export default function TestimonialsSection({ items, sample = false }: { items: 
                   {card.quoteLanguage !== lang && <p className="m-0 mt-3 text-[13px] text-ink-faint">{t.testimonials.quotedIn[card.quoteLanguage]}</p>}
                 </blockquote>
                 <figcaption className="mt-6 flex items-center gap-3 border-t border-ink/[.08] pt-5">
-                  {card.photo ? (
-                    <Image src={card.photo} alt="" width={44} height={44} className="h-11 w-11 flex-none rounded-full object-cover" />
-                  ) : (
-                    <span aria-hidden className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-mint-soft font-manrope text-[14px] font-bold text-mint-deep">
-                      {initials(card.name ?? card.company)}
+                  {card.logo ? (
+                    // The company's own logo, unaltered; the company is also named in text beside it.
+                    <span className="flex h-11 w-[72px] flex-none items-center">
+                      <Image src={card.logo.src} alt="" width={card.logo.width} height={card.logo.height} className="h-auto max-h-[24px] w-auto max-w-[72px]" />
                     </span>
-                  )}
+                  ) : card.photo ? (
+                    <Image src={card.photo} alt="" width={44} height={44} className="h-11 w-11 flex-none rounded-full object-cover" />
+                  ) : card.name ? (
+                    // A person's initials only; an organization never gets a made-up mark.
+                    <span aria-hidden className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-mint-soft font-manrope text-[14px] font-bold text-mint-deep">
+                      {initials(card.name)}
+                    </span>
+                  ) : null}
                   <span className="min-w-0">
-                    {card.name && <span className="block text-[15.5px] font-semibold text-ink">{card.name}</span>}
-                    {attribution && <span className="block text-[14px] leading-[1.5] text-ink-soft">{attribution}</span>}
+                    {card.name && (
+                      <span className="block text-[15.5px] font-semibold text-ink">
+                        <bdi>{card.name}</bdi>
+                      </span>
+                    )}
+                    {attribution && (
+                      // Without a personal name, the role and organization are the main attribution.
+                      <span className={card.name ? "block text-[14px] leading-[1.5] text-ink-soft" : "block text-[15.5px] leading-[1.5] font-semibold text-ink"} data-attribution>
+                        <bdi>{attribution}</bdi>
+                      </span>
+                    )}
                   </span>
                 </figcaption>
                 {card.project && (

@@ -7,7 +7,7 @@ import { chromium, type FullConfig } from "@playwright/test";
 // browser, before any test starts. On a warm server this takes a few seconds.
 // Like every test here, it never reaches a third party: all non-local
 // requests (Turnstile, Cal.com) are aborted.
-const ROUTES = ["/en", "/ar", "/en/start", "/ar/start", "/en/about", "/en/services", "/en/work/rentop", "/en/preview/testimonials"];
+const ROUTES = ["/en", "/ar", "/en/start", "/ar/start", "/en/about", "/en/services", "/en/work/rentop"];
 
 export default async function globalSetup(config: FullConfig) {
   const baseURL = config.projects[0]?.use?.baseURL ?? "http://localhost:3000";

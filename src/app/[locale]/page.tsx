@@ -6,7 +6,6 @@ import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import { publishableTestimonials } from "@/content/testimonials";
-import { reviewSampleTestimonials } from "@/content/review-samples";
 import ProcessSection from "@/components/ProcessSection";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
@@ -32,10 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return buildPageMetadata({ locale, path: "", ...COPY[locale] });
 }
 
-export default async function Home() {
-  // Labelled samples only on an opted-in Vercel Preview branch; otherwise only
-  // approved testimonials, and with none the section is not rendered.
-  const samples = await reviewSampleTestimonials();
+export default function Home() {
   return (
     <>
       <HashScrollHandler />
@@ -44,7 +40,8 @@ export default async function Home() {
         <Hero />
         <ProcessSection />
         <WorkSection />
-        <TestimonialsSection items={samples ?? publishableTestimonials()} sample={samples !== null} />
+        {/* Only approved testimonials; with none, the section is not rendered. */}
+        <TestimonialsSection items={publishableTestimonials()} />
         <ServicesSection />
         <FinalCta />
       </main>

@@ -25,6 +25,9 @@ export interface Testimonial {
     company?: Localized;
     // Path under /public, only used when approval.photo is true.
     photo?: string;
+    // The company's own logo file, unaltered, under /public; only used when
+    // approval.logo is true.
+    logo?: { src: string; width: number; height: number };
   };
   // Optional link to the related case study.
   project?: ProjectSlug;
@@ -42,7 +45,37 @@ export interface Testimonial {
   };
 }
 
-export const TESTIMONIALS: readonly Testimonial[] = [];
+// Each quote is reproduced exactly as approved, including its spelling.
+export const TESTIMONIALS: readonly Testimonial[] = [
+  {
+    id: "otj-nour-makram",
+    quote:
+      "Working with MintApp team on OTJ has been a great experience. They helped turn a complex idea into a working platform, from creative profiles and client briefs to proposals, payments, and project tracking. What I appreciate most is their willingness to keep improving the product with us as we learn from real users. Building a startup means things evolve constantly, and they’ve been part of that journey.",
+    quoteLanguage: "en",
+    author: {
+      name: "Nour Makram",
+      // Nour is a woman: the Arabic title is feminine.
+      role: { en: "Founder", ar: "المؤسِّسة" },
+      company: { en: "OTJ", ar: "OTJ" },
+      // OTJ's own logo from onetimejob.co, unaltered.
+      logo: { src: "/testimonials/otj-logo.png", width: 233, height: 70 },
+    },
+    approval: { approvedBy: "Nour Makram, Founder of OTJ (relayed by Omar)", approvedOn: "2026-10-05", quote: true, name: true, company: true, photo: false, logo: true, translation: false },
+  },
+  {
+    id: "al-wakrah-academy-supervisor",
+    quote:
+      "What stood out about working with Mintapp was how well the team understood what we needed. They took our requirements seriously, handled the work professionally, and delivered a result we were happy with on the agreed timeline.",
+    quoteLanguage: "en",
+    author: {
+      // No personal name. The attribution stays in its approved English
+      // wording on both locales (an Arabic job title would assume a gender).
+      role: { en: "Academy Supervisor" },
+      company: { en: "Al Wakrah" },
+    },
+    approval: { approvedBy: "Academy Supervisor, Al Wakrah (relayed by Omar)", approvedOn: "2026-10-05", quote: true, name: false, company: true, photo: false, logo: false, translation: false },
+  },
+];
 
 export type PublicationProblem =
   | "quote_not_approved"
@@ -52,6 +85,7 @@ export type PublicationProblem =
   | "name_not_approved"
   | "company_not_approved"
   | "photo_not_approved"
+  | "logo_not_approved"
   | "translation_not_approved";
 
 // Every reason an entry may not be published. Empty means it can be shown.
@@ -64,6 +98,7 @@ export function publicationProblems(t: Testimonial): PublicationProblem[] {
   if (t.author.name && !a.name) problems.push("name_not_approved");
   if (t.author.company && !a.company) problems.push("company_not_approved");
   if (t.author.photo && !a.photo) problems.push("photo_not_approved");
+  if (t.author.logo && !a.logo) problems.push("logo_not_approved");
   if (t.translation && Object.keys(t.translation).length > 0 && !a.translation) problems.push("translation_not_approved");
   // Every quote needs an approved attribution: a name, or a role at a company.
   const hasRole = Boolean(t.author.role && Object.values(t.author.role).some(Boolean));
@@ -88,6 +123,7 @@ export function testimonialForLocale(t: Testimonial, locale: Locale) {
     role: pick(t.author.role),
     company: pick(t.author.company),
     photo: t.author.photo,
+    logo: t.author.logo,
     project: t.project,
   };
 }
