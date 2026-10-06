@@ -3,6 +3,7 @@ import { Resend } from "resend";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getNotificationConfig } from "./inquiry-notification-config";
 import { resolveEmailSendingMode } from "./email-sending-mode";
+import { buildInquiryNotificationEmail } from "./email/inquiry-notification-email";
 
 export interface InquiryNotificationInput {
   inquiryId: string;
@@ -10,6 +11,8 @@ export interface InquiryNotificationInput {
   email: string;
   phone?: string;
   company?: string;
+  /** The client's explicit choice on the form; absent for older cached forms. */
+  projectType?: string;
   lang: string;
   desc: string;
 }
@@ -24,6 +27,7 @@ export interface EmailSender {
       to: string;
       replyTo: string;
       subject: string;
+      html: string;
       text: string;
     }) => Promise<{ data: unknown; error: { message: string } | null }>;
   };
@@ -31,22 +35,6 @@ export interface EmailSender {
 
 export function createRealResendSender(apiKey: string): EmailSender {
   return new Resend(apiKey);
-}
-
-function buildEmailBody(input: InquiryNotificationInput): string {
-  const lines = [
-    `Inquiry ID: ${input.inquiryId}`,
-    `Name: ${input.name}`,
-    `Email: ${input.email}`,
-    input.phone ? `Phone: ${input.phone}` : null,
-    input.company ? `Company: ${input.company}` : null,
-    `Preferred language: ${input.lang}`,
-    `Submitted: ${new Date().toISOString()}`,
-    "",
-    "Project description:",
-    input.desc,
-  ].filter((line): line is string => line !== null);
-  return lines.join("\n");
 }
 
 /**
@@ -108,14 +96,17 @@ export async function sendInquiryNotification(
   }
 
   try {
+    // HTML for reading, with the plain-text version as the alternative part.
+    const email = buildInquiryNotificationEmail({ ...input, submittedAt: new Date() });
     const { error } = await sender.emails.send({
       from: config.from,
       to: config.to,
       replyTo: config.replyTo,
       // Fixed subject: removes any header-injection surface entirely. The
-      // client's name only ever appears in the plain-text body below.
-      subject: "New Mintapp project inquiry",
-      text: buildEmailBody(input),
+      // client's details only ever appear in the body.
+      subject: email.subject,
+      html: email.html,
+      text: email.text,
     });
     if (error) throw new Error(error.message);
   } catch (err) {
