@@ -3,6 +3,8 @@
 // website, referral or tracking fields. The same text is the source that
 // every "client fact" in a draft must quote verbatim.
 
+import { PROJECT_TYPE_WORDS, clientProjectType } from "@/lib/dashboard/project-type";
+
 export type BriefLanguage = "en" | "ar";
 
 export interface InquiryForPreparation {
@@ -28,8 +30,10 @@ const LABELS: Record<BriefLanguage, Record<"type" | "budget" | "timeline" | "cou
 export function buildGenerationInput(inquiry: InquiryForPreparation): GenerationInput {
   const language: BriefLanguage = inquiry.preferred_language === "ar" ? "ar" : "en";
   const l = LABELS[language];
+  // Only an explicit choice on the form; anything else is "not provided" and left out.
+  const projectType = clientProjectType(inquiry.project_type);
   const lines = [
-    inquiry.project_type ? `${l.type}: ${inquiry.project_type}` : null,
+    projectType ? `${l.type}: ${PROJECT_TYPE_WORDS[language][projectType]}` : null,
     inquiry.budget_range ? `${l.budget}: ${inquiry.budget_range}` : null,
     inquiry.timeline ? `${l.timeline}: ${inquiry.timeline}` : null,
     inquiry.country ? `${l.country}: ${inquiry.country}` : null,

@@ -94,7 +94,8 @@ describe("display labels", () => {
   });
 
   test("every value the database allows has a label", () => {
-    for (const v of ["website", "web_app", "mobile_app", "website_and_mobile", "other"]) expect(PROJECT_TYPE_LABELS[v]).toBeTruthy();
+    // The four choices on the public form. Older stored values are deliberately not labelled: see project-type.test.ts.
+    for (const v of ["website", "web_app", "mobile_app", "not_sure"]) expect(PROJECT_TYPE_LABELS[v]).toBeTruthy();
     for (const v of ["new", "reviewing", "qualified", "converted", "not_a_fit", "archived"]) expect(LEAD_LABELS[v]).toBeTruthy();
     for (const v of ["queued", "running", "retry_scheduled", "succeeded", "failed", "paused", "manual"]) expect(PREPARATION_LABELS[v]).toBeTruthy();
     expect(label(PROJECT_TYPE_LABELS, null, "Not stated")).toBe("Not stated");

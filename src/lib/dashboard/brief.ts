@@ -1,5 +1,6 @@
 import { buildGenerationInput, type InquiryForPreparation } from "@/lib/preparation/input";
 import { draftSchema, figuresIn } from "@/lib/preparation/draft";
+import { clientProjectType } from "./project-type";
 
 // The structured brief shown in the dashboard and copied into a team
 // member's own Claude chat. Built only from the preparation input (the brief
@@ -22,8 +23,10 @@ const FIELDS: [keyof InquiryForPreparation, string][] = [
 
 export function structuredBrief(inquiry: InquiryForPreparation): StructuredBrief {
   const input = buildGenerationInput(inquiry);
-  const provided = FIELDS.filter(([key]) => inquiry[key]).map(([key, label]) => ({ label, value: String(inquiry[key]) }));
-  const missing = FIELDS.filter(([key]) => !inquiry[key]).map(([, label]) => label.replace(/ \(client-stated\)$/, ""));
+  // Project type counts as provided only when it is one of the form's own choices.
+  const has = (key: keyof InquiryForPreparation) => Boolean(key === "project_type" ? clientProjectType(inquiry.project_type) : inquiry[key]);
+  const provided = FIELDS.filter(([key]) => has(key)).map(([key, label]) => ({ label, value: String(inquiry[key]) }));
+  const missing = FIELDS.filter(([key]) => !has(key)).map(([, label]) => label.replace(/ \(client-stated\)$/, ""));
   return { language: input.language, provided, missing, description: inquiry.project_description.trim(), text: input.brief };
 }
 

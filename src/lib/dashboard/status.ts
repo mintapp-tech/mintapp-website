@@ -3,6 +3,8 @@
 // automation cannot produce a draft (off, paused, failed, out of budget), the
 // inquiry is flagged as needing attention with the manual path offered.
 
+import { PROJECT_TYPE_WORDS } from "./project-type";
+
 export type Tone = "attention" | "info" | "ok";
 export type Locale = "en" | "ar";
 
@@ -138,8 +140,8 @@ const LABELS = {
     meeting: { not_booked: "Not booked", booked: "Booked", cancelled: "Cancelled", completed: "Completed", no_show: "No show" },
     preparation: { queued: "Queued", running: "Preparing", retry_scheduled: "Retrying", succeeded: "Draft generated", failed: "Failed", paused: "Paused", manual: "Manual" },
     lead: { new: "New", reviewing: "Reviewing", qualified: "Qualified", converted: "Converted", not_a_fit: "Not a fit", archived: "Archived" },
-    // The public form's controlled vocabulary (project_type_values constraint).
-    projectType: { website: "Website", web_app: "Web app", mobile_app: "Mobile app", website_and_mobile: "Website and mobile app", other: "Other" },
+    // The four choices on the public form, in its words. Older stored values are not listed: see project-type.ts.
+    projectType: PROJECT_TYPE_WORDS.en,
     briefField: {
       "Project type": "Project type",
       "Budget range (client-stated)": "Budget range (client-stated)",
@@ -154,7 +156,7 @@ const LABELS = {
     meeting: { not_booked: "لم يُحجز", booked: "محجوز", cancelled: "أُلغي", completed: "تمّ", no_show: "لم يحضر" },
     preparation: { queued: "في الانتظار", running: "قيد التحضير", retry_scheduled: "إعادة محاولة", succeeded: "مسودة جاهزة", failed: "فشل", paused: "متوقف مؤقتًا", manual: "يدوي" },
     lead: { new: "جديد", reviewing: "قيد المراجعة", qualified: "مؤهَّل", converted: "أصبح عميلًا", not_a_fit: "غير مناسب", archived: "مؤرشف" },
-    projectType: { website: "موقع إلكتروني", web_app: "تطبيق ويب", mobile_app: "تطبيق موبايل", website_and_mobile: "موقع وتطبيق موبايل", other: "أخرى" },
+    projectType: PROJECT_TYPE_WORDS.ar,
     briefField: {
       "Project type": "نوع المشروع",
       "Budget range (client-stated)": "الميزانية (كما ذكرها العميل)",
