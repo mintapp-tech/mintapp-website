@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
-import { EMAIL_COLORS as C, escapeHtml } from "./layout";
-import { CLIENT_ACK_COPY, bookingUrlFor, buildClientAcknowledgment } from "./client-acknowledgment";
+import { EMAIL_COLORS as C } from "./layout";
+import { CLIENT_ACK_COPY, bookingUrlFor, buildClientAcknowledgment, greetingName } from "./client-acknowledgment";
 import { INQUIRY_NOTIFICATION_SUBJECT, buildInquiryNotificationEmail } from "./inquiry-notification-email";
 
 const BOOKING = bookingUrlFor("mintapp/mintapp-discovery-call", "ref+/=token");
@@ -57,11 +57,34 @@ describe("client acknowledgment", () => {
     expect(ackNoCal("ar").text).toContain(CLIENT_ACK_COPY.ar.noBook);
   });
 
-  test("the visitor's name is escaped in HTML and kept as typed in plain text", () => {
-    const e = buildClientAcknowledgment({ lang: "en", name: HOSTILE, bookingUrl: BOOKING });
-    expect(e.html).not.toContain("<script>");
-    expect(e.html).toContain(escapeHtml(HOSTILE));
-    expect(e.text).toContain(`Hi ${HOSTILE},`);
+  test("a plain name is escaped in HTML and kept as typed in plain text", () => {
+    const e = buildClientAcknowledgment({ lang: "en", name: "Sara O'Neil & Co", bookingUrl: BOOKING });
+    expect(e.html).toContain("Sara O&#39;Neil &amp; Co");
+    expect(e.text).toContain("Hi Sara O'Neil & Co,");
+  });
+
+  test("the email goes to whatever address was typed, so free text that is not a plain name is never echoed", () => {
+    for (const name of [HOSTILE, "Click http://evil.example now", "www.evil.example", "a@b.co", "evil.example", "x" + String.fromCharCode(92) + "y", "N".repeat(61)]) {
+      const e = buildClientAcknowledgment({ lang: "en", name, bookingUrl: BOOKING });
+      expect(e.html, name).not.toContain("<script>");
+      expect(e.html, name).not.toContain("evil");
+      expect(e.text, name).not.toContain("evil");
+      expect(e.text, name).toMatch(/^Hello,/);
+    }
+    expect(buildClientAcknowledgment({ lang: "ar", name: "http://x.example" }).text).toMatch(/^مرحبًا،/);
+    expect(buildClientAcknowledgment({ lang: "en" }).text).toMatch(/^Hello,/);
+  });
+
+  test("greetingName keeps ordinary names, in either script", () => {
+    for (const name of ["Sara Haddad", "Ahmed M. Ali", "Mary-Anne O'Neil", "سارة حداد"]) expect(greetingName(name)).toBe(name);
+    expect(greetingName("   ")).toBeNull();
+    expect(greetingName(undefined)).toBeNull();
+  });
+
+  test("the booking link is built only from a well-formed Cal link and a reference", () => {
+    expect(bookingUrlFor("mintapp/mintapp-discovery-call", "ref")).toBe("https://cal.com/mintapp/mintapp-discovery-call?metadata%5BbookingContext%5D=ref");
+    for (const calLink of [undefined, "", "mintapp", "https://evil.example/x", "mintapp/../x y", "mintapp/call?x=1"]) expect(bookingUrlFor(calLink, "ref"), String(calLink)).toBeUndefined();
+    expect(bookingUrlFor("mintapp/mintapp-discovery-call", undefined)).toBeUndefined();
   });
 
   test("fixed copy has no HTML-special characters, so it is safe to place unescaped", () => {
@@ -98,6 +121,7 @@ describe("internal notification", () => {
         "Email: sara@example.com",
         "Phone: +974 1",
         "Company: Acme",
+        "Project type: Not provided",
         "Preferred language: English",
         "Submitted: 5 Oct 2026, 13:04 UTC",
         "",
@@ -106,6 +130,21 @@ describe("internal notification", () => {
       ].join("\n"),
     );
     expect(internal().text).not.toMatch(/Phone:|Company:/);
+  });
+
+  test("shows the client's explicit project type in English, and 'Not provided' for anything else", () => {
+    for (const [value, label] of [["website", "Website"], ["web_app", "Web application"], ["mobile_app", "Mobile application"], ["not_sure", "Not sure yet"]] as const) {
+      const e = internal({ projectType: value });
+      expect(e.text).toContain(`Project type: ${label}`);
+      expect(e.html).toContain(">Project type</td>");
+      expect(e.html).toContain(`>${label}</td>`);
+    }
+    // Missing (an older form), or a legacy database value the form never offered: never shown as the client's choice.
+    for (const value of [undefined, null, "", "other", "website_and_mobile", "<b>x</b>"]) {
+      const e = internal({ projectType: value });
+      expect(e.text, String(value)).toContain("Project type: Not provided");
+      expect(e.html, String(value)).not.toContain("<b>x</b>");
+    }
   });
 
   test("every client-supplied field is escaped, and the description follows its own direction", () => {
