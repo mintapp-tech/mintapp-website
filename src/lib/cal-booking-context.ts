@@ -8,7 +8,11 @@ import { z } from "zod";
 // only for a bounded window. Not a general-purpose JWT: hand-rolled and
 // deliberately narrow (two fields, one algorithm) rather than pulling in a
 // JWT library for something this small.
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// 30 days. The reference is bearer-style: it contains only an opaque inquiry id
+// and an issue time, is signed, and is used only to tie a booking to its
+// inquiry. A longer life lets a client come back to the booking link in our
+// email well after sending, without ever offering a booking that cannot be linked.
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000; // 5 minutes
 
 // Canonical token shape: exactly one dot, unpadded base64url on both

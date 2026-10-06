@@ -75,18 +75,20 @@ describe("signBookingContext / verifyBookingContext — core round-trip and tamp
     expect(verifyBookingContext(`${payloadB64}.${signPayload(payloadB64, SECRET)}`)).toEqual({ ok: false });
   });
 
-  test("context older than 7 days is rejected", () => {
+  test("context older than 30 days is rejected", () => {
     vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
-    const eightDaysAgo = Math.floor(Date.now() / 1000) - 8 * 24 * 60 * 60;
-    const payloadB64 = validPayloadB64({ iat: eightDaysAgo });
+    const thirtyOneDaysAgo = Math.floor(Date.now() / 1000) - 31 * 24 * 60 * 60;
+    const payloadB64 = validPayloadB64({ iat: thirtyOneDaysAgo });
     expect(verifyBookingContext(`${payloadB64}.${signPayload(payloadB64, SECRET)}`)).toEqual({ ok: false });
   });
 
-  test("context exactly within 7 days is accepted", () => {
+  test("context within 30 days is accepted, including ages that the old 7-day limit refused", () => {
     vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
-    const sixDaysAgo = Math.floor(Date.now() / 1000) - 6 * 24 * 60 * 60;
-    const payloadB64 = validPayloadB64({ iat: sixDaysAgo });
-    expect(verifyBookingContext(`${payloadB64}.${signPayload(payloadB64, SECRET)}`)).toEqual({ ok: true, inquiryId: VALID_UUID });
+    for (const days of [1, 8, 29]) {
+      const issued = Math.floor(Date.now() / 1000) - days * 24 * 60 * 60;
+      const payloadB64 = validPayloadB64({ iat: issued });
+      expect(verifyBookingContext(`${payloadB64}.${signPayload(payloadB64, SECRET)}`), `${days} days`).toEqual({ ok: true, inquiryId: VALID_UUID });
+    }
   });
 
   test("context issued too far in the future (beyond 5 minute clock skew) is rejected", () => {
@@ -192,5 +194,49 @@ describe("verifyBookingContext — canonical token structure", () => {
     expect(nonCanonical).not.toBeNull();
     if (!nonCanonical) return;
     expect(verifyBookingContext(`${nonCanonical}.${signPayload(nonCanonical, SECRET)}`)).toEqual({ ok: false });
+  });
+});
+
+describe("what the reference is (verified before the lifetime was extended)", () => {
+  test("it carries only an opaque inquiry id and an issue time: no name, email, phone or brief", () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
+    const [payloadB64] = signBookingContext(VALID_UUID).split(".");
+    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf8"));
+    expect(Object.keys(payload).sort()).toEqual(["iat", "id"]);
+    expect(payload.id).toBe(VALID_UUID);
+    expect(Number.isInteger(payload.iat)).toBe(true);
+    expect(JSON.stringify(payload)).not.toMatch(/@|name|phone|email|desc/i);
+  });
+
+  test("it is short and URL-safe, so it fits in a link and in the browser without exposing anything", () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
+    const token = signBookingContext(VALID_UUID);
+    expect(token.length).toBeLessThan(160);
+    expect(token).toMatch(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/);
+  });
+
+  test("changing any single character makes it invalid: it cannot be modified without breaking the signature", () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
+    const token = signBookingContext(VALID_UUID);
+    for (let i = 0; i < token.length; i++) {
+      if (token[i] === ".") continue;
+      const swapped = token[i] === "A" ? "B" : "A";
+      const changed = token.slice(0, i) + swapped + token.slice(i + 1);
+      expect(verifyBookingContext(changed), `character ${i}`).toEqual({ ok: false });
+    }
+  });
+
+  test("it cannot be guessed: two references for the same inquiry differ only by issue time, and a signature needs the secret", () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
+    const [payloadB64] = signBookingContext(VALID_UUID).split(".");
+    // Right id and a fresh time, but a signature made without the secret.
+    const forged = validPayloadB64({ iat: Math.floor(Date.now() / 1000) });
+    expect(verifyBookingContext(`${forged}.${signPayload(forged, "not-the-secret")}`)).toEqual({ ok: false });
+    expect(verifyBookingContext(`${payloadB64}.${"A".repeat(43)}`)).toEqual({ ok: false });
+  });
+
+  test("it is only an association: verifying it returns the inquiry id and nothing else", () => {
+    vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", SECRET);
+    expect(Object.keys(verifyBookingContext(signBookingContext(VALID_UUID))).sort()).toEqual(["inquiryId", "ok"]);
   });
 });
