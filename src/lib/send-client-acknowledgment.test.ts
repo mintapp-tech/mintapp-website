@@ -120,28 +120,52 @@ describe("sendClientAcknowledgment: the email", () => {
     expect(sent[0].text).toContain("سارة حداد");
   });
 
-  test("the booking link carries a signed reference that verifies to this inquiry", async () => {
+  test("the button leads to our own booking page, in the client's language, with a signed reference that verifies to this inquiry", async () => {
+    allowSend();
+    for (const lang of ["en", "ar"] as const) {
+      const { sent, sender } = recordingSender();
+      await sendClientAcknowledgment(sender, { ...input, lang });
+      const link = new RegExp(`href="(https://www\\.mintapp\\.tech/${lang}/book\\?ref=[^"]+)"`).exec(sent[0].html)?.[1];
+      expect(link, lang).toBeDefined();
+      const reference = new URL(link!).searchParams.get("ref");
+      expect(verifyBookingContext(reference!), lang).toEqual({ ok: true, inquiryId: INQUIRY_ID });
+      expect(sent[0].text).toContain(link!);
+      expect(sent[0].html).not.toMatch(/href="https:\/\/cal\.com/); // never straight to Cal.com: the page decides
+    }
+  });
+
+  test("a normal submission gets the normal email: the conditional booking line and the button, not the fallback", async () => {
     allowSend();
     const { sent, sender } = recordingSender();
     await sendClientAcknowledgment(sender, input);
-    const link = /href="(https:\/\/cal\.com\/mintapp\/mintapp-discovery-call\?[^"]+)"/.exec(sent[0].html)?.[1];
-    expect(link).toBeDefined();
-    const reference = new URL(link!.replaceAll("&amp;", "&")).searchParams.get("metadata[bookingContext]");
-    expect(reference).toBeTruthy();
-    expect(verifyBookingContext(reference!)).toEqual({ ok: true, inquiryId: INQUIRY_ID });
-    expect(sent[0].text).toContain("https://cal.com/mintapp/mintapp-discovery-call?metadata%5BbookingContext%5D=");
+    expect(sent[0].text).toContain("If you haven’t already chosen a time, you can select one below.");
+    expect(sent[0].html).toContain(">Choose a call time</a>");
+    expect(sent[0].text).not.toContain("We will contact you to arrange");
   });
 
   test.each([
-    ["signing is unavailable (no secret)", () => vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", "")],
-    ["no calendar is configured", () => vi.stubEnv("NEXT_PUBLIC_CAL_LINK", "")],
-  ])("when %s the email is still sent, with the 'we will contact you' text and no booking link", async (_name, breakIt) => {
+    ["the signing secret is missing", () => vi.stubEnv("CAL_BOOKING_CONTEXT_SECRET", ""), "client_ack_fallback: the booking reference could not be signed"],
+    ["no calendar is configured", () => vi.stubEnv("NEXT_PUBLIC_CAL_LINK", ""), "client_ack_fallback: no calendar is configured"],
+    ["the calendar link is malformed", () => vi.stubEnv("NEXT_PUBLIC_CAL_LINK", "https://evil.example/x"), "client_ack_fallback: no calendar is configured"],
+  ])("the technical fallback, only because %s: the email is still sent, with no button, and says we will contact the client", async (_name, breakIt, logLine) => {
     allowSend();
     breakIt();
     const { sent, sender } = recordingSender();
     expect(await sendClientAcknowledgment(sender, input)).toBe("sent");
-    expect(sent[0].html).not.toContain("cal.com");
+    expect(sent[0].html).not.toMatch(/href="https:\/\/(www\.mintapp\.tech\/en\/book|cal\.com)/);
+    expect(sent[0].html).not.toContain("Choose a call time");
     expect(sent[0].text).toContain("We will contact you to arrange a time");
+    expect(sent[0].text).toContain("Your inquiry has reached the Mintapp team.");
+    expect(errors).toHaveBeenCalledWith(logLine); // a fixed line: no inquiry id, no address
+  });
+
+  test("the fallback is never chosen for any other reason: not language, not name, not the client's state", async () => {
+    allowSend();
+    for (const variation of [{ lang: "ar" as const }, { name: "Sara" }, { name: "<b>x</b> http://evil.example" }, { email: "someone.else@example.org" }, { inquiryId: "00000000-0000-4000-8000-000000000001" }]) {
+      const { sent, sender } = recordingSender();
+      await sendClientAcknowledgment(sender, { ...input, ...variation });
+      expect(sent[0].html, JSON.stringify(variation)).toMatch(/href="https:\/\/www\.mintapp\.tech\/(en|ar)\/book\?ref=/);
+    }
   });
 
   test("a hostile name is never echoed into the email", async () => {

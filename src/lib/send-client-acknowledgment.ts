@@ -3,7 +3,7 @@ import type { EmailSender } from "./send-inquiry-notification";
 import { resolveEmailSendingMode } from "./email-sending-mode";
 import { getClientAckConfig } from "./client-ack-config";
 import { signBookingContext } from "./cal-booking-context";
-import { bookingUrlFor, buildClientAcknowledgment } from "./email/client-acknowledgment";
+import { buildClientAcknowledgment, isValidCalLink, recoveryUrlFor } from "./email/client-acknowledgment";
 
 export interface ClientAcknowledgmentInput {
   inquiryId: string;
@@ -49,14 +49,20 @@ export async function sendClientAcknowledgment(sender: EmailSender | null, input
     return "not_configured";
   }
 
-  // The booking link carries the signed inquiry reference (valid 7 days).
-  // Without one (signing failed, or no calendar configured) the email says we
-  // will contact the client instead of showing a button.
+  // The button leads to our own booking page with the signed inquiry reference
+  // (valid 30 days), which decides on the server whether to offer a scheduler.
+  // The technical fallback (no button, "we will contact you") is used ONLY when
+  // that link cannot be made: no calendar configured, or the reference could not
+  // be signed. It is never used just because the client has not booked yet.
   let bookingUrl: string | undefined;
-  try {
-    bookingUrl = bookingUrlFor(process.env.NEXT_PUBLIC_CAL_LINK, signBookingContext(input.inquiryId));
-  } catch {
-    console.error("client_ack_booking_link_unavailable");
+  if (!isValidCalLink(process.env.NEXT_PUBLIC_CAL_LINK)) {
+    console.error("client_ack_fallback: no calendar is configured");
+  } else {
+    try {
+      bookingUrl = recoveryUrlFor(input.lang, signBookingContext(input.inquiryId));
+    } catch {
+      console.error("client_ack_fallback: the booking reference could not be signed");
+    }
   }
 
   try {

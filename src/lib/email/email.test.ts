@@ -1,14 +1,17 @@
 import { describe, expect, test } from "vitest";
-import { EMAIL_COLORS as C } from "./layout";
-import { CLIENT_ACK_COPY, bookingUrlFor, buildClientAcknowledgment, greetingName } from "./client-acknowledgment";
+import { EMAIL_COLORS as C, escapeHtml } from "./layout";
+import { CLIENT_ACK_COPY, buildClientAcknowledgment, greetingName, isValidCalLink, recoveryUrlFor } from "./client-acknowledgment";
 import { INQUIRY_NOTIFICATION_SUBJECT, buildInquiryNotificationEmail } from "./inquiry-notification-email";
 
-const BOOKING = bookingUrlFor("mintapp/mintapp-discovery-call", "ref+/=token");
+const REFERENCE = "payload_part-1.signature_part-2";
+const BOOKING_EN = recoveryUrlFor("en", REFERENCE);
+const BOOKING_AR = recoveryUrlFor("ar", REFERENCE);
 const HOSTILE = `Sara <script>alert(1)</script> "O'Neil" & Co`;
 
-const ackEn = buildClientAcknowledgment({ lang: "en", name: "Sara Haddad", bookingUrl: BOOKING });
-const ackAr = buildClientAcknowledgment({ lang: "ar", name: "سارة حداد", bookingUrl: BOOKING });
-const ackNoCal = (lang: "en" | "ar") => buildClientAcknowledgment({ lang, name: "Sara" });
+// Normal: a booking link exists. Fallback: none could be made (technical only).
+const ackEn = buildClientAcknowledgment({ lang: "en", name: "Sara Haddad", bookingUrl: BOOKING_EN });
+const ackAr = buildClientAcknowledgment({ lang: "ar", name: "سارة حداد", bookingUrl: BOOKING_AR });
+const fallback = (lang: "en" | "ar") => buildClientAcknowledgment({ lang, name: "Sara" });
 const internal = (over: Partial<Parameters<typeof buildInquiryNotificationEmail>[0]> = {}) =>
   buildInquiryNotificationEmail({
     inquiryId: "11111111-2222-4333-8444-555555555555",
@@ -19,14 +22,89 @@ const internal = (over: Partial<Parameters<typeof buildInquiryNotificationEmail>
     submittedAt: new Date("2026-10-05T13:04:00Z"),
     ...over,
   });
-const all = () => [ackEn, ackAr, ackNoCal("en"), ackNoCal("ar"), internal(), internal({ lang: "ar", desc: "تطبيق حجز", phone: "+974 5555 0100", company: "X" })];
+const all = () => [ackEn, ackAr, fallback("en"), fallback("ar"), internal(), internal({ lang: "ar", desc: "تطبيق حجز", phone: "+974 5555 0100", company: "X" })];
 
-describe("client acknowledgment", () => {
+describe("client acknowledgment: the normal email", () => {
+  test("says, in the approved words, that the client can choose a time if they have not already", () => {
+    expect(CLIENT_ACK_COPY.en.bookIf).toBe("If you haven’t already chosen a time, you can select one below.");
+    expect(CLIENT_ACK_COPY.ar.bookIf).toBe("إذا لم تكن قد اخترت موعدًا بعد، يمكنك اختيار الوقت المناسب أدناه.");
+    for (const [email, copy] of [[ackEn, CLIENT_ACK_COPY.en], [ackAr, CLIENT_ACK_COPY.ar]] as const) {
+      expect(email.html).toContain(copy.bookIf);
+      expect(email.text).toContain(copy.bookIf);
+    }
+  });
+
+  test("the button keeps its label, in both languages", () => {
+    expect(ackEn.html).toContain(">Choose a call time</a>");
+    expect(ackAr.html).toContain(">اختر وقت المكالمة</a>");
+  });
+
+  test("never says the client must book twice, and never says Mintapp arranges every meeting", () => {
+    const en = `${ackEn.html}\n${ackEn.text}`;
+    const ar = `${ackAr.html}\n${ackAr.text}`;
+    expect(en).not.toMatch(/must|need to book|book again|second|arrange|we will contact|we contact|reach out|already picked|all set/i);
+    expect(ar).not.toMatch(/يجب|مرة أخرى|مرتين|سنتواصل معك|نتواصل معك|نرتب|لا حاجة/);
+  });
+
+  test("one clear action: a single link to our own booking page, never straight to Cal.com", () => {
+    for (const [email, lang] of [[ackEn, "en"], [ackAr, "ar"]] as const) {
+      expect(email.html.match(/<a href="https:\/\/www\.mintapp\.tech\/(en|ar)\/book\?ref=/g)).toHaveLength(1);
+      expect(email.html).toContain(`href="https://www.mintapp.tech/${lang}/book?ref=${REFERENCE}"`);
+      expect(email.text).toContain(`https://www.mintapp.tech/${lang}/book?ref=${REFERENCE}`);
+      expect(`${email.html}\n${email.text}`).not.toMatch(/cal\.com\/(?!$)[A-Za-z]/); // only the words "Cal.com" in the note
+      expect(email.html).not.toMatch(/href="https:\/\/cal\.com/);
+    }
+  });
+
+  test("mentions that Cal.com sends the booking confirmation separately", () => {
+    expect(ackEn.text).toContain(CLIENT_ACK_COPY.en.confirmationNote);
+    expect(ackAr.text).toContain(CLIENT_ACK_COPY.ar.confirmationNote);
+  });
+
+  test("the HTML and the plain text carry the same sentences", () => {
+    for (const [email, t] of [[ackEn, CLIENT_ACK_COPY.en], [ackAr, CLIENT_ACK_COPY.ar]] as const) {
+      for (const sentence of [t.received, t.review, t.bookIf, t.confirmationNote, t.signoff, t.why]) {
+        expect(email.text, sentence).toContain(sentence);
+        expect(email.html, sentence).toContain(escapeHtml(sentence));
+      }
+    }
+  });
+});
+
+describe("client acknowledgment: the technical fallback", () => {
+  test("has no button and no booking link at all, and says Mintapp will contact the client", () => {
+    for (const [lang, t] of [["en", CLIENT_ACK_COPY.en], ["ar", CLIENT_ACK_COPY.ar]] as const) {
+      const e = fallback(lang);
+      expect(e.html).not.toMatch(/href="https:\/\/(www\.mintapp\.tech\/(en|ar)\/book|cal\.com)/);
+      expect(e.html).not.toContain(t.action);
+      expect(e.text).not.toMatch(/\/book|cal\.com/i); // the footer's site and privacy addresses are fine; a booking link is not
+      expect(e.text).toContain(t.noBook);
+      expect(e.text).toContain(t.received); // the inquiry was received
+      expect(e.text).not.toContain(t.bookIf);
+    }
+  });
+
+  test("the HTML and the plain text carry the same sentences", () => {
+    for (const [email, t] of [[fallback("en"), CLIENT_ACK_COPY.en], [fallback("ar"), CLIENT_ACK_COPY.ar]] as const) {
+      for (const sentence of [t.received, t.review, t.noBook, t.signoff]) {
+        expect(email.text, sentence).toContain(sentence);
+        expect(email.html, sentence).toContain(escapeHtml(sentence));
+      }
+    }
+  });
+
+  test("is chosen by whether a booking link exists, and by nothing else", () => {
+    // Same client, same everything: only the link differs.
+    expect(buildClientAcknowledgment({ lang: "en", name: "Sara", bookingUrl: BOOKING_EN }).text).toContain(CLIENT_ACK_COPY.en.bookIf);
+    expect(buildClientAcknowledgment({ lang: "en", name: "Sara", bookingUrl: undefined }).text).toContain(CLIENT_ACK_COPY.en.noBook);
+  });
+});
+
+describe("client acknowledgment: subject, direction, greeting and safety", () => {
   test("subjects are fixed and carry no inquiry details", () => {
     expect(ackEn.subject).toBe("We received your project inquiry");
     expect(ackAr.subject).toBe("وصلنا طلب مشروعك");
-    const hostile = buildClientAcknowledgment({ lang: "en", name: HOSTILE, bookingUrl: BOOKING });
-    expect(hostile.subject).toBe(ackEn.subject);
+    expect(buildClientAcknowledgment({ lang: "en", name: HOSTILE, bookingUrl: BOOKING_EN }).subject).toBe(ackEn.subject);
   });
 
   test("English is left to right and Arabic is right to left, end to end", () => {
@@ -39,33 +117,15 @@ describe("client acknowledgment", () => {
     expect(ackAr.html).toContain('<span dir="ltr"');
   });
 
-  test("one clear action that names what it does, linked to the booking page", () => {
-    for (const [email, label] of [[ackEn, "Choose a call time"], [ackAr, "اختر وقت المكالمة"]] as const) {
-      expect(email.html.match(/<a href="https:\/\/cal\.com\//g)).toHaveLength(1);
-      expect(email.html).toContain(`>${label}</a>`);
-      expect(email.text).toContain(BOOKING);
-    }
-  });
-
-  test("the booking link carries the signed reference, encoded", () => {
-    expect(BOOKING).toBe("https://cal.com/mintapp/mintapp-discovery-call?metadata%5BbookingContext%5D=ref%2B%2F%3Dtoken");
-  });
-
-  test("without a booking link, it says we will arrange the time and links nowhere else", () => {
-    expect(ackNoCal("en").html).not.toContain("cal.com/");
-    expect(ackNoCal("en").text).toContain(CLIENT_ACK_COPY.en.noBook);
-    expect(ackNoCal("ar").text).toContain(CLIENT_ACK_COPY.ar.noBook);
-  });
-
   test("a plain name is escaped in HTML and kept as typed in plain text", () => {
-    const e = buildClientAcknowledgment({ lang: "en", name: "Sara O'Neil & Co", bookingUrl: BOOKING });
+    const e = buildClientAcknowledgment({ lang: "en", name: "Sara O'Neil & Co", bookingUrl: BOOKING_EN });
     expect(e.html).toContain("Sara O&#39;Neil &amp; Co");
     expect(e.text).toContain("Hi Sara O'Neil & Co,");
   });
 
   test("the email goes to whatever address was typed, so free text that is not a plain name is never echoed", () => {
     for (const name of [HOSTILE, "Click http://evil.example now", "www.evil.example", "a@b.co", "evil.example", "x" + String.fromCharCode(92) + "y", "N".repeat(61)]) {
-      const e = buildClientAcknowledgment({ lang: "en", name, bookingUrl: BOOKING });
+      const e = buildClientAcknowledgment({ lang: "en", name, bookingUrl: BOOKING_EN });
       expect(e.html, name).not.toContain("<script>");
       expect(e.html, name).not.toContain("evil");
       expect(e.text, name).not.toContain("evil");
@@ -81,22 +141,14 @@ describe("client acknowledgment", () => {
     expect(greetingName(undefined)).toBeNull();
   });
 
-  test("the booking link is built only from a well-formed Cal link and a reference", () => {
-    expect(bookingUrlFor("mintapp/mintapp-discovery-call", "ref")).toBe("https://cal.com/mintapp/mintapp-discovery-call?metadata%5BbookingContext%5D=ref");
-    for (const calLink of [undefined, "", "mintapp", "https://evil.example/x", "mintapp/../x y", "mintapp/call?x=1"]) expect(bookingUrlFor(calLink, "ref"), String(calLink)).toBeUndefined();
-    expect(bookingUrlFor("mintapp/mintapp-discovery-call", undefined)).toBeUndefined();
-  });
-
   test("fixed copy has no HTML-special characters, so it is safe to place unescaped", () => {
-    const strings = Object.values(CLIENT_ACK_COPY).flatMap((t) =>
-      Object.values(t).map((v) => (typeof v === "function" ? v("") : v)),
-    );
+    const strings = Object.values(CLIENT_ACK_COPY).flatMap((t) => Object.values(t).map((v) => (typeof v === "function" ? v("") : v)));
     for (const s of strings) expect(s).not.toMatch(/[<>&"']/);
   });
 
   test("promises no proposal, design, estimate or pricing", () => {
-    expect(`${ackEn.text}\n${ackNoCal("en").text}`).not.toMatch(/proposal|estimate|pric|quote|design|mockup/i);
-    expect(`${ackAr.text}\n${ackNoCal("ar").text}`).not.toMatch(/عرض|تسعير|تقدير|تكلفة|تصميم/);
+    expect(`${ackEn.text}\n${fallback("en").text}`).not.toMatch(/proposal|estimate|pric|quote|design|mockup/i);
+    expect(`${ackAr.text}\n${fallback("ar").text}`).not.toMatch(/عرض|تسعير|تقدير|تكلفة|تصميم/);
   });
 
   test("footer has the contact address, website and the privacy policy in the email's language", () => {
@@ -104,6 +156,23 @@ describe("client acknowledgment", () => {
     expect(ackEn.html).toContain('href="https://www.mintapp.tech/en/privacy"');
     expect(ackAr.html).toContain('href="https://www.mintapp.tech/ar/privacy"');
     expect(ackAr.html).toContain(">سياسة الخصوصية</a>");
+  });
+});
+
+describe("the booking link", () => {
+  test("points to our own page, in the email's language, with the reference as a URL-safe query", () => {
+    expect(recoveryUrlFor("en", REFERENCE)).toBe(`https://www.mintapp.tech/en/book?ref=${REFERENCE}`);
+    expect(recoveryUrlFor("ar", REFERENCE)).toBe(`https://www.mintapp.tech/ar/book?ref=${REFERENCE}`);
+    expect(recoveryUrlFor("en", REFERENCE, "https://preview.example")).toBe(`https://preview.example/en/book?ref=${REFERENCE}`);
+  });
+
+  test("is made only from a well-formed signed reference", () => {
+    for (const bad of [undefined, "", "no-dot", "a.b.c", "a b.c", "a.b?x=1", "a.b#frag", "<script>.x", "a.b\n"]) expect(recoveryUrlFor("en", bad), String(bad)).toBeUndefined();
+  });
+
+  test("a calendar counts as configured only when its link looks like one", () => {
+    expect(isValidCalLink("mintapp/mintapp-discovery-call")).toBe(true);
+    for (const bad of [undefined, "", "mintapp", "https://evil.example/x", "mintapp/../x y", "mintapp/call?x=1"]) expect(isValidCalLink(bad), String(bad)).toBe(false);
   });
 });
 
@@ -155,7 +224,7 @@ describe("internal notification", () => {
 });
 
 describe("every template", () => {
-  test("no tracking pixels and no third-party resources: one image, our own mark", () => {
+  test("no tracking pixels and no third-party resources: one image, our own mark, links only to our site and our address", () => {
     for (const e of all()) {
       const images = e.html.match(/<img\b[^>]*>/g) ?? [];
       expect(images).toHaveLength(1);
@@ -164,7 +233,7 @@ describe("every template", () => {
       // The brand name is live text, so it survives blocked images.
       expect(e.html).toContain(">mintapp</span>");
       for (const [, href] of e.html.matchAll(/href="([^"]+)"/g)) {
-        expect(href).toMatch(/^(https:\/\/www\.mintapp\.tech|https:\/\/cal\.com\/mintapp\/|mailto:)/);
+        expect(href).toMatch(/^(https:\/\/www\.mintapp\.tech|mailto:)/);
       }
     }
   });

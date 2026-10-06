@@ -20,12 +20,13 @@ const siteUrl = pathToFileURL(join(root, "public")).href;
 const { module: ack } = await runnerImport(join(root, "src/lib/email/client-acknowledgment.ts"));
 const { module: note } = await runnerImport(join(root, "src/lib/email/inquiry-notification-email.ts"));
 
-const bookingUrl = ack.bookingUrlFor("mintapp/mintapp-discovery-call", "preview-reference");
+const bookingUrl = ack.recoveryUrlFor("en", "preview-reference.signature", siteUrl);
+const bookingUrlAr = ack.recoveryUrlFor("ar", "preview-reference.signature", siteUrl);
 const previews = {
   "client-acknowledgment-en": ack.buildClientAcknowledgment({ lang: "en", name: "Sara Haddad", bookingUrl, siteUrl }),
-  "client-acknowledgment-ar": ack.buildClientAcknowledgment({ lang: "ar", name: "سارة حداد", bookingUrl, siteUrl }),
-  "client-acknowledgment-en-no-calendar": ack.buildClientAcknowledgment({ lang: "en", name: "Sara Haddad", siteUrl }),
-  "client-acknowledgment-ar-no-calendar": ack.buildClientAcknowledgment({ lang: "ar", name: "سارة حداد", siteUrl }),
+  "client-acknowledgment-ar": ack.buildClientAcknowledgment({ lang: "ar", name: "سارة حداد", bookingUrl: bookingUrlAr, siteUrl }),
+  "client-acknowledgment-en-fallback": ack.buildClientAcknowledgment({ lang: "en", name: "Sara Haddad", siteUrl }),
+  "client-acknowledgment-ar-fallback": ack.buildClientAcknowledgment({ lang: "ar", name: "سارة حداد", siteUrl }),
   "client-acknowledgment-en-plain-greeting": ack.buildClientAcknowledgment({ lang: "en", name: "http://not-a-name.example", bookingUrl, siteUrl }),
   "internal-notification-en": note.buildInquiryNotificationEmail({
     inquiryId: "00000000-0000-4000-8000-000000000000",
