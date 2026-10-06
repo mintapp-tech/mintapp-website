@@ -51,10 +51,16 @@ fails if that changes. If a file ever needs real Unicode text, write it as
 3. `supabase/migrations/20260823000000_revoke_public_inquiry_privileges.sql`
 4. `supabase/migrations/20260823120000_allow_disabled_notification_status.sql`
 5. `supabase/migrations/20260824000000_add_cal_booking_event_ordering.sql`
-6. `supabase/migrations/20261005000000_add_inquiry_preparation.sql`
-7. `supabase/migrations/20261006000000_add_preparation_dashboard.sql`
-8. `supabase/review/01_review_marker.sql`
-9. `supabase/review/02_synthetic_inquiries.sql`
+6. `supabase/migrations/20261004000000_allow_not_sure_project_type.sql`
+7. `supabase/migrations/20261005000000_add_inquiry_preparation.sql`
+8. `supabase/migrations/20261006000000_add_preparation_dashboard.sql`
+9. `supabase/review/01_review_marker.sql`
+10. `supabase/review/02_synthetic_inquiries.sql`
+
+**Already set up before 6 October 2026?** Run only item 6 (it is additive and
+safe to run again), then `npm run review:seed`. Until item 6 is run, the
+seed's "Not sure yet" inquiry cannot be stored, and the repair command stops
+with a message saying so; nothing else is affected.
 
 Never run: `20261001000000_add_cal_booking_event_ledger.sql` (deferred, only on
 `feat/pending-booking-workflow`), anything in `supabase/local-demo/`, and

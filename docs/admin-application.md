@@ -98,6 +98,23 @@ Its timestamp sorts before the dashboard migrations, so:
 
 Take a backup before applying (the Free plan has no automatic backups).
 
+## Project type: what the client chose, and what we think
+
+The public form asks for the project type (Website, Web application, Mobile
+application, Not sure yet; stored as `website`, `web_app`, `mobile_app`,
+`not_sure`). The dashboard follows one rule (`src/lib/dashboard/project-type.ts`):
+
+- Only those four values are shown under "Provided by the client". They use the
+  form's own words, in English and Arabic, and they are included in the
+  structured brief and in the text sent to a generator.
+- No value, or an older value the form never offered (`other`,
+  `website_and_mobile`), is shown as **Not provided** and listed under what is
+  missing. It is never shown as "Other".
+- Nothing infers the type from the written brief.
+- A future suggestion made by software or by Omar or Adam ("Suggested from the
+  brief", editable) must be stored in its own column and shown separately, so
+  the client's answer is never overwritten. That column is not built yet.
+
 ## Before launch
 
 1. In Supabase: disable public sign-ups; keep email confirmation on; create the

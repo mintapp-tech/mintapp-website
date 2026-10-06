@@ -32,6 +32,9 @@ if (rows.length === 0 || rows.some((r) => !SYNTHETIC_ID.test(r.id))) throw new E
 const db = createClient(project.url, project.secretKey, { auth: { persistSession: false, autoRefreshToken: false } });
 const check = async (message, promise) => {
   const { data, error } = await promise;
+  if (error?.message.includes("project_type_values")) {
+    throw new Error(`${message}: the review project does not accept the "not_sure" project type yet. Run supabase/migrations/20261004000000_allow_not_sure_project_type.sql in its SQL editor first (additive, safe to run again), then repeat this command.`);
+  }
   if (error) throw new Error(`${message}: ${error.message}`);
   return data;
 };
