@@ -54,9 +54,10 @@ application cannot restyle or rewrite them.
 
 The public booking page shows Cal.com branding, consistent with the free plan.
 
-## Proposed Mintapp templates
+## Mintapp templates
 
-Code: `src/lib/email/`. Not wired to any live send.
+Code: `src/lib/email/`. Wired into the inquiry route on `feat/client-intake`
+(not live; see [client-intake-release.md](./client-intake-release.md)).
 
 - `layout.ts`: shared layout. Table layout with inline styles; light header
   with the Mintapp mark (`public/email/mintapp-mark.png`, our own server) and
@@ -93,7 +94,7 @@ daily cap is reached only above 50 accepted inquiries in a day. Turnstile,
 the honeypot and the idempotency check already keep bots and retries from
 sending.
 
-## Release plan (not done in this milestone)
+## Release plan (superseded: see client-intake-release.md)
 
 1. Wire the acknowledgment into `route.ts`'s `after()` step, behind the same
    `EMAIL_SENDING_MODE` switch, with its own new From/Reply-To variables. It
