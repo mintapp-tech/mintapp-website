@@ -21,20 +21,37 @@ function decodeLiteral(body, unicodeEscapes) {
 
 // Splits the VALUES section into tuples of decoded values: strings, null,
 // true/false, and now() (kept as the text "now()"). Comments are skipped.
+const KEYWORDS = { null: null, true: true, false: false, "now()": "now()" };
+
 function tokenize(values) {
   const tuples = [];
   let current = null;
   let i = 0;
   while (i < values.length) {
     const rest = values.slice(i);
-    let m;
-    if ((m = /^\s+/.exec(rest)) || (m = /^--[^\n]*/.exec(rest))) i += m[0].length;
-    else if (rest[0] === "(") (current = []), i++;
-    else if (rest[0] === ")") tuples.push(current), (current = null), i++;
-    else if (rest[0] === ",") i++;
-    else if ((m = /^(U&)?'((?:[^']|'')*)'/.exec(rest))) (current.push(decodeLiteral(m[2], Boolean(m[1]))), (i += m[0].length));
-    else if ((m = /^(null|true|false|now\(\))/i.exec(rest))) (current.push(m[1].toLowerCase() === "null" ? null : m[1].toLowerCase() === "true" ? true : m[1].toLowerCase() === "false" ? false : "now()"), (i += m[0].length));
-    else throw new Error(`Seed parse error near: ${rest.slice(0, 30)}`);
+    const skip = /^\s+/.exec(rest) ?? /^--[^\n]*/.exec(rest);
+    const string = /^(U&)?'((?:[^']|'')*)'/.exec(rest);
+    const keyword = /^(null|true|false|now\(\))/i.exec(rest);
+    if (skip) {
+      i += skip[0].length;
+    } else if (rest[0] === "(") {
+      current = [];
+      i++;
+    } else if (rest[0] === ")") {
+      tuples.push(current);
+      current = null;
+      i++;
+    } else if (rest[0] === ",") {
+      i++;
+    } else if (string) {
+      current.push(decodeLiteral(string[2], Boolean(string[1])));
+      i += string[0].length;
+    } else if (keyword) {
+      current.push(KEYWORDS[keyword[1].toLowerCase()]);
+      i += keyword[0].length;
+    } else {
+      throw new Error(`Seed parse error near: ${rest.slice(0, 30)}`);
+    }
   }
   return tuples;
 }
