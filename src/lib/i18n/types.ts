@@ -165,6 +165,23 @@ export interface HomeContent {
     prepClarify: string;
     sideNote: string;
   };
+  // The page behind the "Choose a call time" button in the acknowledgment email.
+  book: {
+    metaTitle: string;
+    scheduleNote: string;
+    bookedTitle: string;
+    bookedBody: string; // contains {when}
+    bookedBodyNoTime: string;
+    manage: string;
+    closedTitle: string;
+    closedBody: string;
+    unavailableTitle: string;
+    unavailableBody: string;
+    restart: string;
+    errorTitle: string;
+    errorBody: string;
+    writeUs: string;
+  };
   success: {
     badge: string;
     title: string;
