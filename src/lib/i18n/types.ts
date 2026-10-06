@@ -1,3 +1,5 @@
+import type { ProjectType } from "../project-types";
+
 export type Lang = "ar" | "en";
 
 export interface CaseStudyContent {
@@ -125,6 +127,9 @@ export interface HomeContent {
     fCompany: string;
     fEmail: string;
     fPhone: string;
+    fProjectType: string;
+    fProjectTypeHelp: string;
+    projectTypes: Record<ProjectType, string>;
     fDesc: string;
     fDescHelp: string;
     fDescPh: string;
