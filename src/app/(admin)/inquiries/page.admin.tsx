@@ -5,6 +5,7 @@ import { ownersLabel, teamMembers, type TeamMember } from "@/lib/admin/auth/conf
 import { adminText } from "@/lib/admin/locale";
 import type { AdminLocale, AdminMessages } from "@/lib/admin/messages";
 import { listInquiries, type InquiryRow } from "@/lib/dashboard/data";
+import { clientProjectType } from "@/lib/dashboard/project-type";
 import { selectGenerator } from "@/lib/preparation/config";
 import { excerpt, label, labelsFor } from "@/lib/dashboard/status";
 import { Chip, MEETING_TONES, REVIEW_TONES, card, eyebrow, formatDate, formatDay, todayInCairo, type ChipTone } from "@/components/dashboard/ui";
@@ -51,7 +52,7 @@ function Client({ r, c }: { r: Row; c: Ctx }) {
         ) : null}
       </Link>
       <div className="mt-0.5 text-[12.5px] text-ink-faint">
-        {label(c.labels.projectType, r.project_type, c.t.list.typeNotStated)} · {c.t.languages[r.language] ?? r.language}
+        {c.t.list.typeLabel}: {label(c.labels.projectType, clientProjectType(r.project_type), c.t.list.notProvided)} · {c.t.languages[r.language] ?? r.language}
       </div>
       <p dir="auto" className="mt-1.5 mb-0 max-w-[60ch] text-[13.5px] leading-relaxed text-ink-soft">
         {excerpt(r.summary)}

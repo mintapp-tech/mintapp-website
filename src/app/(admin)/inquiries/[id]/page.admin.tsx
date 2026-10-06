@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/admin/auth/state";
 import { ownerChoices, ownersLabel, teamMembers } from "@/lib/admin/auth/config";
 import { adminText } from "@/lib/admin/locale";
 import { getInquiry } from "@/lib/dashboard/data";
+import { clientProjectType } from "@/lib/dashboard/project-type";
 import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "@/lib/dashboard/brief";
 import { label, labelsFor, preparationNotice } from "@/lib/dashboard/status";
 import { isLocalDashboardDemo } from "@/lib/sql-gateway";
@@ -139,7 +140,7 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
 
       <header className="mt-4 mb-6">
         <p className={eyebrow}>
-          {label(L.projectType, inquiry.project_type, d.typeNotStated)} · {t.languages[inquiry.language] ?? inquiry.language}
+          {d.typeLabel}: {label(L.projectType, clientProjectType(inquiry.project_type), d.notProvided)} · {t.languages[inquiry.language] ?? inquiry.language}
         </p>
         <h1 className="m-0 mt-1.5 text-[26px] leading-tight font-bold tracking-[-0.02em] sm:text-[32px] rtl:tracking-normal">
           <bdi>{inquiry.client_name}</bdi>
