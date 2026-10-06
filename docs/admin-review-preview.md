@@ -34,7 +34,17 @@ Authentication settings:
 
 ## Step 2. Database: exact files, in this order (review project only)
 
-Run each file's contents in the review project's SQL editor, one at a time:
+Run each file's contents in the review project's SQL editor, one at a time.
+
+**How to get the SQL into the editor.** Open the file in your editor
+(VS Code), select all, copy, paste. Do not pipe SQL through the Windows
+clipboard tool (`git show ... | clip`) or any Command Prompt pipe: Windows
+re-encodes the text with the old DOS code page (437), which turns every Arabic
+letter into box-drawing symbols. That is exactly how the first review data was
+corrupted. The migrations and `supabase/review/` files are therefore kept
+ASCII-only (the seed writes Arabic as Postgres Unicode escapes), and a test
+fails if that changes. If a file ever needs real Unicode text, write it as
+`U&'\0645...'` escapes rather than relying on any copy route.
 
 1. `supabase/migrations/20260815000000_create_project_inquiries.sql`
 2. `supabase/migrations/20260822000000_align_constraints_and_add_submission_token.sql`
@@ -52,6 +62,18 @@ never "apply all pending migrations". Nothing here touches the live project.
 
 Check: `select public.review_environment();` returns `synthetic-review`, and
 `select count(*) from public.project_inquiries;` returns 4.
+
+**Refreshing or repairing the synthetic inquiries** (for example if the text
+ever looks wrong): from the repository, with `.env.review.local` in place,
+
+```
+npm run review:seed
+```
+
+It refuses to run unless the project answers the review marker, rewrites only
+the four synthetic inquiries' content from the ASCII-only seed (bookings,
+owners, notes and drafts are untouched), reads them back and reports any
+field that differs. It prints no keys and no Arabic text.
 
 ## Step 3. Test sign-in against real Supabase Auth (local, synthetic)
 
