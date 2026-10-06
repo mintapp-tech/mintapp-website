@@ -33,6 +33,9 @@ export interface EmailSender {
   };
 }
 
+// The provider answered with an error. Carries only its error type, never its message.
+class ProviderRejected extends Error {}
+
 export function createRealResendSender(apiKey: string): EmailSender {
   return new Resend(apiKey);
 }
@@ -108,9 +111,11 @@ export async function sendInquiryNotification(
       html: email.html,
       text: email.text,
     });
-    if (error) throw new Error(error.message);
+    // The provider's message can quote the recipient or the content, so only its
+    // error type is kept (a thrown exception is reported as "unexpected_error").
+    if (error) throw new ProviderRejected((error as { name?: string }).name ?? "provider_error");
   } catch (err) {
-    console.error("Resend send failed:", err instanceof Error ? err.message : err);
+    console.error("inquiry_notification_send_failed", err instanceof ProviderRejected ? err.message : "unexpected_error");
     await updateStatus(supabase, input.inquiryId, "failed");
     return "send_failed";
   }
