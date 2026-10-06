@@ -106,3 +106,19 @@ export async function applyBookingRescheduled(
   }
   return result.data ? "applied" : "no_match";
 }
+
+// After a BOOKING_CREATED was refused, says whether the reason is that the inquiry
+// already holds a DIFFERENT active booking: a second booking made from two tabs,
+// a double click or a retry. The database has already refused it (and recorded
+// nothing), so this exists only so the team can see that an extra booking is
+// sitting in Cal.com. Read-only, never throws, and answers only yes or no.
+export async function isDuplicateActiveBooking(supabase: SupabaseClient, args: { inquiryId: string; uid: string }): Promise<boolean> {
+  try {
+    const { data, error } = await supabase.from("project_inquiries").select("booking_status, cal_booking_id").eq("id", args.inquiryId).limit(1);
+    const row = (data as { booking_status: string; cal_booking_id: string | null }[] | null)?.[0];
+    if (error || !row) return false;
+    return row.booking_status === "booked" && Boolean(row.cal_booking_id) && row.cal_booking_id !== args.uid;
+  } catch {
+    return false;
+  }
+}

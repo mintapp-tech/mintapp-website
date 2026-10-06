@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { applyBookingCreated, applyBookingCancelled, applyBookingRescheduled } from "./apply-cal-booking-event";
+import { applyBookingCreated, applyBookingCancelled, applyBookingRescheduled, isDuplicateActiveBooking } from "./apply-cal-booking-event";
 
 function fakeSupabase(rpcImpl: (fn: string, args: unknown) => Promise<{ data: unknown; error: { code?: string } | null }>) {
   const calls: { fn: string; args: unknown }[] = [];
@@ -115,5 +115,50 @@ describe("applyBookingRescheduled", () => {
       eventAt: "e",
     });
     expect(result).toBe("no_match");
+  });
+});
+
+function fakeSupabaseForRead(result: { data: unknown; error?: unknown } | "throw") {
+  const queried: string[] = [];
+  const client = {
+    from(table: string) {
+      queried.push(table);
+      return {
+        select: () => ({
+          eq: () => ({
+            limit: async () => {
+              if (result === "throw") throw new Error("network down");
+              return { data: result.data, error: result.error ?? null };
+            },
+          }),
+        }),
+      };
+    },
+  } as unknown as SupabaseClient;
+  return { queried, client };
+}
+
+describe("isDuplicateActiveBooking: tells a second active booking apart from an ordinary stale event", () => {
+  const args = { inquiryId: "id-1", uid: "uid-2" };
+
+  test("the inquiry holds a different active booking: duplicate", async () => {
+    const { queried, client } = fakeSupabaseForRead({ data: [{ booking_status: "booked", cal_booking_id: "uid-1" }] });
+    expect(await isDuplicateActiveBooking(client, args)).toBe(true);
+    expect(queried).toEqual(["project_inquiries"]);
+  });
+
+  test.each([
+    ["the same booking again (a retry)", [{ booking_status: "booked", cal_booking_id: "uid-2" }]],
+    ["a cancelled booking (rebooking is allowed)", [{ booking_status: "cancelled", cal_booking_id: "uid-1" }]],
+    ["no booking yet", [{ booking_status: "not_booked", cal_booking_id: null }]],
+    ["an unknown inquiry", []],
+  ])("%s: not a duplicate", async (_name, data) => {
+    const { client } = fakeSupabaseForRead({ data });
+    expect(await isDuplicateActiveBooking(client, args)).toBe(false);
+  });
+
+  test("a read error or a thrown exception never escapes and never claims a duplicate", async () => {
+    expect(await isDuplicateActiveBooking(fakeSupabaseForRead({ data: null, error: { code: "x" } }).client, args)).toBe(false);
+    expect(await isDuplicateActiveBooking(fakeSupabaseForRead("throw").client, args)).toBe(false);
   });
 });
