@@ -6,7 +6,8 @@ import { CONTACT_EMAIL, EMAIL_COLORS, SITE_URL, button, escapeHtml, heading, lin
 
 export interface ClientAcknowledgmentInput {
   lang: EmailLang;
-  name: string;
+  /** Used in the greeting only when it looks like a plain name; see greetingName(). */
+  name?: string;
   /** Booking page carrying the signed inquiry reference; absent when signing failed. */
   bookingUrl?: string;
   siteUrl?: string;
@@ -19,6 +20,7 @@ export const CLIENT_ACK_COPY = {
     preheaderNoBook: "We will contact you to arrange your discovery call.",
     heading: "We have your idea",
     hello: (name: string) => `Hi ${name},`,
+    helloPlain: "Hello,",
     received: "Thank you for telling us about your idea. Your inquiry has reached the Mintapp team.",
     review: "Before we meet, we read what you sent, so the call can focus on your goals and questions.",
     book: "Next step: choose a time for a 30-minute discovery call.",
@@ -37,6 +39,7 @@ export const CLIENT_ACK_COPY = {
     preheaderNoBook: "سنتواصل معك لتحديد موعد مكالمتك التعريفية.",
     heading: "وصلتنا فكرتك",
     hello: (name: string) => `مرحبًا ${name}،`,
+    helloPlain: "مرحبًا،",
     received: "شكرًا لمشاركتنا فكرتك. وصل طلبك إلى فريق Mintapp.",
     review: "قبل أن نلتقي، نقرأ ما أرسلته حتى تركّز المكالمة على أهدافك وأسئلتك.",
     book: "الخطوة التالية: اختر وقتًا لمكالمة تعريفية مدتها 30 دقيقة.",
@@ -51,6 +54,17 @@ export const CLIENT_ACK_COPY = {
   },
 } as const;
 
+// This email goes to whatever address was typed into the form, which is not
+// necessarily the sender's own. So the visitor's free text is echoed only when
+// it looks like a plain name: short, with no link, address or markup characters.
+// Anything else gets a plain greeting.
+export function greetingName(name: string | undefined): string | null {
+  const trimmed = (name ?? "").trim();
+  if (!trimmed || trimmed.length > 60) return null;
+  if (/[@:/\x5c<>{}[\]|]|www\.|\.[a-z]{2,}|https?/i.test(trimmed)) return null;
+  return trimmed;
+}
+
 // Latin names and addresses inside Arabic sentences are isolated so their
 // punctuation stays in the right place.
 const isolate = (html: string) => `<bdi>${html}</bdi>`;
@@ -62,9 +76,10 @@ export function buildClientAcknowledgment({ lang, name, bookingUrl, siteUrl = SI
 
   // The fixed copy has no HTML-special characters (asserted in the tests), so
   // only the visitor's name needs escaping before it is placed in a sentence.
+  const greeting = greetingName(name);
   const content = [
     heading(lang, t.heading),
-    paragraph(lang, t.hello(isolate(escapeHtml(name.trim())))),
+    paragraph(lang, greeting ? t.hello(isolate(escapeHtml(greeting))) : t.helloPlain),
     paragraph(lang, escapeHtml(t.received)),
     paragraph(lang, escapeHtml(t.review)),
     ...(bookingUrl
@@ -87,7 +102,7 @@ export function buildClientAcknowledgment({ lang, name, bookingUrl, siteUrl = SI
   });
 
   const text = [
-    t.hello(name.trim()),
+    greeting ? t.hello(greeting) : t.helloPlain,
     "",
     t.received,
     "",
@@ -110,6 +125,7 @@ export function buildClientAcknowledgment({ lang, name, bookingUrl, siteUrl = SI
 // The booking page with the signed inquiry reference attached, using Cal.com's
 // documented `metadata[key]` booking-link parameter (the same reference the
 // on-page embed passes). The reference is valid for 7 days.
-export function bookingUrlFor(calLink: string, bookingContext: string): string {
+export function bookingUrlFor(calLink: string | undefined, bookingContext: string | undefined): string | undefined {
+  if (!calLink || !bookingContext || !/^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)+$/.test(calLink)) return undefined;
   return `https://cal.com/${calLink}?metadata%5BbookingContext%5D=${encodeURIComponent(bookingContext)}`;
 }
