@@ -69,6 +69,50 @@ test("list: all synthetic inquiries, Arabic intact, and stalled preparation flag
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
+const SCHOOL = "11111111-0000-4000-8000-000000000002";
+const row = (page: Page, id: string) => page.locator("tbody tr", { has: page.locator(`a[href="/inquiries/${id}"]`) });
+
+test("project type: only what the client chose is shown as provided, everything else is Not provided (English)", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  // Seeded as: clinic web_app, school website, crafts not_sure (all explicit), restaurant no value (like every inquiry sent before the form asked).
+  await expect(row(page, CLINIC)).toContainText("Type: Web application");
+  await expect(row(page, SCHOOL)).toContainText("Type: Website");
+  await expect(row(page, CRAFTS)).toContainText("Type: Not sure yet");
+  await expect(row(page, RESTAURANT)).toContainText("Type: Not provided");
+  await expect(page.locator("tbody")).not.toContainText(/Other/);
+
+  await page.goto(`/inquiries/${RESTAURANT}`);
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+  await expect(page.locator("main")).toContainText("Project type: Not provided");
+  await expect(page.locator('[data-brief="provided"]')).not.toContainText("Project type");
+  await expect(page.locator('[data-brief="missing"]')).toContainText("Project type");
+  await expect(page.locator("main")).not.toContainText(/Other/);
+
+  await page.goto(`/inquiries/${CRAFTS}`);
+  await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeNot sure yet");
+  await expect(page.locator('[data-brief="missing"]')).not.toContainText("Project type");
+});
+
+test("project type in Arabic: the form's own words, and Not provided for no choice", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+  await expect(row(page, CLINIC)).toContainText("النوع: تطبيق ويب");
+  await expect(row(page, SCHOOL)).toContainText("النوع: موقع إلكتروني");
+  await expect(row(page, CRAFTS)).toContainText("النوع: لست متأكدًا بعد");
+  await expect(row(page, RESTAURANT)).toContainText("النوع: غير مُقدَّم");
+  await expect(page.locator("tbody")).not.toContainText("أخرى");
+
+  await page.goto(`/inquiries/${RESTAURANT}`);
+  await expect(page.locator("main")).toContainText("نوع المشروع: غير مُقدَّم");
+  await expect(page.locator('[data-brief="provided"]')).not.toContainText("نوع المشروع");
+  await expect(page.locator('[data-brief="missing"]')).toContainText("نوع المشروع");
+  await page.goto(`/inquiries/${CRAFTS}`);
+  await expect(page.locator('[data-brief="provided"]')).toContainText("نوع المشروعلست متأكدًا بعد");
+  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
+  expect(results.violations.map((v) => v.id)).toEqual([]);
+});
+
 test("phones get cards instead of the table, with nothing wider than the screen", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.setViewportSize({ width: 360, height: 780 });
@@ -120,7 +164,7 @@ test("manual path: copy a brief without contact details, paste the result, revie
   const page = await signIn(browser, OMAR);
   await page.goto(`/inquiries/${CLINIC}`);
   await expect(page.locator('[data-brief="provided"]')).toContainText("Budget range (client-stated)Not sure yet");
-  await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeWeb app");
+  await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeWeb application");
   await page.getByRole("button", { name: "Copy brief for Claude" }).click();
   await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
