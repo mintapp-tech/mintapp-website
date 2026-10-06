@@ -38,7 +38,7 @@ export const SYNTHETIC_BRIEFS: SyntheticBrief[] = [
     kind: "ambiguous",
     inquiry: {
       preferred_language: "en",
-      project_type: "other",
+      project_type: "not_sure",
       budget_range: null,
       timeline: null,
       country: "Saudi Arabia",
@@ -52,7 +52,7 @@ export const SYNTHETIC_BRIEFS: SyntheticBrief[] = [
     kind: "tempting",
     inquiry: {
       preferred_language: "en",
-      project_type: "website_and_mobile",
+      project_type: null,
       budget_range: "$5,000 - $10,000",
       timeline: null,
       country: "UAE",
@@ -86,7 +86,7 @@ export const SYNTHETIC_BRIEFS: SyntheticBrief[] = [
     kind: "ambiguous",
     inquiry: {
       preferred_language: "ar",
-      project_type: "other",
+      project_type: "not_sure",
       budget_range: null,
       timeline: null,
       country: "الأردن",
