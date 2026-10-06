@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { createRealResendSender, sendInquiryNotification } from "@/lib/send-inquiry-notification";
+import { sendClientAcknowledgment } from "@/lib/send-client-acknowledgment";
 import { insertInquiry } from "@/lib/insert-inquiry";
 import { findInquiryIdByToken } from "@/lib/find-inquiry-by-token";
 import { verifyTurnstileToken } from "@/lib/verify-turnstile";
@@ -224,20 +225,31 @@ export async function POST(request: NextRequest) {
   const sender = apiKey ? createRealResendSender(apiKey) : null;
 
   // 11: the inquiry is already durably stored — the client's submission is
-  // a success from here on. Email notification is best-effort and must
-  // never block or fail the response. `after()` guarantees this still runs
-  // to completion on Vercel even though the response has already been sent.
-  after(() =>
-    sendInquiryNotification(supabase, sender, {
-      inquiryId,
-      name: body.name,
-      email: body.email,
-      phone: body.phone,
-      company: body.company,
-      lang: body.lang,
-      desc: body.desc,
-    }),
-  );
+  // a success from here on. Both emails are best-effort and must never block
+  // or fail the response. `after()` guarantees this still runs to completion
+  // on Vercel even though the response has already been sent.
+  //
+  // This point is reached only for a newly stored inquiry: a retry, an
+  // already-known submission token and a duplicate all returned above, so
+  // each inquiry produces one internal notification and one acknowledgment.
+  // The two are independent: one failing never stops the other.
+  after(async () => {
+    const results = await Promise.allSettled([
+      sendInquiryNotification(supabase, sender, {
+        inquiryId,
+        name: body.name,
+        email: body.email,
+        phone: body.phone,
+        company: body.company,
+        projectType: body.projectType,
+        lang: body.lang,
+        desc: body.desc,
+      }),
+      sendClientAcknowledgment(sender, { inquiryId, name: body.name, email: body.email, lang: body.lang }),
+    ]);
+    // Both helpers handle their own errors; this only catches the unexpected.
+    for (const result of results) if (result.status === "rejected") console.error("inquiry_email_task_failed");
+  });
 
   // 12: success response.
   return acceptedInquiryResponse(inquiryId, 201, false);
