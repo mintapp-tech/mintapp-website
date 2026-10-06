@@ -105,10 +105,19 @@ for (const locale of ["en", "ar"] as const) {
       const probe = PROBES[locale];
       const good = reference(probe.guarded);
       const tampered = good.slice(0, 10) + (good[10] === "A" ? "B" : "A") + good.slice(11);
+      // The same signature bytes spelled differently: only the final character has spare bits.
+      const [goodPayload, goodSignature] = good.split(".");
+      const goodBytes = Buffer.from(goodSignature, "base64url");
+      const alternates = [..."ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_"]
+        .map((ch) => goodSignature.slice(0, -1) + ch)
+        .filter((spelling) => spelling !== goodSignature && Buffer.from(spelling, "base64url").equals(goodBytes));
+      expect(alternates).toHaveLength(3);
       const cases: [string, string | undefined, number][] = [
         ["missing", undefined, 0],
         ["garbage", "not-a-reference", 0],
         ["tampered", tampered, 0],
+        ...alternates.map((spelling, i): [string, string, number] => [`non-canonical signature spelling ${i + 1}`, `${goodPayload}.${spelling}`, 0]),
+        ["padded signature", `${good}=`, 0],
         ["expired (31 days)", reference(probe.guarded, 31), 0],
         ["signed with another secret", reference(probe.guarded, 1, "someone-elses-secret"), 0],
         ["genuine reference, no such inquiry", reference(probe.unknown), 1],

@@ -24,6 +24,7 @@ const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000; // 5 minutes
 // ever handed to a decoder.
 const MAX_PAYLOAD_B64_LENGTH = 200;
 const SIGNATURE_B64_LENGTH = 43;
+const SIGNATURE_BYTES = 32;
 const BASE64URL_CHARS = /^[A-Za-z0-9_-]+$/;
 
 const contextPayloadSchema = z
@@ -108,10 +109,13 @@ export function verifyBookingContext(token: string): VerifyBookingContextResult 
   // rather than a silent 200 no-op that looks identical to a normal
   // rejected token.
   const secret = getSecret();
-  let actual: Buffer;
-  try {
-    actual = Buffer.from(signatureB64, "base64url");
-  } catch {
+  // The signature gets the same canonical re-encoding check as the payload.
+  // 43 characters carry 258 bits for a 256-bit digest, so the final character
+  // has two unused bits; without this check up to four different spellings of
+  // one signature decode to the same bytes and all verify. Requiring the
+  // re-encoded form to equal the supplied text accepts exactly one spelling.
+  const actual = Buffer.from(signatureB64, "base64url");
+  if (actual.length !== SIGNATURE_BYTES || actual.toString("base64url") !== signatureB64) {
     return { ok: false };
   }
   const expected = Buffer.from(sign(payloadB64, secret), "base64url");

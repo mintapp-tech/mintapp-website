@@ -129,6 +129,19 @@ describe("a link that cannot be used: one answer, no database access", () => {
     expect(queries).toHaveLength(0);
   });
 
+  test("every non-canonical spelling of a genuine signature gets the same refusal, before the database", async () => {
+    const good = referenceAged(1);
+    const [payload, signature] = good.split(".");
+    const bytes = Buffer.from(signature, "base64url");
+    const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    const spellings = [...alphabet].map((ch) => signature.slice(0, -1) + ch).filter((s) => s !== signature && Buffer.from(s, "base64url").equals(bytes));
+    expect(spellings).toHaveLength(3); // they decode to the very same signature bytes
+    const { client, queries } = fakeDatabase({ data: [row()] });
+    for (const spelling of spellings) expect(await resolveBookingRecovery(`${payload}.${spelling}`, client)).toEqual({ state: "unavailable" });
+    expect(queries).toHaveLength(0);
+    expect((await resolveBookingRecovery(good, client)).state).toBe("schedule"); // the canonical one still works
+  });
+
   test("a genuine reference for an inquiry that does not exist, or was deleted, looks exactly like a bad one", async () => {
     const bad = await resolveBookingRecovery("garbage", fakeDatabase({ data: [] }).client);
     const unknown = await resolveBookingRecovery(referenceAged(1), fakeDatabase({ data: [] }).client);
