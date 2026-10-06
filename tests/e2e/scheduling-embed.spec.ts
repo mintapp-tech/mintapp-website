@@ -13,9 +13,10 @@ const FAKE_CONTEXT = "fake-booking-context-token-for-e2e-only";
 const FAKE_UUID = "11111111-1111-4111-8111-111111111111";
 
 async function fillMinimumValidForm(page: Page) {
-  const textInputs = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])');
+  const textInputs = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])');
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
+  await page.locator('label:has(input[name="projectType"][value="website"])').click();
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }

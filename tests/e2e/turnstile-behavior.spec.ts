@@ -7,9 +7,10 @@ import { installTurnstileMock, triggerTurnstileCallback, mockInquiriesRoute } fr
 // real Cloudflare, Supabase, or Resend endpoint.
 
 async function fillMinimumValidForm(page: import("@playwright/test").Page) {
-  const textInputs = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])');
+  const textInputs = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])');
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
+  await page.locator('label:has(input[name="projectType"][value="website"])').click();
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }
