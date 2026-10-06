@@ -186,19 +186,21 @@ describe("reading never changes anything", () => {
 });
 
 describe("formatMeetingTime", () => {
-  test("English and Arabic, in the client's own timezone", () => {
+  test("English and Arabic, in the client's own timezone, with the zone as a plain offset", () => {
     const en = formatMeetingTime("2026-10-20T09:00:00Z", "Africa/Cairo", "en");
     const ar = formatMeetingTime("2026-10-20T09:00:00Z", "Africa/Cairo", "ar");
     expect(en).toMatch(/Tuesday/);
     expect(en).toContain("2026");
+    expect(en).toContain("GMT+3"); // not the jargon "EEST"
     expect(ar).toContain("2026"); // Latin digits, as on the rest of the site
     expect(ar).toMatch(/[؀-ۿ]/); // Arabic weekday and month
+    expect(ar).toContain("+3");
     expect(en).not.toBe(ar);
   });
 
   test("falls back to UTC for an unknown timezone, and gives nothing for a missing or invalid time", () => {
-    expect(formatMeetingTime("2026-10-20T09:00:00Z", "Not/AZone", "en")).toContain("UTC");
-    expect(formatMeetingTime("2026-10-20T09:00:00Z", null, "en")).toContain("UTC");
+    expect(formatMeetingTime("2026-10-20T09:00:00Z", "Not/AZone", "en")).toContain("GMT");
+    expect(formatMeetingTime("2026-10-20T09:00:00Z", null, "en")).toContain("GMT");
     expect(formatMeetingTime(null, "Africa/Cairo", "en")).toBeNull();
     expect(formatMeetingTime("not a date", "Africa/Cairo", "en")).toBeNull();
   });

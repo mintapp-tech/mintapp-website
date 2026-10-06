@@ -96,13 +96,13 @@ export async function resolveBookingRecovery(reference: unknown, supabase?: Supa
 }
 
 // The meeting time as the client will read it, in their own timezone when we hold
-// one. Done on the server so the page renders the same text everywhere.
+// one, with the zone as a plain offset (GMT+3) rather than an abbreviation (EEST). Done on the server so the page renders the same text everywhere.
 export function formatMeetingTime(startsAt: string | null, timezone: string | null, locale: "en" | "ar"): string | null {
   if (!startsAt) return null;
   const date = new Date(startsAt);
   if (Number.isNaN(date.getTime())) return null;
   const intlLocale = locale === "ar" ? "ar-EG-u-nu-latn" : "en-GB";
-  const options: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" };
+  const options: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "shortOffset" };
   try {
     return new Intl.DateTimeFormat(intlLocale, { ...options, timeZone: timezone ?? "UTC" }).format(date);
   } catch {
