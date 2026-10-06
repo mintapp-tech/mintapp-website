@@ -53,3 +53,24 @@ describe("inquirySchema — honeypot is shape-only, never a schema rejection", (
     if (result.success) expect(result.data.honeypot).toBe("bot filled this in");
   });
 });
+
+describe("inquirySchema — project type", () => {
+  test.each(["website", "web_app", "mobile_app", "not_sure"])("accepts %s", (projectType) => {
+    const result = inquirySchema.safeParse({ ...validBase, projectType });
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.projectType).toBe(projectType);
+  });
+
+  test("an older cached form that sends no project type is still accepted, with nothing guessed", () => {
+    const result = inquirySchema.safeParse(validBase);
+    expect(result.success).toBe(true);
+    if (result.success) expect(result.data.projectType).toBeUndefined();
+  });
+
+  // The legacy database values (website_and_mobile, other) are not offered by the form.
+  test.each(["other", "website_and_mobile", "Website", "WEB_APP", "web app", "", "mobile", null, 3, ["website"]])("rejects %j", (projectType) => {
+    const result = inquirySchema.safeParse({ ...validBase, projectType });
+    expect(result.success).toBe(false);
+    if (!result.success) expect(result.error.issues[0].path).toEqual(["projectType"]);
+  });
+});

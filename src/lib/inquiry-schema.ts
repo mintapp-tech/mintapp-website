@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { INQUIRY_LIMITS } from "./inquiry-limits";
+import { PROJECT_TYPES } from "./project-types";
 
 // Server-side source of truth. This schema only validates *shape* — the
 // honeypot deliberately accepts any string here rather than enforcing
@@ -20,6 +21,11 @@ export const inquirySchema = z.object({
   email: z.string().trim().toLowerCase().max(INQUIRY_LIMITS.emailMax).email(),
   desc: z.string().trim().min(INQUIRY_LIMITS.descMin).max(INQUIRY_LIMITS.descMax),
   lang: z.enum(["en", "ar"]),
+  // The form always sends it. It stays optional here only so an older cached
+  // copy of the form (which has no such question) still gets through; when it
+  // is present it must be exactly one of the four known values. A missing
+  // value is stored as "not provided", never guessed from the brief.
+  projectType: z.enum(PROJECT_TYPES).optional(),
   consent: z.literal(true),
   submissionToken: z.string().uuid(),
   formStartedAt: z.string().datetime(),
