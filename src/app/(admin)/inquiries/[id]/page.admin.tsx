@@ -10,6 +10,7 @@ import { requireAdmin } from "@/lib/admin/auth/state";
 import { ownerChoices, ownersLabel, teamMembers } from "@/lib/admin/auth/config";
 import { adminText } from "@/lib/admin/locale";
 import { getInquiry } from "@/lib/dashboard/data";
+import { mayApprove } from "@/lib/dashboard/approval";
 import { clientProjectType } from "@/lib/dashboard/project-type";
 import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "@/lib/dashboard/brief";
 import { label, labelsFor, preparationNotice } from "@/lib/dashboard/status";
@@ -72,7 +73,7 @@ function Hidden({ inquiryId, extra }: { inquiryId: string; extra?: Record<string
 }
 
 export default async function InquiryPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireAdmin();
+  const me = await requireAdmin();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
   const detail = await getInquiry(id);
@@ -269,10 +270,16 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
                   )}
                   {latest.review_status === "in_review" && (
                     <>
-                      <form action={reviewAction}>
-                        <Hidden inquiryId={id} extra={{ version: latest.version, to: "approved" }} />
-                        <SubmitButton className={primary}>{d.draft.approve}</SubmitButton>
-                      </form>
+                      {mayApprove(latest, me.email) ? (
+                        <form action={reviewAction}>
+                          <Hidden inquiryId={id} extra={{ version: latest.version, to: "approved" }} />
+                          <SubmitButton className={primary}>{d.draft.approve}</SubmitButton>
+                        </form>
+                      ) : (
+                        <p data-waiting-for-teammate className="m-0 self-center rounded-xl bg-surface-2/70 px-3 py-2 text-[13.5px] text-ink-soft">
+                          {d.draft.waitingForTeammate}
+                        </p>
+                      )}
                       <form action={reviewAction}>
                         <Hidden inquiryId={id} extra={{ version: latest.version, to: "draft" }} />
                         <SubmitButton className={button}>{d.draft.sendBack}</SubmitButton>

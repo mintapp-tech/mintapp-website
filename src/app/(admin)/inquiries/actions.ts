@@ -6,6 +6,7 @@ import { requireAdmin } from "@/lib/admin/auth/state";
 import { teamMembers } from "@/lib/admin/auth/config";
 import { assertSyntheticReviewDatabase } from "@/lib/admin/review-guard";
 import * as data from "@/lib/dashboard/data";
+import { mayApprove } from "@/lib/dashboard/approval";
 import { getSqlGateway, isLocalDashboardDemo } from "@/lib/sql-gateway";
 import { selectGenerator } from "@/lib/preparation/config";
 import { createSqlPreparationStore } from "@/lib/preparation/sql-store";
@@ -87,6 +88,12 @@ export async function reviewAction(form: FormData) {
   const inquiryId = id.parse(form.get("inquiryId"));
   const version = z.coerce.number().int().min(1).parse(form.get("version"));
   const to = z.enum(["in_review", "approved", "draft"]).parse(form.get("to"));
+  if (to === "approved") {
+    // Teammate approval is enforced here, not only in the page: whoever wrote
+    // a version cannot approve it, however the request was made.
+    const draft = (await data.getInquiry(inquiryId))?.drafts.find((d) => d.version === version);
+    if (!draft || !mayApprove(draft, member.email)) return;
+  }
   await data.review(inquiryId, version, to, member.email);
   refresh(inquiryId);
 }
