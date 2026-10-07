@@ -143,6 +143,42 @@ test("phones get cards instead of the table, with nothing wider than the screen"
   expect(results.violations.map((v) => v.id)).toEqual([]);
 });
 
+test("the table never hides a column: from 1024 px every column sits inside the card, and tablets get cards", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  // The card clips its overflow, so a wide table would hide columns without any scrollbar or page overflow: measure the columns themselves.
+  const outsideCard = () =>
+    page.evaluate(() => {
+      const table = document.querySelector("table");
+      const card = table?.parentElement;
+      if (!table || !card) return -1;
+      const box = card.getBoundingClientRect();
+      const cells = [...table.querySelectorAll("th, tbody tr:last-child td")];
+      return cells.filter((cell) => {
+        const r = cell.getBoundingClientRect();
+        return r.left < box.left - 1 || r.right > box.right + 1;
+      }).length;
+    });
+  for (const language of ["en", "ar"] as const) {
+    if (language === "ar") await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
+    for (const width of [1024, 1280, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/inquiries");
+      await expect(page.locator("table")).toBeVisible();
+      expect(await outsideCard(), `${language} table at ${width}px`).toBe(0);
+      await expect(page.locator("thead th")).toHaveCount(7); // client, received, meeting, preparation, review, sales stage, owner
+    }
+    for (const width of [768, 900, 1023]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/inquiries");
+      await expect(page.locator("table")).toBeHidden();
+      const cards = page.locator("ul[aria-label] > li");
+      await expect(cards, `${language} cards at ${width}px`).toHaveCount(4);
+      // The owner, sales stage and meeting are all on every card.
+      await expect(cards.first().locator('[data-status="sales"]')).toBeVisible();
+    }
+  }
+});
+
 test("an unknown inquiry shows a not-found page inside the dashboard", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   // The page streams behind a loading state, so the status is already sent

@@ -167,7 +167,7 @@ export default async function InquiriesPage() {
           </dl>
 
           {/* Tablet and desktop: a table. */}
-          <div className={`${card} hidden overflow-hidden md:block`}>
+          <div className={`${card} hidden overflow-hidden lg:block`}>
             <table className="w-full border-collapse text-start text-[14px]">
               <caption className="sr-only">{t.list.caption}</caption>
               <thead className="border-b border-line bg-surface-2/60">
@@ -229,7 +229,7 @@ export default async function InquiriesPage() {
           </div>
 
           {/* Phones: one card per inquiry. */}
-          <ul className="m-0 flex list-none flex-col gap-3 p-0 md:hidden" aria-label={t.list.caption}>
+          <ul className="m-0 flex list-none flex-col gap-3 p-0 lg:hidden" aria-label={t.list.caption}>
             {rows.map((r) => (
               <li key={r.id} className={`${card} p-4 ${r.attention ? "border-s-4 border-s-red-600" : ""}`}>
                 <div className="mb-2 flex items-center justify-between gap-3 text-[12.5px] text-ink-faint">
