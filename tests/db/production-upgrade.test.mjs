@@ -28,6 +28,18 @@ const PRODUCTION_BEFORE = [
 const CRM = ["20261005000000_add_inquiry_preparation.sql", "20261006000000_add_preparation_dashboard.sql"];
 const ROLLBACK_DIR = join(process.cwd(), "supabase", "rollback");
 
+// The SQL in the launch runbook is run here, so the document cannot drift from the database.
+const RUNBOOK = readFileSync(join(process.cwd(), "docs", "operations-crm-v1-launch.md"), "utf8");
+const runbookSql = (heading) => {
+  const start = RUNBOOK.indexOf(heading);
+  assert.ok(start >= 0, `runbook heading not found: ${heading}`);
+  const block = /```sql\r?\n([\s\S]*?)```/.exec(RUNBOOK.slice(start));
+  assert.ok(block, `no sql block after: ${heading}`);
+  return block[1];
+};
+const lines = (out) => out.split(/\r?\n/).filter((l) => l !== "");
+let preChecks;
+
 const id = (n) => `eeeeeeee-0000-4000-8000-${String(n).padStart(12, "0")}`;
 const [LEGACY, BOOKED, CANCELLED, NOT_SURE, DELETED, ARABIC] = [1, 2, 3, 4, 5, 6].map(id);
 const NEW_INQUIRY = id(90);
@@ -80,6 +92,15 @@ describe("the chain used here is the one production has", () => {
     const onDisk = readdirSync(join(process.cwd(), "supabase", "migrations")).filter((f) => f.endsWith(".sql")).sort();
     assert.deepEqual([...PRODUCTION_BEFORE, ...CRM].sort(), onDisk, "supabase/migrations changed: update the runbook and this rehearsal");
   });
+  test("the runbook's pre-check queries run and show the documented pre-launch state", () => {
+    preChecks = lines(db.psql(runbookSql("## 4. Pre-checks")));
+    // A: no CRM functions, no CRM tables, crm_absent = true (no owners column: no row). B: not_sure allowed, rebooking allowed.
+    // C: 6 inquiries, 1 soft-deleted, then the two fingerprints.
+    assert.deepEqual(preChecks.slice(0, 6), ["0", "0", "t", "t", "t", "6|1"]);
+    assert.match(preChecks[6], /^[0-9a-f]{32}$/);
+    assert.match(preChecks[7], /^[0-9a-f]{32}$/);
+    assert.equal(preChecks.length, 8);
+  });
   test("before the upgrade there are no CRM objects", () => {
     assert.equal(customFunctions(), 0);
     assert.equal(count("select count(*) from information_schema.tables where table_schema = 'public' and table_name in ('inquiry_preparations','preparation_drafts','inquiry_follow_ups','inquiry_notes')"), 0);
@@ -88,8 +109,28 @@ describe("the chain used here is the one production has", () => {
 });
 
 describe("applying the two CRM migrations, file by file, in order", () => {
+  let post8;
+  let post9;
   before(() => {
-    for (const file of CRM) db.applyMigration(file);
+    // As the runbook says: one file at a time, its post-checks after each.
+    db.applyMigration(CRM[0]);
+    post8 = lines(db.psql(runbookSql("### Post-checks for file 8")));
+    db.applyMigration(CRM[1]);
+    post9 = lines(db.psql(runbookSql("### Post-checks for file 9")));
+  });
+
+  test("the runbook's post-checks for file 8 give exactly the documented results", () => {
+    // one job each, 'manual | 6', one trigger, and the inquiries fingerprint equals the recorded 'before' value
+    assert.deepEqual(post8, ["t", "manual|6", "1", preChecks[6]]);
+  });
+
+  test("the runbook's post-checks for file 9 give exactly the documented results", () => {
+    // fingerprint equals the recorded 'before' value; 0 owned; 0 other rows; no public read access and no public execute (no rows); RLS on for all six tables
+    assert.equal(post9[0], preChecks[7]);
+    assert.deepEqual(post9.slice(1, 3), ["0", "0"]);
+    const rls = post9.slice(3);
+    assert.equal(rls.length, 6, "six tables, nothing listed for the public roles");
+    assert.ok(rls.every((l) => /\|t$/.test(l)), rls.join(", "));
   });
 
   test("every existing inquiry is exactly as it was, including deleted, legacy-type, booked and cancelled ones", () => {
