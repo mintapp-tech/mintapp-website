@@ -9,9 +9,10 @@ import { installTurnstileMock, mockInquiriesRoute } from "./turnstile-mock";
 // server-side" — that's route.test.ts's job).
 
 async function fillMinimumValidForm(page: Page) {
-  const textInputs = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])');
+  const textInputs = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])');
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
+  await page.locator('label:has(input[name="projectType"][value="website"])').click();
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }
@@ -26,28 +27,36 @@ test.describe("keyboard-only progression", () => {
     await installTurnstileMock(page, { autoComplete: false });
     await page.goto("/en/start");
 
-    const nameInput = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])').nth(0);
+    const nameInput = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])').nth(0);
     await nameInput.focus();
     await expect(nameInput).toBeFocused();
     await page.keyboard.type("Keyboard User");
 
     // Company (optional) — Tab forward.
     await page.keyboard.press("Tab");
-    const companyInput = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])').nth(1);
+    const companyInput = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])').nth(1);
     await expect(companyInput).toBeFocused();
 
     // Email.
     await page.keyboard.press("Tab");
-    const emailInput = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])').nth(2);
+    const emailInput = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])').nth(2);
     await expect(emailInput).toBeFocused();
     await page.keyboard.type("keyboard@example.com");
 
     // Phone (optional).
     await page.keyboard.press("Tab");
-    const phoneInput = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])').nth(3);
+    const phoneInput = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])').nth(3);
     await expect(phoneInput).toBeFocused();
 
-    // Description.
+    // Project type: one tab stop for the whole group, arrow keys choose.
+    await page.keyboard.press("Tab");
+    const firstOption = page.locator('input[name="projectType"]').first();
+    await expect(firstOption).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect(page.locator('input[name="projectType"][value="web_app"]')).toBeFocused();
+    await expect(page.locator('input[name="projectType"][value="web_app"]')).toBeChecked();
+
+    // Description (one Tab leaves the whole group).
     await page.keyboard.press("Tab");
     const descInput = page.locator("form textarea").first();
     await expect(descInput).toBeFocused();

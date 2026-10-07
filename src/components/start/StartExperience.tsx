@@ -8,6 +8,7 @@ import { usePrefersReducedMotion } from "@/lib/use-prefers-reduced-motion";
 import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
+import { PROJECT_TYPES, type ProjectType } from "@/lib/project-types";
 import TurnstileWidget, { type TurnstileWidgetHandle } from "./TurnstileWidget";
 import ScheduleEmbed from "./ScheduleEmbed";
 
@@ -23,14 +24,15 @@ interface FormState {
   company: string;
   email: string;
   phone: string;
+  projectType: ProjectType | "";
   desc: string;
 }
 
-const emptyForm: FormState = { name: "", company: "", email: "", phone: "", desc: "" };
+const emptyForm: FormState = { name: "", company: "", email: "", phone: "", projectType: "", desc: "" };
 
 // Visual/reading order of the fields that can carry a server-side error —
 // used to find "the first invalid field" for focus management.
-const FIELD_ORDER: (keyof FormState)[] = ["name", "company", "email", "phone", "desc"];
+const FIELD_ORDER: (keyof FormState)[] = ["name", "company", "email", "phone", "projectType", "desc"];
 
 const inputClass =
   "w-full rounded-[14px] border border-ink/[.14] bg-canvas px-4 py-3 text-[15.5px] text-ink placeholder:text-ink-faint transition-colors focus:border-mint-deep focus:outline-none";
@@ -72,6 +74,7 @@ export default function StartExperience() {
   const companyFieldRef = useRef<HTMLInputElement>(null);
   const emailFieldRef = useRef<HTMLInputElement>(null);
   const phoneFieldRef = useRef<HTMLInputElement>(null);
+  const projectTypeFieldRef = useRef<HTMLInputElement>(null);
   const descFieldRef = useRef<HTMLTextAreaElement>(null);
 
   // A callback ref (not a useEffect keyed on `submitted`) so focus is
@@ -110,13 +113,16 @@ export default function StartExperience() {
       case "phone":
         phoneFieldRef.current?.focus();
         break;
+      case "projectType":
+        projectTypeFieldRef.current?.focus();
+        break;
       case "desc":
         descFieldRef.current?.focus();
         break;
     }
   }, [fieldErrors]);
 
-  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.desc.trim() && consent && turnstileToken);
+  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.projectType && form.desc.trim() && consent && turnstileToken);
 
   const updateField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
@@ -128,6 +134,16 @@ export default function StartExperience() {
       if (!(key in prev)) return prev;
       const next = { ...prev };
       delete next[key];
+      return next;
+    });
+  };
+
+  const chooseProjectType = (value: ProjectType) => {
+    setForm((prev) => ({ ...prev, projectType: value }));
+    setFieldErrors((prev) => {
+      if (!("projectType" in prev)) return prev;
+      const next = { ...prev };
+      delete next.projectType;
       return next;
     });
   };
@@ -166,6 +182,7 @@ export default function StartExperience() {
           company: form.company.trim() || undefined,
           email: form.email.trim(),
           phone: form.phone.trim() || undefined,
+          projectType: form.projectType || undefined,
           desc: form.desc.trim(),
           lang,
           consent,
@@ -271,7 +288,8 @@ export default function StartExperience() {
               <div className="mx-auto mt-8 max-w-[440px] text-start">
                 <div className="mb-3 text-[15px] font-semibold">{t.success.nextTitle}</div>
                 <div className="flex flex-col gap-2.5">
-                  {t.success.next.map((point) => (
+                  {/* The calendar is shown right below, so the first step is the client's: book a time. */}
+                  {[submitted.bookingContext ? t.success.nextBook : t.success.nextNoCalendar, ...t.success.next].map((point) => (
                     <div key={point} className="flex items-start gap-2.5 text-[14.5px] leading-[1.7] text-ink-soft">
                       <span className="mt-2 block h-[5px] w-[5px] flex-none rounded-full bg-mint-deep" />
                       {point}
@@ -414,6 +432,54 @@ export default function StartExperience() {
                       )}
                     </label>
                   </div>
+
+                  <fieldset
+                    role="radiogroup"
+                    aria-labelledby="project-type-label"
+                    aria-describedby={fieldErrors.projectType ? "project-type-help project-type-error" : "project-type-help"}
+                    aria-invalid={!!fieldErrors.projectType}
+                    className="m-0 flex min-w-0 flex-col gap-2 border-0 p-0"
+                  >
+                    <legend id="project-type-label" className="mb-2 p-0 text-[14px] font-medium text-ink">
+                      {t.start.fProjectType}
+                    </legend>
+                    <div className="grid grid-cols-1 gap-2.5 min-[360px]:grid-cols-2 sm:grid-cols-4">
+                      {PROJECT_TYPES.map((value, index) => {
+                        const selected = form.projectType === value;
+                        return (
+                          <label
+                            key={value}
+                            className={`relative flex min-h-[52px] cursor-pointer items-center gap-2.5 rounded-[14px] border px-3.5 py-3 text-start text-[14.5px] leading-[1.35] font-medium transition-colors duration-200 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-mint-deep motion-reduce:transition-none ${
+                              selected ? "border-mint-deep bg-mint-soft text-dark" : fieldErrors.projectType ? "border-red-500 bg-canvas text-ink" : "border-ink/[.14] bg-canvas text-ink hover:border-ink/[.3]"
+                            }`}
+                          >
+                            <input
+                              ref={index === 0 ? projectTypeFieldRef : undefined}
+                              type="radio"
+                              name="projectType"
+                              value={value}
+                              required
+                              checked={selected}
+                              onChange={() => chooseProjectType(value)}
+                              className="sr-only"
+                            />
+                            <span aria-hidden className={`flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border transition-colors duration-200 motion-reduce:transition-none ${selected ? "border-mint-deep bg-mint-deep" : "border-ink/[.3] bg-surface"}`}>
+                              <span className={`block h-[6px] w-[6px] rounded-full bg-white transition-transform duration-200 motion-reduce:transition-none ${selected ? "scale-100" : "scale-0"}`} />
+                            </span>
+                            {t.start.projectTypes[value]}
+                          </label>
+                        );
+                      })}
+                    </div>
+                    <span id="project-type-help" className="text-[13px] leading-[1.6] text-ink-soft">
+                      {t.start.fProjectTypeHelp}
+                    </span>
+                    {fieldErrors.projectType && (
+                      <span id="project-type-error" className="text-[12.5px] font-medium text-red-600">
+                        {messageForCode(fieldErrors.projectType)}
+                      </span>
+                    )}
+                  </fieldset>
 
                   <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                     {t.start.fDesc}

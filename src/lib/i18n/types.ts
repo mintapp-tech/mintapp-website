@@ -1,3 +1,5 @@
+import type { ProjectType } from "../project-types";
+
 export type Lang = "ar" | "en";
 
 export interface CaseStudyContent {
@@ -71,6 +73,13 @@ export interface HomeContent {
       nextText: string;
     };
   };
+  testimonials: {
+    eyebrow: string;
+    title: string;
+    // Shown under a quote displayed in its original language (no approved translation).
+    quotedIn: { en: string; ar: string };
+    // Shown only with labelled sample content on a review Preview.
+  };
   work: {
     eyebrow: string;
     title: string;
@@ -118,6 +127,9 @@ export interface HomeContent {
     fCompany: string;
     fEmail: string;
     fPhone: string;
+    fProjectType: string;
+    fProjectTypeHelp: string;
+    projectTypes: Record<ProjectType, string>;
     fDesc: string;
     fDescHelp: string;
     fDescPh: string;
@@ -153,6 +165,23 @@ export interface HomeContent {
     prepClarify: string;
     sideNote: string;
   };
+  // The page behind the "Choose a call time" button in the acknowledgment email.
+  book: {
+    metaTitle: string;
+    scheduleNote: string;
+    bookedTitle: string;
+    bookedBody: string; // contains {when}
+    bookedBodyNoTime: string;
+    manage: string;
+    closedTitle: string;
+    closedBody: string;
+    unavailableTitle: string;
+    unavailableBody: string;
+    restart: string;
+    errorTitle: string;
+    errorBody: string;
+    writeUs: string;
+  };
   success: {
     badge: string;
     title: string;
@@ -169,6 +198,8 @@ export interface HomeContent {
     };
     nextTitle: string;
     next: string[];
+    nextBook: string;
+    nextNoCalendar: string;
     home: string;
     note: string;
   };

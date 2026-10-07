@@ -8,7 +8,11 @@ import { z } from "zod";
 // only for a bounded window. Not a general-purpose JWT: hand-rolled and
 // deliberately narrow (two fields, one algorithm) rather than pulling in a
 // JWT library for something this small.
-const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+// 30 days. The reference is bearer-style: it contains only an opaque inquiry id
+// and an issue time, is signed, and is used only to tie a booking to its
+// inquiry. A longer life lets a client come back to the booking link in our
+// email well after sending, without ever offering a booking that cannot be linked.
+const MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000; // 5 minutes
 
 // Canonical token shape: exactly one dot, unpadded base64url on both
@@ -20,6 +24,7 @@ const MAX_FUTURE_SKEW_MS = 5 * 60 * 1000; // 5 minutes
 // ever handed to a decoder.
 const MAX_PAYLOAD_B64_LENGTH = 200;
 const SIGNATURE_B64_LENGTH = 43;
+const SIGNATURE_BYTES = 32;
 const BASE64URL_CHARS = /^[A-Za-z0-9_-]+$/;
 
 const contextPayloadSchema = z
@@ -104,10 +109,13 @@ export function verifyBookingContext(token: string): VerifyBookingContextResult 
   // rather than a silent 200 no-op that looks identical to a normal
   // rejected token.
   const secret = getSecret();
-  let actual: Buffer;
-  try {
-    actual = Buffer.from(signatureB64, "base64url");
-  } catch {
+  // The signature gets the same canonical re-encoding check as the payload.
+  // 43 characters carry 258 bits for a 256-bit digest, so the final character
+  // has two unused bits; without this check up to four different spellings of
+  // one signature decode to the same bytes and all verify. Requiring the
+  // re-encoded form to equal the supplied text accepts exactly one spelling.
+  const actual = Buffer.from(signatureB64, "base64url");
+  if (actual.length !== SIGNATURE_BYTES || actual.toString("base64url") !== signatureB64) {
     return { ok: false };
   }
   const expected = Buffer.from(sign(payloadB64, secret), "base64url");

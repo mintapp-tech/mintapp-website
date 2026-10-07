@@ -44,6 +44,9 @@ vi.mock("@/lib/send-inquiry-notification", () => ({
 const kickPreparationAfterSubmission = vi.fn();
 vi.mock("@/lib/preparation/run", () => ({ kickPreparationAfterSubmission: (...args: unknown[]) => kickPreparationAfterSubmission(...args) }));
 
+const sendClientAcknowledgment = vi.fn();
+vi.mock("@/lib/send-client-acknowledgment", () => ({ sendClientAcknowledgment: (...args: unknown[]) => sendClientAcknowledgment(...args) }));
+
 vi.mock("@/lib/turnstile-config", () => ({
   getTurnstileSecretKey: () => "fake-secret",
   getAllowedTurnstileHostnames: () => ["mintapp.tech", "www.mintapp.tech"],
@@ -233,6 +236,8 @@ describe("POST /api/inquiries — success path (after() mocked and executed dete
       { fake: "sender" },
       expect.objectContaining({ inquiryId: "new-id", name: "Jane Doe", email: "jane@example.com" }),
     );
+    expect(sendClientAcknowledgment).toHaveBeenCalledTimes(1);
+    expect(sendClientAcknowledgment).toHaveBeenCalledWith({ fake: "sender" }, { inquiryId: "new-id", name: "Jane Doe", email: "jane@example.com", lang: "en" });
   });
 
   test("existing submission after valid Turnstile: 200 alreadyReceived, no insert, no notification scheduled", async () => {
@@ -384,5 +389,137 @@ describe("POST /api/inquiries — bookingContext on every accepted branch", () =
     const body = await res.json();
     expect(body).toEqual({ id: EXISTING_UUID, alreadyReceived: true });
     expect(body.bookingContext).toBeUndefined();
+  });
+});
+
+describe("POST /api/inquiries: client acknowledgment", () => {
+  function freshInsert() {
+    vi.stubEnv("RESEND_API_KEY", "fake-key-not-real");
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({ fake: "client" });
+    findInquiryIdByToken.mockResolvedValue(null);
+    insertInquiry.mockResolvedValue({ status: "inserted", id: "new-id" });
+    createRealResendSender.mockReturnValue({ fake: "sender" });
+    sendInquiryNotification.mockResolvedValue("sent");
+    sendClientAcknowledgment.mockResolvedValue("sent");
+  }
+
+  test("is sent only after the inquiry is stored, never during the request", async () => {
+    freshInsert();
+    const order: string[] = [];
+    insertInquiry.mockImplementation(async () => {
+      order.push("stored");
+      return { status: "inserted", id: "new-id" };
+    });
+    sendClientAcknowledgment.mockImplementation(async () => {
+      order.push("acknowledged");
+      return "sent";
+    });
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(201);
+    expect(order).toEqual(["stored"]); // the response is out, and no email has gone yet
+    await runScheduledAfterCallbacks();
+    expect(order).toEqual(["stored", "acknowledged"]);
+  });
+
+  test("uses the language of the submitted form", async () => {
+    freshInsert();
+    await POST(makeRequest({ ...validBody, lang: "ar", name: "سارة حداد" }));
+    await runScheduledAfterCallbacks();
+    expect(sendClientAcknowledgment).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ lang: "ar", name: "سارة حداد" }));
+  });
+
+  test("a retry of the same submission creates one inquiry and one acknowledgment", async () => {
+    freshInsert();
+    // First attempt: stored. The retry carries the same submission token, which the lookup now knows.
+    const first = await POST(makeRequest(validBody));
+    expect(first.status).toBe(201);
+    findInquiryIdByToken.mockResolvedValue("new-id");
+    const retry = await POST(makeRequest(validBody));
+    expect(retry.status).toBe(200);
+    expect(await retry.json()).toMatchObject({ id: "new-id", alreadyReceived: true });
+    await runScheduledAfterCallbacks();
+    expect(insertInquiry).toHaveBeenCalledTimes(1);
+    expect(sendInquiryNotification).toHaveBeenCalledTimes(1);
+    expect(sendClientAcknowledgment).toHaveBeenCalledTimes(1);
+  });
+
+  test("two requests that race to the unique index create one inquiry and one acknowledgment", async () => {
+    freshInsert();
+    insertInquiry.mockResolvedValueOnce({ status: "inserted", id: "new-id" }).mockResolvedValueOnce({ status: "duplicate", id: "new-id" });
+    const [a, b] = await Promise.all([POST(makeRequest(validBody)), POST(makeRequest(validBody))]);
+    expect([a.status, b.status].sort()).toEqual([200, 201]);
+    await runScheduledAfterCallbacks();
+    expect(sendClientAcknowledgment).toHaveBeenCalledTimes(1);
+    expect(sendInquiryNotification).toHaveBeenCalledTimes(1);
+  });
+
+  test("is never sent when the inquiry was not stored", async () => {
+    freshInsert();
+    insertInquiry.mockResolvedValue({ status: "failed", message: "db down" });
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(502);
+    await runScheduledAfterCallbacks();
+    expect(sendClientAcknowledgment).not.toHaveBeenCalled();
+  });
+
+  test("is never sent for a bot (honeypot) or for a failed Turnstile check", async () => {
+    freshInsert();
+    await POST(makeRequest({ ...validBody, honeypot: "bot" }));
+    verifyTurnstileToken.mockResolvedValue({ ok: false, reason: "invalid" });
+    await POST(makeRequest(validBody));
+    await runScheduledAfterCallbacks();
+    expect(sendClientAcknowledgment).not.toHaveBeenCalled();
+  });
+
+  test("a failing acknowledgment cannot affect the response or the internal notification", async () => {
+    freshInsert();
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendClientAcknowledgment.mockRejectedValue(new Error("boom: jane@example.com"));
+    const res = await POST(makeRequest(validBody));
+    expect(res.status).toBe(201);
+    expect(await res.json()).toMatchObject({ id: "new-id" });
+    await expect(runScheduledAfterCallbacks()).resolves.toBeUndefined();
+    expect(sendInquiryNotification).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(log.mock.calls)).not.toContain("jane@example.com");
+    log.mockRestore();
+  });
+
+  test("a failing internal notification cannot stop the acknowledgment", async () => {
+    freshInsert();
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendInquiryNotification.mockRejectedValue(new Error("resend down"));
+    await POST(makeRequest(validBody));
+    await expect(runScheduledAfterCallbacks()).resolves.toBeUndefined();
+    expect(sendClientAcknowledgment).toHaveBeenCalledTimes(1);
+    log.mockRestore();
+  });
+
+  test("the response never reveals anything about either email", async () => {
+    freshInsert();
+    sendClientAcknowledgment.mockResolvedValue("send_failed");
+    const body = await (await POST(makeRequest(validBody))).json();
+    expect(Object.keys(body).sort()).toEqual(["id"]);
+  });
+
+  test("passes the project type on, and nothing is made up for an older form", async () => {
+    freshInsert();
+    await POST(makeRequest({ ...validBody, projectType: "mobile_app" }));
+    await runScheduledAfterCallbacks();
+    expect(sendInquiryNotification).toHaveBeenLastCalledWith(expect.anything(), expect.anything(), expect.objectContaining({ projectType: "mobile_app" }));
+    expect(insertInquiry).toHaveBeenLastCalledWith(expect.anything(), expect.objectContaining({ projectType: "mobile_app" }));
+
+    findInquiryIdByToken.mockResolvedValue(null);
+    await POST(makeRequest(validBody));
+    expect(insertInquiry).toHaveBeenLastCalledWith(expect.anything(), expect.not.objectContaining({ projectType: expect.anything() }));
+  });
+
+  test("an unknown project type is rejected as a field error before anything else runs", async () => {
+    freshInsert();
+    const res = await POST(makeRequest({ ...validBody, projectType: "other" }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Invalid submission.", fields: { projectType: "invalid_value" } });
+    expect(insertInquiry).not.toHaveBeenCalled();
+    expect(sendClientAcknowledgment).not.toHaveBeenCalled();
   });
 });

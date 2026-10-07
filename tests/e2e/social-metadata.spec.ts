@@ -9,12 +9,12 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     en: {
       title: "Mintapp — Software that feels easy",
       description:
-        "Websites, web apps and mobile apps for founders and teams in Egypt and MENA. We review your idea before the first call, so it starts with direction.",
+        "Mintapp designs and builds websites, web apps and mobile apps for founders and teams in Egypt, MENA and beyond. We review your idea before the first call.",
     },
     ar: {
       title: "Mintapp — برمجيات تُصنع بسهولة",
       description:
-        "مواقع وتطبيقات ويب وتطبيقات موبايل للمؤسسين والفرق في مصر والمنطقة العربية. نراجع فكرتك قبل المكالمة الأولى، لتبدأ باتجاه واضح.",
+        "تصمّم Mintapp وتطوّر مواقع وتطبيقات ويب وموبايل للمؤسسين والفرق في مصر والمنطقة العربية وخارجها. نراجع فكرتك قبل المكالمة الأولى.",
     },
   },
   {

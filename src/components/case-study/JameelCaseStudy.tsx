@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
@@ -73,10 +74,10 @@ export default function JameelCaseStudy() {
           <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-jameel/[.14]" />
           <div className="relative flex items-end justify-center gap-[clamp(16px,3vw,28px)] py-[clamp(20px,4vw,50px)]">
             <div className="w-[min(38%,220px)] -rotate-3">
-              <PhoneFrame src={`${shots}/home.png`} alt="Jameel client app home screen with washing services" priority />
+              <PhoneFrame src={`${shots}/home.png`} alt={localAlt("Jameel client app home screen with washing services", lang)} priority />
             </div>
             <div className="w-[min(42%,240px)] translate-y-2 rotate-2">
-              <PhoneFrame src={`${shots}/service-details.png`} alt="Jameel service details and booking screen" />
+              <PhoneFrame src={`${shots}/service-details.png`} alt={localAlt("Jameel service details and booking screen", lang)} />
             </div>
           </div>
         </Reveal>
@@ -133,16 +134,16 @@ export default function JameelCaseStudy() {
         </Reveal>
         <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <RevealItem>
-            <PhoneFrame src={`${shots}/home.png`} alt="Jameel home screen with service categories" />
+            <PhoneFrame src={`${shots}/home.png`} alt={localAlt("Jameel home screen with service categories", lang)} />
           </RevealItem>
           <RevealItem>
-            <PhoneFrame src={`${shots}/location.png`} alt="Jameel add location screen with map picker" />
+            <PhoneFrame src={`${shots}/location.png`} alt={localAlt("Jameel add location screen with map picker", lang)} />
           </RevealItem>
           <RevealItem>
-            <PhoneFrame src={`${shots}/booking.png`} alt="Jameel available booking times screen" />
+            <PhoneFrame src={`${shots}/booking.png`} alt={localAlt("Jameel available booking times screen", lang)} />
           </RevealItem>
           <RevealItem>
-            <PhoneFrame src={`${shots}/payments.png`} alt="Jameel saved payment methods screen" />
+            <PhoneFrame src={`${shots}/payments.png`} alt={localAlt("Jameel saved payment methods screen", lang)} />
           </RevealItem>
         </RevealGroup>
       </section>

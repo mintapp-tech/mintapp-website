@@ -4,6 +4,8 @@ import HashScrollHandler from "@/components/HashScrollHandler";
 import Hero from "@/components/Hero";
 import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
+import TestimonialsSection from "@/components/TestimonialsSection";
+import { publishableTestimonials } from "@/content/testimonials";
 import ProcessSection from "@/components/ProcessSection";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
@@ -14,12 +16,12 @@ const COPY = {
   en: {
     title: "Mintapp — Software that feels easy",
     description:
-      "Websites, web apps and mobile apps for founders and teams in Egypt and MENA. We review your idea before the first call, so it starts with direction.",
+      "Mintapp designs and builds websites, web apps and mobile apps for founders and teams in Egypt, MENA and beyond. We review your idea before the first call.",
   },
   ar: {
     title: "Mintapp — برمجيات تُصنع بسهولة",
     description:
-      "مواقع وتطبيقات ويب وتطبيقات موبايل للمؤسسين والفرق في مصر والمنطقة العربية. نراجع فكرتك قبل المكالمة الأولى، لتبدأ باتجاه واضح.",
+      "تصمّم Mintapp وتطوّر مواقع وتطبيقات ويب وموبايل للمؤسسين والفرق في مصر والمنطقة العربية وخارجها. نراجع فكرتك قبل المكالمة الأولى.",
   },
 } as const;
 
@@ -38,6 +40,8 @@ export default function Home() {
         <Hero />
         <ProcessSection />
         <WorkSection />
+        {/* Only approved testimonials; with none, the section is not rendered. */}
+        <TestimonialsSection items={publishableTestimonials()} />
         <ServicesSection />
         <FinalCta />
       </main>

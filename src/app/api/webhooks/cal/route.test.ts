@@ -23,7 +23,9 @@ vi.mock("@/lib/supabase-server", () => ({ getSupabaseServerClient: (...args: unk
 const applyBookingCreated = vi.fn();
 const applyBookingCancelled = vi.fn();
 const applyBookingRescheduled = vi.fn();
+const isDuplicateActiveBooking = vi.fn();
 vi.mock("@/lib/apply-cal-booking-event", () => ({
+  isDuplicateActiveBooking: (...args: unknown[]) => isDuplicateActiveBooking(...args),
   applyBookingCreated: (...args: unknown[]) => applyBookingCreated(...args),
   applyBookingCancelled: (...args: unknown[]) => applyBookingCancelled(...args),
   applyBookingRescheduled: (...args: unknown[]) => applyBookingRescheduled(...args),
@@ -502,5 +504,52 @@ describe("no secret/payload/identifier ever leaks through logs or the response b
     expect(res.status).toBe(401);
     expect(spy).not.toHaveBeenCalled();
     spy.mockRestore();
+  });
+});
+
+describe("BOOKING_CREATED — a second, different booking for an inquiry that already has one", () => {
+  async function postCreated() {
+    const body = baseCreatedPayload();
+    (body.payload as Record<string, unknown>).metadata = { bookingContext: validContext() };
+    return POST(makeRequest(body));
+  }
+
+  test("is ignored like any refused event (identical 200), and a fixed-category line makes the stray booking visible", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    applyBookingCreated.mockResolvedValue("no_match");
+    isDuplicateActiveBooking.mockResolvedValue(true);
+    const res = await postCreated();
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+    expect(isDuplicateActiveBooking).toHaveBeenCalledWith({ fake: "client" }, { inquiryId: INQUIRY_ID, uid: "cal-uid-1" });
+    expect(spy).toHaveBeenCalledWith("cal_webhook_duplicate_active_booking_ignored");
+    // Nothing identifying: no inquiry id, no booking id, no context.
+    const logged = spy.mock.calls.flat(2).join(" ");
+    expect(logged).not.toContain(INQUIRY_ID);
+    expect(logged).not.toContain("cal-uid-1");
+    spy.mockRestore();
+  });
+
+  test("an ordinary refusal (a stale replay) is silent: no duplicate line", async () => {
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    applyBookingCreated.mockResolvedValue("no_match");
+    isDuplicateActiveBooking.mockResolvedValue(false);
+    const res = await postCreated();
+    expect(res.status).toBe(200);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  test("an applied booking never triggers the duplicate check", async () => {
+    applyBookingCreated.mockResolvedValue("applied");
+    await postCreated();
+    expect(isDuplicateActiveBooking).not.toHaveBeenCalled();
+  });
+
+  test("the check can fail without changing the response", async () => {
+    applyBookingCreated.mockResolvedValue("no_match");
+    isDuplicateActiveBooking.mockRejectedValue(new Error("db down"));
+    const res = await postCreated();
+    expect(res.status).toBe(200);
   });
 });

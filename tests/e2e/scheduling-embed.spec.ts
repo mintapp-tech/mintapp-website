@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { installTurnstileMock, mockInquiriesRoute } from "./turnstile-mock";
-import { installCalEmbedMock, fireCalEvent, getRecordedInlineCalls } from "./cal-embed-mock";
+import { installCalEmbedMock, fireCalEvent, getActiveListenerCount, getRecordedInlineCalls } from "./cal-embed-mock";
 
 // Every test here blocks the real Cloudflare Turnstile script (via
 // installTurnstileMock) and the real Cal.com embed script/domain (via
@@ -13,9 +13,10 @@ const FAKE_CONTEXT = "fake-booking-context-token-for-e2e-only";
 const FAKE_UUID = "11111111-1111-4111-8111-111111111111";
 
 async function fillMinimumValidForm(page: Page) {
-  const textInputs = page.locator('form input:not([type="checkbox"]):not([tabindex="-1"])');
+  const textInputs = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])');
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
+  await page.locator('label:has(input[name="projectType"][value="website"])').click();
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }
@@ -52,6 +53,23 @@ test.describe("valid accepted response renders the scheduling section", () => {
     expect(calls.length).toBe(1);
     expect(calls[0].calLink).toBe("mintapp/mintapp-discovery-call");
     expect(calls[0].config["metadata[bookingContext]"]).toBe(FAKE_CONTEXT);
+
+    // The calendar is right there, so the next step is the client's: choose a time.
+    await expect(page.getByText("Choose an available time below for your discovery call")).toBeVisible();
+    await expect(page.getByText(/We reach out to arrange|We contact you to arrange/)).toHaveCount(0);
+  });
+
+  test("Arabic: the next step tells the client to choose an available time", async ({ page }) => {
+    await installTurnstileMock(page);
+    await installCalEmbedMock(page);
+    await mockInquiriesRoute(page, () => ({ status: 201, body: { id: FAKE_UUID, bookingContext: FAKE_CONTEXT } }));
+
+    await page.goto("/ar/start");
+    await fillMinimumValidForm(page);
+    await submitForm(page);
+
+    await expect(page.getByText("اختر وقتًا متاحًا أدناه لمكالمتك التعريفية")).toBeVisible();
+    await expect(page.getByText(/نتواصل معك لتحديد موعد اجتماع|نتواصل معك لتحديد وقت/)).toHaveCount(0);
   });
 });
 
@@ -68,6 +86,9 @@ test.describe("malformed or missing context shows the unavailable fallback, neve
     await expect(page.getByRole("heading", { name: "We have your idea" })).toBeVisible();
     await expect(page.getByText("Online scheduling is unavailable right now.")).toBeVisible();
     await expect(page.getByRole("region")).toHaveCount(0);
+    // Without a calendar, the next step stays with us.
+    await expect(page.getByText("We contact you to arrange a time for your discovery call")).toBeVisible();
+    await expect(page.getByText("Choose an available time below")).toHaveCount(0);
   });
 
   test("a non-string bookingContext (malformed shape) is treated the same as absent", async ({ page }) => {
@@ -145,11 +166,24 @@ test.describe("retry reinitializes cleanly with the same bookingContext, no new 
     expect(inquiryCallCount).toBe(1);
     expect(requests.length).toBe(1);
 
-    // The remounted instance registers a fresh listener; firing linkReady
-    // now proves the retry cleanly reinitialized (old timeout/listener from
-    // the first attempt no longer fires a stale transition).
+    // The remount is asynchronous: the new embed calls inline() and registers
+    // its linkReady listener only after React re-renders and getCalApi()
+    // resolves. Wait for exactly one inline() per attempt, and for the first
+    // attempt's listener to be gone and the retry's to be in place (one, not
+    // zero or two), before firing anything.
+    await expect.poll(async () => (await getRecordedInlineCalls(page)).length).toBe(2);
+    await expect.poll(() => getActiveListenerCount(page, NAMESPACE, "linkReady")).toBe(1);
+
+    const region = page.getByRole("region", { name: "Schedule your discovery call" });
+    const loadingStatus = page.getByRole("status").filter({ hasText: "Loading available times…" });
+    await expect(region).toBeVisible();
+    await expect(loadingStatus).toHaveCount(1);
+
+    // linkReady now reaches the retry's listener: the status moves to ready.
     await fireCalEvent(page, NAMESPACE, "linkReady");
-    await expect(page.getByRole("region", { name: "Schedule your discovery call" })).toBeVisible();
+    await expect(loadingStatus).toHaveCount(0);
+    await expect(region).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "We couldn't load the scheduler" })).toHaveCount(0);
 
     const calls = await getRecordedInlineCalls(page);
     expect(calls.length).toBe(2);

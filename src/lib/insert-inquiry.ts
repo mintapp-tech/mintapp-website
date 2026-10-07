@@ -29,6 +29,9 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
       utm_source: body.utmSource || null,
       utm_medium: body.utmMedium || null,
       utm_campaign: body.utmCampaign || null,
+      // Only an explicit choice on the form is stored; a missing value stays
+      // null ("not provided") and is never inferred from the brief.
+      ...(body.projectType ? { project_type: body.projectType } : {}),
       // Requires the corrective migration that adds this column + a unique
       // partial index — see
       // supabase/migrations/20260822000000_align_constraints_and_add_submission_token.sql.
@@ -38,6 +41,15 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
     .single();
 
   if (insertError) {
+    // Safety net for a release-order slip: a database that has not yet had the
+    // project-type migration rejects the new "not_sure" value with a check
+    // violation. The inquiry matters more than that one answer, so keep it
+    // (stored as "not provided") and say so in the log. Never fires once the
+    // migration is applied.
+    if (insertError.code === "23514" && body.projectType && insertError.message.includes("project_type_values")) {
+      console.error("project_type_rejected_by_database: stored the inquiry without it");
+      return insertInquiry(supabase, { ...body, projectType: undefined });
+    }
     if (insertError.code === "23505") {
       // Unique-violation on submission_token: this exact submission was
       // already stored (a retry/double-post of the same client attempt).

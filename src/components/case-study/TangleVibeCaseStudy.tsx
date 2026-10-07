@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
+import { ProductScreens } from "@/components/work/ScreenFrames";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
 
@@ -126,32 +127,28 @@ export default function TangleVibeCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-          {cs.screensTitle}
-        </Reveal>
-        <Reveal delay={0.05} className="mb-[clamp(24px,3vw,36px)] max-w-[60ch] text-[16px] leading-[1.85] text-ink-soft">
-          {cs.screensCopy}
-        </Reveal>
-        <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {[
-            { bg: "bg-tanglevibe-bg", accent: "bg-tanglevibe" },
-            { bg: "bg-canvas", accent: "bg-dark" },
-            { bg: "bg-tanglevibe-bg", accent: "bg-tanglevibe-2" },
-            { bg: "bg-canvas", accent: "bg-tanglevibe" },
-          ].map((screen, i) => (
-            <RevealItem
-              key={i}
-              className={`flex aspect-[3/4] items-center justify-center rounded-2xl border border-ink/[.08] ${screen.bg} p-6`}
-            >
-              <div className="flex w-full flex-col gap-2.5">
-                <span className="block h-2 w-[50%] rounded bg-dark/80" />
-                <div className={`h-16 rounded-lg ${screen.accent}`} />
-                <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-                <span className="block h-1.5 w-[40%] rounded bg-ink/[.14]" />
-              </div>
-            </RevealItem>
-          ))}
-        </RevealGroup>
+        <ProductScreens slug="tanglevibe" title={cs.screensTitle} copy={cs.screensCopy}>
+          <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[
+              { bg: "bg-tanglevibe-bg", accent: "bg-tanglevibe" },
+              { bg: "bg-canvas", accent: "bg-dark" },
+              { bg: "bg-tanglevibe-bg", accent: "bg-tanglevibe-2" },
+              { bg: "bg-canvas", accent: "bg-tanglevibe" },
+            ].map((screen, i) => (
+              <RevealItem
+                key={i}
+                className={`flex aspect-[3/4] items-center justify-center rounded-2xl border border-ink/[.08] ${screen.bg} p-6`}
+              >
+                <div className="flex w-full flex-col gap-2.5">
+                  <span className="block h-2 w-[50%] rounded bg-dark/80" />
+                  <div className={`h-16 rounded-lg ${screen.accent}`} />
+                  <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
+                  <span className="block h-1.5 w-[40%] rounded bg-ink/[.14]" />
+                </div>
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </ProductScreens>
       </section>
 
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">

@@ -170,3 +170,30 @@ describe("sendInquiryNotification — send path (mode explicitly allowed)", () =
     expect(result).toBe("sent_but_bookkeeping_failed");
   });
 });
+
+describe("sendInquiryNotification: branded email", () => {
+  test("sends HTML with a plain-text alternative under the fixed subject, including the client's project type", async () => {
+    allowSendMode();
+    const { client } = fakeSupabaseForNotification();
+    const sent: Parameters<EmailSender["emails"]["send"]>[0][] = [];
+    const sender: EmailSender = { emails: { send: async (args) => { sent.push(args); return { data: null, error: null }; } } };
+    const result = await sendInquiryNotification(client, sender, { ...baseInput, name: "<b>Name</b>", projectType: "web_app" });
+    expect(result).toBe("sent");
+    expect(sent).toHaveLength(1);
+    expect(sent[0].subject).toBe("New Mintapp project inquiry");
+    expect(sent[0].html).toContain("<!doctype html>");
+    expect(sent[0].html).not.toContain("<b>Name</b>");
+    expect(sent[0].text).toContain("Project type: Web application");
+    expect(sent[0].text).toContain("Name: <b>Name</b>"); // plain text keeps what was typed
+    expect(sent[0].subject).not.toContain("Name");
+  });
+
+  test("an inquiry with no project type (an older cached form) says 'Not provided', never a guess", async () => {
+    allowSendMode();
+    const { client } = fakeSupabaseForNotification();
+    const sent: Parameters<EmailSender["emails"]["send"]>[0][] = [];
+    const sender: EmailSender = { emails: { send: async (args) => { sent.push(args); return { data: null, error: null }; } } };
+    await sendInquiryNotification(client, sender, baseInput);
+    expect(sent[0].text).toContain("Project type: Not provided");
+  });
+});

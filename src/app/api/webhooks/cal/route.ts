@@ -12,7 +12,7 @@ import {
   bookingRescheduledPayloadSchema,
   resolveAttendeeTimezone,
 } from "@/lib/cal-webhook-schema";
-import { applyBookingCreated, applyBookingCancelled, applyBookingRescheduled, type ApplyResult } from "@/lib/apply-cal-booking-event";
+import { applyBookingCreated, applyBookingCancelled, applyBookingRescheduled, isDuplicateActiveBooking, type ApplyResult } from "@/lib/apply-cal-booking-event";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -211,6 +211,7 @@ export async function POST(request: NextRequest) {
         eventAt,
       }),
     );
+    if (result === "no_match") await noteDuplicateActiveBooking(context.inquiryId, payload.uid);
     return resultResponse(result);
   }
 
@@ -282,6 +283,18 @@ async function runApply(fn: () => Promise<ApplyResult>): Promise<ApplyResult> {
   } catch {
     console.error("cal_webhook_apply_threw");
     return "internal_error";
+  }
+}
+
+// A refused BOOKING_CREATED is usually a stale replay and stays silent. When the
+// reason is a second, different active booking, one fixed line (no ids) makes
+// the extra booking in Cal.com findable. Observability only: the response is the
+// same as for every other refused event, and a failure here changes nothing.
+async function noteDuplicateActiveBooking(inquiryId: string, uid: string) {
+  try {
+    if (await isDuplicateActiveBooking(getSupabaseServerClient(), { inquiryId, uid })) console.error("cal_webhook_duplicate_active_booking_ignored");
+  } catch {
+    // observability only
   }
 }
 

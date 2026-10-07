@@ -10,7 +10,10 @@ import type { Page } from "@playwright/test";
 // network call to Cal.com.
 export async function installCalEmbedMock(page: Page) {
   await page.addInitScript(() => {
-    const state: { inlineCalls: { calLink: string; config: Record<string, unknown> }[] } = { inlineCalls: [] };
+    const state: { inlineCalls: { calLink: string; config: Record<string, unknown> }[]; listeners: Record<string, number> } = {
+      inlineCalls: [],
+      listeners: {},
+    };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (window as any).__calEmbedMock = state;
 
@@ -20,9 +23,13 @@ export async function installCalEmbedMock(page: Page) {
         if (method === "inline") {
           state.inlineCalls.push({ calLink: arg?.calLink, config: arg?.config ?? {} });
         } else if (method === "on") {
-          window.addEventListener(`CAL:${namespace}:${arg.action}`, arg.callback);
+          const name = `CAL:${namespace}:${arg.action}`;
+          window.addEventListener(name, arg.callback);
+          state.listeners[name] = (state.listeners[name] ?? 0) + 1;
         } else if (method === "off") {
-          window.removeEventListener(`CAL:${namespace}:${arg.action}`, arg.callback);
+          const name = `CAL:${namespace}:${arg.action}`;
+          window.removeEventListener(name, arg.callback);
+          state.listeners[name] = (state.listeners[name] ?? 0) - 1;
         }
       };
     }
@@ -55,6 +62,17 @@ export async function fireCalEvent(page: Page, namespace: string, action: string
       window.dispatchEvent(new CustomEvent(`CAL:${namespace}:${action}`, { detail }));
     },
     { namespace, action, detail },
+  );
+}
+
+// How many listeners ScheduleEmbed currently has registered for an event.
+// Registration is asynchronous (getCalApi() resolves first), so a test must
+// wait for it before firing that event, or the event is simply lost.
+export async function getActiveListenerCount(page: Page, namespace: string, action: string) {
+  return page.evaluate(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (name) => ((window as any).__calEmbedMock.listeners[name] ?? 0) as number,
+    `CAL:${namespace}:${action}`,
   );
 }
 

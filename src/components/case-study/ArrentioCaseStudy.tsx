@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
@@ -47,7 +48,7 @@ export default function ArrentioCaseStudy() {
         <Reveal delay={0.1} className="mt-5 flex flex-wrap items-center gap-3">
           <Image
             src="/work/arrentio/logo.png"
-            alt="Arrentio logo"
+            alt={localAlt("Arrentio logo", lang)}
             width={44}
             height={36}
             className="rounded-[10px]"
@@ -79,7 +80,7 @@ export default function ArrentioCaseStudy() {
               <ChromeBar />
               <Image
                 src="/work/arrentio/home.jpg"
-                alt="Arrentio marketplace homepage"
+                alt={localAlt("Arrentio marketplace homepage", lang)}
                 width={1600}
                 height={1084}
                 className="h-auto w-full"
@@ -90,7 +91,7 @@ export default function ArrentioCaseStudy() {
               <ChromeBar />
               <Image
                 src="/work/arrentio/car-detail.jpg"
-                alt="Arrentio car detail and booking page"
+                alt={localAlt("Arrentio car detail and booking page", lang)}
                 width={1200}
                 height={2000}
                 className="aspect-[3/4] w-full object-cover object-top"
@@ -180,7 +181,7 @@ export default function ArrentioCaseStudy() {
               <ChromeBar />
               <Image
                 src="/work/arrentio/home.jpg"
-                alt="Arrentio marketplace homepage"
+                alt={localAlt("Arrentio marketplace homepage", lang)}
                 width={1600}
                 height={1084}
                 className="h-auto w-full"
@@ -190,7 +191,7 @@ export default function ArrentioCaseStudy() {
               <ChromeBar />
               <Image
                 src="/work/arrentio/explore.jpg"
-                alt="Arrentio explore page with filters and live inventory"
+                alt={localAlt("Arrentio explore page with filters and live inventory", lang)}
                 width={1600}
                 height={1084}
                 className="h-auto w-full"
@@ -200,7 +201,7 @@ export default function ArrentioCaseStudy() {
               <ChromeBar />
               <Image
                 src="/work/arrentio/list-your-car.jpg"
-                alt="Arrentio provider onboarding page"
+                alt={localAlt("Arrentio provider onboarding page", lang)}
                 width={1600}
                 height={1021}
                 className="h-auto w-full"
@@ -212,7 +213,7 @@ export default function ArrentioCaseStudy() {
             <div className="relative min-h-[340px] flex-1">
               <Image
                 src="/work/arrentio/car-detail.jpg"
-                alt="Arrentio car detail and booking page"
+                alt={localAlt("Arrentio car detail and booking page", lang)}
                 fill
                 sizes="(min-width: 1024px) 40vw, 100vw"
                 className="object-cover object-top"
