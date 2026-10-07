@@ -74,6 +74,37 @@ test("nothing private is served without signing in, and only on the admin host",
   expect(headers["content-security-policy"]).not.toMatch(/https?:/);
   expect(headers["x-content-type-options"]).toBe("nosniff");
   expect(headers["permissions-policy"]).toContain("camera=()");
+  // Never publicly cached (the exact production value is checked against a production build), and never shown inside another site's frame.
+  expect(headers["cache-control"]).toMatch(/no-store|no-cache/);
+  expect(headers["cache-control"]).not.toMatch(/public|s-maxage|max-age=[1-9]/);
+  expect(headers["x-frame-options"]).toBe("DENY");
+  expect(headers["content-security-policy"]).toContain("frame-ancestors 'none'");
+});
+
+test("forged session cookies open nothing, on any private page", async ({ browser }) => {
+  const b64 = (value: unknown) => Buffer.from(JSON.stringify(value)).toString("base64url");
+  const now = Math.floor(Date.now() / 1000);
+  // A well-formed but unsigned token for an allowlisted address, claiming a completed second factor.
+  const unsignedToken = `${b64({ alg: "none", typ: "JWT" })}.${b64({ sub: "11111111-1111-4111-8111-111111111111", email: OMAR, role: "authenticated", aal: "aal2", session_id: "22222222-2222-4222-8222-222222222222", iat: now, exp: now + 3600 })}.`;
+  const session = { access_token: unsignedToken, refresh_token: "forged", token_type: "bearer", expires_in: 3600, expires_at: now + 3600, user: { id: "11111111-1111-4111-8111-111111111111", email: OMAR } };
+  const base = { domain: "localhost", path: "/", secure: true, httpOnly: true, sameSite: "Strict" as const };
+  const variants: { name: string; value: string }[][] = [
+    [{ name: "__Host-mintapp-admin-auth", value: "garbage" }],
+    [{ name: "__Host-mintapp-admin-auth", value: `base64-${b64(session)}` }],
+    [{ name: "__Host-mintapp-admin-auth", value: `base64-${b64(session)}` }, { name: "__Host-mintapp-admin-activity", value: `${b64({ sid: "22222222-2222-4222-8222-222222222222", iat: now, last: now })}.AAAA` }],
+    [{ name: "__Host-mintapp-admin-activity", value: `${b64({ sid: "x", iat: now, last: now })}.AAAA` }],
+  ];
+  for (const cookies of variants) {
+    for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+      const context = await browser.newContext();
+      await context.addCookies(cookies.map((c) => ({ ...base, ...c })));
+      const page = await context.newPage();
+      await page.goto(path);
+      await expect(page, `${cookies.map((c) => c.name).join("+")} ${path}`).toHaveURL(/\/login(\?.*)?$/);
+      await expect(page.locator("body")).not.toContainText("physiotherapy");
+      await context.close();
+    }
+  }
 });
 
 test("a wrong password, or the right password for an account outside the allowlist, gets the same refusal", async ({ browser }) => {
