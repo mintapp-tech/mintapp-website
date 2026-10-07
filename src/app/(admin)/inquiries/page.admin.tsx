@@ -6,6 +6,7 @@ import { adminText } from "@/lib/admin/locale";
 import type { AdminLocale, AdminMessages } from "@/lib/admin/messages";
 import { listInquiries, type InquiryRow } from "@/lib/dashboard/data";
 import { clientProjectType } from "@/lib/dashboard/project-type";
+import { needsApprovalBeforeMeeting } from "@/lib/dashboard/approval";
 import { selectGenerator } from "@/lib/preparation/config";
 import { excerpt, label, labelsFor } from "@/lib/dashboard/status";
 import { Chip, MEETING_TONES, REVIEW_TONES, card, eyebrow, formatDate, formatDay, todayInCairo, type ChipTone } from "@/components/dashboard/ui";
@@ -18,6 +19,7 @@ const STUCK = new Set(["failed", "paused"]);
 
 interface Row extends InquiryRow {
   attention: boolean;
+  needsApproval: boolean;
   owner: string;
   followUp: { action: string; who: string; due: string; overdue: boolean } | null;
   review: { text: string; tone: ChipTone; approved: boolean; inReview: boolean };
@@ -31,6 +33,23 @@ interface Ctx {
 
 const MeetingChip = ({ r, c }: { r: Row; c: Ctx }) => <Chip tone={MEETING_TONES[r.booking_status] ?? "neutral"}>{label(c.labels.meeting, r.booking_status)}</Chip>;
 const meetingTime = (r: Row, c: Ctx) => (r.meeting_start_at && r.booking_status === "booked" ? formatDate(r.meeting_start_at, true, c.locale) : null);
+
+// The sales stage is its own state, separate from the meeting, the preparation and the review.
+const SalesChip = ({ r, c, prefixed = false }: { r: Row; c: Ctx; prefixed?: boolean }) => {
+  const stage = label(c.labels.lead, r.lead_status);
+  return (
+    <Chip tone="neutral" data-status="sales">
+      {prefixed ? c.t.list.sales(stage) : stage}
+    </Chip>
+  );
+};
+
+const ApprovalFlag = ({ r, c }: { r: Row; c: Ctx }) =>
+  r.needsApproval ? (
+    <Chip tone="warn" data-flag="needs-approval">
+      {c.t.list.needsApproval}
+    </Chip>
+  ) : null;
 
 const PreparationChip = ({ r, c }: { r: Row; c: Ctx }) =>
   r.attention ? (
@@ -94,6 +113,7 @@ export default async function InquiriesPage() {
   const automationLabel = generator.enabled ? `on (${generator.generator.id})` : generator.reason === "off" ? t.list.automationOff : `${t.list.automationOff} (${generator.reason.replaceAll("_", " ")})`;
   const members: TeamMember[] = teamMembers();
   const today = todayInCairo();
+  const now = new Date();
 
   const rows: Row[] = raw.map((r) => {
     const waiting = (r.preparation_status === "queued" || r.preparation_status === "retry_scheduled") && !generator.enabled;
@@ -101,6 +121,7 @@ export default async function InquiriesPage() {
     return {
       ...r,
       attention: STUCK.has(r.preparation_status ?? "") || waiting || !r.preparation_status,
+      needsApproval: needsApprovalBeforeMeeting(r, now),
       owner: ownersLabel(r.owners, members, t.list.unassigned),
       followUp: r.next_follow_up
         ? {
@@ -136,9 +157,11 @@ export default async function InquiriesPage() {
         </div>
       ) : (
         <>
-          <dl className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <dl className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6" data-summary>
             <Stat value={rows.filter((r) => r.attention).length} title={t.list.stats.attention} tone="attention" />
+            <Stat value={rows.filter((r) => r.followUp?.overdue).length} title={t.list.stats.overdue} tone="attention" />
             <Stat value={rows.filter((r) => r.booking_status === "booked").length} title={t.list.stats.booked} />
+            <Stat value={rows.filter((r) => r.needsApproval).length} title={t.list.stats.unapproved} tone="attention" />
             <Stat value={rows.filter((r) => r.review.inReview).length} title={t.list.stats.review} />
             <Stat value={rows.filter((r) => r.review.approved).length} title={t.list.stats.approved} />
           </dl>
@@ -164,6 +187,9 @@ export default async function InquiriesPage() {
                   <th scope="col" className="px-4 py-3 text-start">
                     {t.list.columns.review}
                   </th>
+                  <th scope="col" className="px-4 py-3 text-start">
+                    {t.list.columns.sales}
+                  </th>
                   <th scope="col" className="py-3 ps-4 pe-5 text-start">
                     {t.list.columns.owner}
                   </th>
@@ -184,7 +210,13 @@ export default async function InquiriesPage() {
                       <PreparationChip r={r} c={c} />
                     </td>
                     <td className="px-4 py-4">
-                      <Chip tone={r.review.tone}>{r.review.text}</Chip>
+                      <div className="flex flex-col items-start gap-1">
+                        <Chip tone={r.review.tone}>{r.review.text}</Chip>
+                        <ApprovalFlag r={r} c={c} />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <SalesChip r={r} c={c} />
                     </td>
                     <td className="py-4 ps-4 pe-5">
                       <span className={`whitespace-nowrap ${r.owners.length ? "" : "text-ink-faint"}`}>{r.owner}</span>
@@ -209,6 +241,8 @@ export default async function InquiriesPage() {
                   <MeetingChip r={r} c={c} />
                   <PreparationChip r={r} c={c} />
                   <Chip tone={r.review.tone}>{r.review.text}</Chip>
+                  <SalesChip r={r} c={c} prefixed />
+                  <ApprovalFlag r={r} c={c} />
                 </div>
                 {meetingTime(r, c) && <p className="mt-2 mb-0 text-[12.5px] text-ink-soft">{t.list.meetingAt(meetingTime(r, c)!)}</p>}
                 {r.followUp && <FollowUpLine f={r.followUp} c={c} className="mt-1" />}
