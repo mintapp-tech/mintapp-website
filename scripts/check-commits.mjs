@@ -15,6 +15,8 @@ import { join, resolve } from "node:path";
 const KNOWN_BROKEN = {
   "49082616d5c6796cb3e95b0c4b6cebca78704849":
     "deletes src/lib/preparation/supabase-store.ts while run.ts still imports it until bbeeda3",
+  "3629f8912e92e7b99a44c3b3e7f5612cfe74d5f3":
+    "its seed-parser test has a type error that 9906e3b fixes (typed the parser rows)",
 };
 
 const git = (...args) => execFileSync("git", args, { encoding: "utf8" }).trim();
