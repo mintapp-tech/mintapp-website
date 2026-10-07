@@ -98,6 +98,48 @@ Its timestamp sorts before the dashboard migrations, so:
 
 Take a backup before applying (the Free plan has no automatic backups).
 
+The exact production steps (backup, pre-checks, one file at a time, post-checks,
+a real test submission, accounts, hostname) and the four rollback tiers are in
+`docs/operations-crm-v1-launch.md`. Recovery scripts live in `supabase/rollback/`
+(outside `supabase/migrations/`): `01` stops new preparation jobs and keeps all
+data; `02` removes everything the CRM added, after the team's data is exported.
+`tests/db/production-upgrade.test.mjs` rehearses the whole path.
+
+## The inquiry list and the review rules
+
+- **Four states, kept apart.** Each inquiry shows its meeting (from Cal.com),
+  its preparation (job state), its review (draft, ready, approved) and its
+  sales stage (`lead_status`: new, reviewing, qualified, converted, not a fit,
+  archived) as separate chips and, on desktop, separate columns. The sales
+  stage is shown but not yet editable in v1.
+- **What needs a person is counted:** inquiries needing attention, overdue
+  follow-ups, booked meetings that have no approved preparation note, notes
+  ready for review, and approved notes. A booked, upcoming meeting with no
+  approved note carries an "Approval needed before the meeting" flag.
+- **Ownership:** Omar, Adam, or Omar & Adam, shown by name. Sign-in emails never
+  appear in lists, selectors or ownership controls; contact details sit in one
+  collapsed section of an inquiry and are never included in a brief.
+- **Follow-ups:** each has exactly one responsible person, a due date and an
+  open or done state. Overdue ones are marked in the list, in the summary count
+  and on the inquiry.
+- **Manual preparation.** The inquiry page builds a structured brief (what the
+  client provided, what is missing, their own words) and copies it, without
+  contact details, for a team member to paste into their own Claude chat. The
+  result is pasted back, edited (every edit is a new version; earlier versions
+  stay), marked ready, and approved. The brief's instructions ask for client
+  facts (with the client's own words), assumptions (with reasons) and suggestions
+  as separate sections and forbid invented numbers; any figure in a saved draft
+  that the client never stated is flagged for the reviewer. Nothing connects to a
+  Claude account.
+- **Teammate approval.** The person who wrote a version cannot approve it: the
+  page shows them "a teammate needs to approve it" instead of an Approve button,
+  and the server action refuses the approval however the request is made
+  (`src/lib/dashboard/approval.ts`). Versions made by automation have no human
+  author, so either person may approve them. An edit by the other person is a
+  new version they wrote, which the first person may approve.
+- **Cancelling or rescheduling a meeting** never touches preparation: it is keyed
+  to the inquiry, not the booking.
+
 ## Project type: what the client chose, and what we think
 
 The public form asks for the project type (Website, Web application, Mobile
@@ -117,6 +159,8 @@ application, Not sure yet; stored as `website`, `web_app`, `mobile_app`,
 
 ## Before launch
 
+The full, ordered checklist is `docs/operations-crm-v1-launch.md`. In short:
+
 1. In Supabase: disable public sign-ups; keep email confirmation on; create the
    two team accounts (Omar, Adam) and confirm their emails; each person signs
    in once and sets up the authenticator immediately.
@@ -133,5 +177,6 @@ application, Not sure yet; stored as `website`, `web_app`, `mobile_app`,
 - `docs/admin-review-preview.md`: the synthetic review Preview and testing
   sign-in against real Supabase Auth.
 - `docs/security-baseline.md`: the security baseline and Mintapp's status.
-- `docs/crm-roadmap.md`: what this release covers and the later CRM phases.
+- `docs/crm-roadmap.md`: what this release covers, how it extends, and the later CRM phases.
+- `docs/operations-crm-v1-launch.md`: the production launch runbook, checklist and rollback plan.
 - `docs/outreach-readiness.md`: the controlled live test of the client path.

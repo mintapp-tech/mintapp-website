@@ -123,7 +123,9 @@ environment **Preview** and branch **`review/admin-preview`** only:
 | `PREPARATION_GENERATOR` | `off` |
 | `EMAIL_SENDING_MODE` | `disabled` |
 
-Then push the branch: `git push origin feat/inquiry-preparation:review/admin-preview`.
+Then push the branch: `git push origin review/admin-preview`. That branch contains
+`feat/inquiry-preparation` and the released `main` (merged in with ordinary merges,
+never rebased); update it by merging `main` into it again.
 
 The Preview's address is the branch address, for example
 `https://mintapp-website-git-review-admin-preview-omarmeneams-projects.vercel.app`
