@@ -26,6 +26,14 @@ const PRODUCTION_BEFORE = [
   "20261007000000_allow_rebooking_after_cancellation.sql",
 ];
 const CRM = ["20261005000000_add_inquiry_preparation.sql", "20261006000000_add_preparation_dashboard.sql"];
+// CRM Release 1 adds to the two above, in order, after them.
+const RELEASE_1 = [
+  "20261010000000_add_admin_auth_throttle.sql",
+  "20261011000000_add_crm_core.sql",
+  "20261012000000_add_crm_proposals_projects.sql",
+  "20261013000000_add_crm_outreach.sql",
+  "20261014000000_add_crm_reads.sql",
+];
 const ROLLBACK_DIR = join(process.cwd(), "supabase", "rollback");
 
 // The SQL in the launch runbook is run here, so the document cannot drift from the database.
@@ -53,8 +61,8 @@ const insertRow = (rowId, over = {}) =>
            values (${lit(rowId)}, ${lit(over.name ?? "Existing Client")}, ${lit(`client-${rowId.slice(-2)}@example.com`)}, '+20100000000', 'Existing Co', ${lit(over.lang ?? "en")}, ${lit(over.type ?? null)}, ${lit(over.desc ?? "A real project description from before the dashboard existed.")}, true, now(), ${over.deleted ? "now()" : "null"})`);
 
 // Every column of every existing inquiry as it was before launch. The new
-// "owners" column is excluded, so the same fingerprint works before and after.
-const inquiryFingerprint = () => db.psql(`select md5(coalesce(string_agg((to_jsonb(t) - 'owners')::text, '|' order by t.id), '')) from public.project_inquiries t`);
+// "owners" and "utm_content" columns are excluded, so the same fingerprint works before and after.
+const inquiryFingerprint = () => db.psql(`select md5(coalesce(string_agg((to_jsonb(t) - 'owners' - 'utm_content')::text, '|' order by t.id), '')) from public.project_inquiries t`);
 
 // What the database looks like to the application: tables, project_inquiries
 // columns, public functions, triggers and constraints. Rolling back must restore it exactly.
@@ -88,9 +96,9 @@ before(async () => {
 after(() => db?.stop());
 
 describe("the chain used here is the one production has", () => {
-  test("the CRM migrations are exactly the two not yet applied, and nothing else is pending or excluded by accident", () => {
+  test("the CRM migrations are exactly the ones not yet applied, and nothing else is pending or excluded by accident", () => {
     const onDisk = readdirSync(join(process.cwd(), "supabase", "migrations")).filter((f) => f.endsWith(".sql")).sort();
-    assert.deepEqual([...PRODUCTION_BEFORE, ...CRM].sort(), onDisk, "supabase/migrations changed: update the runbook and this rehearsal");
+    assert.deepEqual([...PRODUCTION_BEFORE, ...CRM, ...RELEASE_1].sort(), onDisk, "supabase/migrations changed: update the runbook and this rehearsal");
   });
   test("the runbook's pre-check queries run and show the documented pre-launch state", () => {
     preChecks = lines(db.psql(runbookSql("## 4. Pre-checks")));
@@ -209,6 +217,77 @@ describe("applying the two CRM migrations, file by file, in order", () => {
   });
 });
 
+describe("CRM Release 1, applied on top of Operations/CRM v1, file by file", () => {
+  const LEGACY_STAGES = [id(95), id(96), id(97)];
+  let stages;
+  let preRelease;
+  before(() => {
+    preRelease = inquiryFingerprint();
+    // Inquiries sitting in the early sales stages that Release 1 replaces.
+    ["converted", "not_a_fit", "archived"].forEach((stage, n) => {
+      insertRow(LEGACY_STAGES[n], { type: "website" });
+      db.psql(`update public.project_inquiries set lead_status = ${lit(stage)} where id = ${lit(LEGACY_STAGES[n])}`);
+    });
+    for (const file of RELEASE_1) db.applyMigration(file);
+    stages = db.psql(`select string_agg(lead_status, ',' order by id) from public.project_inquiries where id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[])`);
+    db.psql(`delete from public.crm_activity; delete from public.inquiry_preparations where inquiry_id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[]);
+             delete from public.preparation_drafts where inquiry_id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[]);
+             delete from public.project_inquiries where id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[]);`);
+  });
+
+  test("the early stage names carried over to their successors", () => {
+    assert.equal(stages, "won,lost,paused");
+  });
+
+  test("every existing inquiry is exactly as it was: same rows, same values, same stage", () => {
+    assert.equal(inquiryFingerprint(), preRelease);
+    assert.equal(count("select count(*) from public.project_inquiries where lead_status <> 'new'"), 0);
+    assert.equal(count("select count(*) from public.project_inquiries where utm_content is not null"), 0);
+  });
+
+  test("it adds only CRM objects: no row in any CRM table until the team uses it", () => {
+    for (const t of ["crm_companies", "crm_contacts", "inquiry_crm", "crm_stage_history", "crm_proposals", "crm_projects", "crm_prospects", "crm_outreach_touches", "admin_auth_throttle"]) {
+      assert.equal(count(`select count(*) from public.${t}`), 0, t);
+    }
+  });
+
+  test("the public insert and the booking functions still work, on old and new inquiries", () => {
+    const newId = id(93);
+    svc(`insert into public.project_inquiries (id, full_name, email, project_description, preferred_language, consent_given, consent_at, source_page, submission_token, utm_content)
+         values (${lit(newId)}, 'Form Client', 'form@example.com', 'Submitted after Release 1.', 'en', true, now(), '/en/start', 'aaaaaaaa-3333-4333-8333-aaaaaaaaaaaa', 'flagship_en')`);
+    assert.equal(count(`select count(*) from public.inquiry_preparations where inquiry_id = ${lit(newId)} and status = 'queued'`), 1);
+    assert.equal(svc(`select public.apply_booking_created(${lit(newId)}, 'r1-1', '2026-11-01 09:00:00+00', 'Africa/Cairo', '2026-10-10 10:00:00+00')`), newId);
+    assert.equal(svc(`select public.apply_booking_cancelled(${lit(newId)}, 'r1-1', '2026-11-01 09:00:00+00', 'Africa/Cairo', '2026-10-10 10:05:00+00')`), newId);
+    assert.equal(db.psql(`select lead_status from public.project_inquiries where id = ${lit(newId)}`), "new", "bookings never touch the sales stage");
+    db.psql(`delete from public.crm_activity; delete from public.inquiry_preparations where inquiry_id = ${lit(newId)}; delete from public.project_inquiries where id = ${lit(newId)}`);
+  });
+
+  test("a team member can use every part of it on the upgraded database", () => {
+    svc(`select public.crm_set_stage(${lit(BOOKED)}, 'qualified', 'omar@mintapp.tech')`);
+    const created = JSON.parse(svc(`select public.crm_create_from_inquiry(${lit(BOOKED)}, 'new', null, 'omar@mintapp.tech')`));
+    assert.ok(created.contact_id && created.company_id);
+    assert.equal(JSON.parse(svc("select public.crm_overview(current_date)")).counts.open_inquiries > 0, true);
+    svc(`select public.crm_set_stage(${lit(BOOKED)}, 'new', 'omar@mintapp.tech')`);
+    db.psql("delete from public.crm_stage_history; delete from public.crm_activity; delete from public.inquiry_crm; delete from public.crm_contacts; delete from public.crm_companies");
+  });
+
+  test("anon and authenticated can read none of the new tables and run none of the new functions", () => {
+    for (const role of ["anon", "authenticated"]) {
+      for (const t of ["crm_companies", "crm_contacts", "inquiry_crm", "crm_activity", "crm_proposals", "crm_projects", "crm_prospects", "admin_auth_throttle"]) {
+        assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.${t}`), /permission denied/, `${role} ${t}`);
+      }
+      assert.match(db.psqlExpectError(`set role ${role}; select public.crm_overview(current_date)`), /permission denied/, role);
+      assert.match(db.psqlExpectError(`set role ${role}; select public.admin_auth_locked('${"a".repeat(64)}')`), /permission denied/, role);
+    }
+  });
+
+  test("applying Release 1 a second time changes nothing", () => {
+    const fingerprint = inquiryFingerprint();
+    for (const file of RELEASE_1) db.applyMigration(file);
+    assert.equal(inquiryFingerprint(), fingerprint);
+  });
+});
+
 describe("recovery scripts", () => {
   test("script 1 stops new jobs and keeps all data; an inquiry submitted afterwards still saves", () => {
     const jobs = count("select count(*) from public.inquiry_preparations");
@@ -228,6 +307,11 @@ describe("recovery scripts", () => {
   });
 
   test("script 2 removes everything the CRM added, and the database is exactly what it was before the launch", () => {
+    // Release 1 comes off first (its own script), then v1.
+    applyRollback("03_remove_crm_release_1.sql");
+    assert.equal(count("select count(*) from information_schema.tables where table_schema = 'public' and (table_name like 'crm\_%' or table_name in ('inquiry_crm', 'admin_auth_throttle'))"), 0);
+    assert.equal(count("select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'crm\_%' or p.proname like 'admin\_auth\_%')"), 0);
+    assert.equal(count("select count(*) from information_schema.columns where table_schema = 'public' and table_name = 'project_inquiries' and column_name = 'utm_content'"), 0);
     db.psql(`delete from public.preparation_drafts; delete from public.inquiry_follow_ups; delete from public.inquiry_notes;`); // team data the runbook says to export first
     // Restore inquiry rows the earlier tests changed, so the comparison is about schema and untouched data.
     applyRollback("02_remove_operations_crm_v1.sql");
@@ -248,7 +332,7 @@ describe("recovery scripts", () => {
   });
 
   test("after a full removal the launch can be done again from the same files", () => {
-    for (const file of CRM) db.applyMigration(file);
+    for (const file of [...CRM, ...RELEASE_1]) db.applyMigration(file);
     assert.equal(count("select count(*) from public.inquiry_preparations"), count("select count(*) from public.project_inquiries"));
     assert.equal(count("select count(*) from public.inquiry_preparations where status = 'manual'"), count("select count(*) from public.project_inquiries"));
   });
