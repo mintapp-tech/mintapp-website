@@ -91,7 +91,7 @@ export default async function MetricsPage({ searchParams }: { searchParams: Prom
           {data.sources.length === 0 ? (
             <Empty>{m.noSources}</Empty>
           ) : (
-            <div className="relative overflow-x-auto">
+            <div className="relative overflow-x-auto focus-visible:outline-2 focus-visible:outline-mint-deep" role="region" aria-label={m.sources} tabIndex={0}>
               <table className="w-full border-collapse text-start text-[13.5px]" data-sources>
                 <caption className="sr-only">{m.sources}</caption>
                 <thead>
