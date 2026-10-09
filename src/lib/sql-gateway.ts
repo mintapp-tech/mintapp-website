@@ -26,8 +26,10 @@ export const SQL_FUNCTIONS = {
   },
   monthly_generation_tokens: { params: [["p_provider", "text"]] },
   preparation_input: { params: [["p_inquiry_id", "uuid"]] },
+  admin_auth_locked: { params: [["p_key", "text"]] },
+  admin_auth_record: { params: [["p_key", "text"], ["p_success", "boolean"], ["p_limit", "integer"]] },
   dashboard_inquiries: { params: [] },
-  // Exists only in the synthetic review database (supabase/review/).
+  // Exists only in a synthetic review database (the marker is never a migration).
   review_environment: { params: [] },
   dashboard_inquiry: { params: [["p_inquiry_id", "uuid"]] },
   dashboard_set_owners: { params: [["p_inquiry_id", "uuid"], ["p_owners", "jsonb"]] },

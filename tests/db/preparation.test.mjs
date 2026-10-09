@@ -34,7 +34,7 @@ before(async () => {
 after(() => db?.stop());
 
 beforeEach(() => {
-  db.psql(`delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
+  db.psql(`delete from public.crm_activity; delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
            delete from public.inquiry_preparations where inquiry_id <> ${lit(LEGACY)};
            delete from public.project_inquiries where id <> ${lit(LEGACY)};`);
 });

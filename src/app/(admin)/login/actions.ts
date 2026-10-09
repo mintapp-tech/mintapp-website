@@ -6,6 +6,7 @@ import { authMode, findMember, supabaseAuthConfig } from "@/lib/admin/auth/confi
 import { ACTIVITY_COOKIE, ACTIVITY_COOKIE_OPTIONS, activityToken } from "@/lib/admin/auth/activity";
 import { adminState, serverAuthClient } from "@/lib/admin/auth/state";
 import { AUTH_COOKIE, tokenClaims } from "@/lib/admin/auth/supabase-client";
+import { clientAddress, isLocked, recordOutcome, throttleKeys } from "@/lib/admin/auth/throttle";
 
 // Sign-in for the admin application.
 //   Supabase Auth: password, then a required authenticator-app code; only
@@ -22,14 +23,21 @@ export async function loginAction(_previous: LoginState, form: FormData): Promis
 
   const client = await serverAuthClient();
   try {
+    const keys = throttleKeys(supabaseAuthConfig()!.sessionSecret, "password", email, await clientAddress());
+    if (await isLocked(keys)) return { error: "locked" };
     const { error } = await client!.auth.signInWithPassword({ email, password });
-    if (error) return { error: error.status === 429 ? "locked" : error.status && error.status < 500 ? "invalid" : "unavailable" };
+    if (error) {
+      if (error.status === 429) return { error: "locked" };
+      if (!error.status || error.status >= 500) return { error: "unavailable" };
+      return { error: (await recordOutcome(keys, false)) ? "locked" : "invalid" };
+    }
     // Same answer as a wrong password for anyone not on the allowlist, and
     // their session is ended at once.
     if (!findMember(email)) {
       await client!.auth.signOut({ scope: "local" });
-      return { error: "invalid" };
+      return { error: (await recordOutcome(keys, false)) ? "locked" : "invalid" };
     }
+    await recordOutcome(keys, true);
   } catch {
     console.error("admin_login_failed");
     return { error: "unavailable" };
@@ -74,8 +82,15 @@ export async function verifyMfaAction(_previous: MfaState, form: FormData): Prom
       factorId = data?.totp[0]?.id ?? "";
     }
     if (!factorId) return { error: "unavailable" };
+    const keys = throttleKeys(config.sessionSecret, "code", state.email, await clientAddress());
+    if (await isLocked(keys)) return { error: "invalidCode" };
     const { data, error } = await client.auth.mfa.challengeAndVerify({ factorId, code });
-    if (error || !data) return { error: error && error.status && error.status < 500 ? "invalidCode" : "unavailable" };
+    if (error || !data) {
+      if (!error?.status || error.status >= 500) return { error: "unavailable" };
+      await recordOutcome(keys, false);
+      return { error: "invalidCode" };
+    }
+    await recordOutcome(keys, true);
     const { sessionId, aal } = tokenClaims(data.access_token);
     if (aal !== "aal2" || !sessionId) return { error: "unavailable" };
     (await cookies()).set(ACTIVITY_COOKIE, activityToken(sessionId, config.sessionSecret), ACTIVITY_COOKIE_OPTIONS);

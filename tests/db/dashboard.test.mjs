@@ -25,10 +25,7 @@ before(async () => {
   for (const file of db.migrations) db.applyMigration(file);
 });
 after(() => db?.stop());
-beforeEach(() => {
-  db.psql(`delete from public.inquiry_follow_ups; delete from public.inquiry_notes; delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
-           delete from public.team_login_attempts; delete from public.inquiry_preparations; delete from public.project_inquiries;`);
-});
+beforeEach(() => db.clearData());
 
 describe("reads", () => {
   test("preparation input carries the brief and structured answers, never contact details", () => {
@@ -156,13 +153,16 @@ describe("prepare one inquiry now", () => {
 describe("login throttling", () => {
   test("8 failures lock the key for 15 minutes; success clears it", () => {
     const key = "a".repeat(64);
-    for (let i = 1; i <= 7; i++) assert.equal(svc(`select public.team_login_record(${lit(key)}, false)`), "f");
-    assert.equal(svc(`select public.team_login_locked(${lit(key)})`), "f");
-    assert.equal(svc(`select public.team_login_record(${lit(key)}, false)`), "t");
-    assert.equal(svc(`select public.team_login_locked(${lit(key)})`), "t");
-    svc(`select public.team_login_record(${lit(key)}, true)`);
-    assert.equal(svc(`select public.team_login_locked(${lit(key)})`), "f");
-    assert.match(db.psqlExpectError(`set role service_role; select public.team_login_record('not-a-hash', false)`), /key_shape/);
+    for (let i = 1; i <= 7; i++) assert.equal(svc(`select public.admin_auth_record(${lit(key)}, false)`), "f");
+    assert.equal(svc(`select public.admin_auth_locked(${lit(key)})`), "f");
+    assert.equal(svc(`select public.admin_auth_record(${lit(key)}, false)`), "t");
+    assert.equal(svc(`select public.admin_auth_locked(${lit(key)})`), "t");
+    svc(`select public.admin_auth_record(${lit(key)}, true)`);
+    assert.equal(svc(`select public.admin_auth_locked(${lit(key)})`), "f");
+    assert.match(db.psqlExpectError(`set role service_role; select public.admin_auth_record('not-a-hash', false)`), /key_shape/);
+    const other = "b".repeat(64);
+    for (let i = 1; i <= 29; i++) assert.equal(svc(`select public.admin_auth_record(${lit(other)}, false, 30)`), "f");
+    assert.equal(svc(`select public.admin_auth_record(${lit(other)}, false, 30)`), "t", "a higher ceiling for the account overall");
   });
 });
 
@@ -219,7 +219,7 @@ describe("access", () => {
       assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.inquiry_follow_ups;`), /permission denied/);
       assert.match(db.psqlExpectError(`set role ${role}; select public.dashboard_set_owners('${A}', '[]'::jsonb);`), /permission denied/);
       assert.match(db.psqlExpectError(`set role ${role}; select public.dashboard_add_follow_up('${A}', 'x', 'omar', current_date, 'x');`), /permission denied/);
-      assert.match(db.psqlExpectError(`set role ${role}; select public.team_login_locked('${"a".repeat(64)}');`), /permission denied/);
+      assert.match(db.psqlExpectError(`set role ${role}; select public.admin_auth_locked('${"a".repeat(64)}');`), /permission denied/);
     }
   });
 });

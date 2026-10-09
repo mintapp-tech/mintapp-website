@@ -103,6 +103,16 @@ export async function startCluster() {
   psql("create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;");
   const migrations = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
 
+  // Empties every table the tests write to (all CRM tables hang off the inquiries).
+  const clearData = () =>
+    psql(`truncate public.project_inquiries cascade;
+          delete from public.generation_usage; delete from public.automation_control; delete from public.admin_auth_throttle;
+          do $$ begin
+            if to_regclass('public.crm_contacts') is not null then
+              delete from public.crm_contacts; delete from public.crm_companies; delete from public.crm_activity;
+            end if;
+          end $$;`);
+
   const stop = () => {
     try {
       execFileSync(bin("pg_ctl"), ["-D", data, "-m", "fast", "-w", "stop"], { stdio: "ignore" });
@@ -111,7 +121,7 @@ export async function startCluster() {
     }
   };
 
-  return { port, psql, psqlExpectError, psqlAsync, applyFile, applyMigration, migrations, stop };
+  return { port, psql, psqlExpectError, psqlAsync, applyFile, applyMigration, clearData, migrations, stop };
 }
 
 export const lit = (v) => (v === null || v === undefined ? "null" : `'${String(v).replace(/'/g, "''")}'`);
