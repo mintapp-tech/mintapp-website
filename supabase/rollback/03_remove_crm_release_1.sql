@@ -26,6 +26,7 @@ begin;
 drop trigger if exists inquiry_follow_ups_trail on public.inquiry_follow_ups;
 drop trigger if exists inquiry_notes_trail on public.inquiry_notes;
 drop trigger if exists preparation_drafts_trail on public.preparation_drafts;
+drop trigger if exists project_inquiries_booking_trail on public.project_inquiries;
 
 drop table if exists public.crm_outreach_touches;
 drop table if exists public.crm_prospects;

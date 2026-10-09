@@ -146,6 +146,27 @@ describe("ownership and the activity trail", () => {
     assert.equal(svc(`select detail ->> 'to' from public.crm_activity where action = 'draft_review' order by at desc, id desc limit 1`), "approved");
   });
 
+  test("booking history: a booking, a move and a cancellation are on the trail, with status and time only", () => {
+    insertInquiry(A);
+    svc(`select public.apply_booking_created(${lit(A)}, 'h-1', now() + interval '3 days', 'Africa/Cairo', now())`);
+    svc(`select public.apply_booking_rescheduled(${lit(A)}, 'h-1', 'h-2', now() + interval '4 days', 'Africa/Cairo', now() + interval '1 minute')`);
+    svc(`select public.apply_booking_cancelled(${lit(A)}, 'h-2', now() + interval '4 days', 'Africa/Cairo', now() + interval '2 minutes')`);
+    assert.equal(actions(A), "booking_booked,booking_rescheduled,booking_cancelled");
+    assert.equal(svc(`select string_agg(distinct actor, ',') from public.crm_activity where inquiry_id = ${lit(A)}`), "cal.com");
+    assert.deepEqual(Object.keys(json(`select detail from public.crm_activity where action = 'booking_booked'`)).sort(), ["start", "status"]);
+  });
+
+  test("a failure writing the trail can never stop a booking from being recorded", () => {
+    insertInquiry(A);
+    db.psql("revoke insert on public.crm_activity from service_role");
+    try {
+      assert.equal(svc(`select public.apply_booking_created(${lit(A)}, 'w-1', now() + interval '3 days', 'Africa/Cairo', now())`), A);
+    } finally {
+      db.psql("grant insert on public.crm_activity to service_role");
+    }
+    assert.equal(db.psql(`select booking_status from public.project_inquiries where id = ${lit(A)}`), "booked");
+  });
+
   test("the trail never holds the text of a note, a draft or contact details", () => {
     insertInquiry(A);
     svc(`select public.dashboard_add_note(${lit(A)}, ${lit(OMAR)}, 'secret-note-text')`);

@@ -194,6 +194,31 @@ drop trigger if exists preparation_drafts_trail on public.preparation_drafts;
 create trigger preparation_drafts_trail after insert or update on public.preparation_drafts
   for each row execute function public.crm_trail_draft();
 
+-- Booking history: a booking, a move or a cancellation is written to the trail
+-- as it happens (status and time only). This must never get in the way of the
+-- booking webhook, so a failure here is reported as a warning and ignored.
+create or replace function public.crm_trail_booking()
+returns trigger
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  if new.booking_status is distinct from old.booking_status or new.meeting_start_at is distinct from old.meeting_start_at then
+    perform public.crm_log('cal.com', 'inquiry', new.id, new.id,
+      case when new.booking_status = old.booking_status and new.booking_status = 'booked' then 'booking_rescheduled' else 'booking_' || new.booking_status end,
+      jsonb_build_object('status', new.booking_status, 'start', new.meeting_start_at));
+  end if;
+  return new;
+exception when others then
+  raise warning 'crm_trail_booking_failed';
+  return new;
+end;
+$$;
+drop trigger if exists project_inquiries_booking_trail on public.project_inquiries;
+create trigger project_inquiries_booking_trail after update of booking_status, meeting_start_at on public.project_inquiries
+  for each row execute function public.crm_trail_booking();
+
 -- ============================================================
 -- 4. Companies and contacts
 -- ============================================================
@@ -661,7 +686,7 @@ begin
     'public.crm_host(text)', 'public.crm_name_key(text)', 'public.crm_phone_key(text)', 'public.crm_email_key(text)',
     'public.crm_score_valid(jsonb)', 'public.crm_score_total(jsonb)',
     'public.crm_log(text, text, uuid, uuid, text, jsonb)',
-    'public.crm_trail_follow_up()', 'public.crm_trail_note()', 'public.crm_trail_draft()',
+    'public.crm_trail_follow_up()', 'public.crm_trail_note()', 'public.crm_trail_draft()', 'public.crm_trail_booking()',
     'public.crm_ensure(uuid)', 'public.crm_save_company(uuid, jsonb, text)', 'public.crm_save_contact(uuid, uuid, jsonb, text)',
     'public.crm_link_inquiry(uuid, uuid, uuid, text)', 'public.crm_create_from_inquiry(uuid, text, uuid, text)',
     'public.crm_save_inquiry_details(uuid, jsonb, text)', 'public.crm_set_stage(uuid, text, text, text, text, date)',
