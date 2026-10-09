@@ -40,6 +40,46 @@ export const SQL_FUNCTIONS = {
   dashboard_review: { params: [["p_inquiry_id", "uuid"], ["p_version", "integer"], ["p_to", "text"], ["p_reviewer", "text"]] },
   dashboard_retry_preparation: { params: [["p_inquiry_id", "uuid"]] },
   dashboard_mark_manual: { params: [["p_inquiry_id", "uuid"]] },
+  // CRM Release 1 (supabase/migrations/20261011 to 20261014). Writes carry the signed-in member's email as p_actor.
+  crm_save_company: { params: [["p_id", "uuid"], ["p_fields", "jsonb"], ["p_actor", "text"]] },
+  crm_save_contact: { params: [["p_id", "uuid"], ["p_company_id", "uuid"], ["p_fields", "jsonb"], ["p_actor", "text"]] },
+  crm_link_inquiry: { params: [["p_inquiry_id", "uuid"], ["p_company_id", "uuid"], ["p_contact_id", "uuid"], ["p_actor", "text"]] },
+  crm_create_from_inquiry: { params: [["p_inquiry_id", "uuid"], ["p_company_mode", "text"], ["p_company_id", "uuid"], ["p_actor", "text"]] },
+  crm_save_inquiry_details: { params: [["p_inquiry_id", "uuid"], ["p_fields", "jsonb"], ["p_actor", "text"]] },
+  crm_set_stage: { params: [["p_inquiry_id", "uuid"], ["p_to", "text"], ["p_actor", "text"], ["p_reason", "text"], ["p_note", "text"], ["p_paused_until", "date"]] },
+  crm_set_owners: { params: [["p_inquiry_id", "uuid"], ["p_owners", "jsonb"], ["p_actor", "text"]] },
+  crm_create_proposal: { params: [["p_inquiry_id", "uuid"], ["p_fields", "jsonb"], ["p_actor", "text"]] },
+  crm_update_proposal: { params: [["p_id", "uuid"], ["p_fields", "jsonb"], ["p_actor", "text"]] },
+  crm_proposal_transition: { params: [["p_id", "uuid"], ["p_to", "text"], ["p_actor", "text"], ["p_note", "text"]] },
+  crm_convert_to_project: { params: [["p_inquiry_id", "uuid"], ["p_name", "text"], ["p_actor", "text"]] },
+  crm_set_project_status: { params: [["p_id", "uuid"], ["p_status", "text"], ["p_actor", "text"]] },
+  crm_save_prospect: { params: [["p_id", "uuid"], ["p_fields", "jsonb"], ["p_actor", "text"]] },
+  crm_set_prospect_stage: {
+    params: [["p_id", "uuid"], ["p_to", "text"], ["p_actor", "text"], ["p_follow_up_action", "text"], ["p_follow_up_owner", "text"], ["p_follow_up_due_on", "date"], ["p_reason", "text"]],
+  },
+  crm_set_prospect_follow_up: { params: [["p_id", "uuid"], ["p_action", "text"], ["p_owner", "text"], ["p_due_on", "date"], ["p_actor", "text"]] },
+  crm_log_touch: {
+    params: [
+      ["p_prospect_id", "uuid"], ["p_kind", "text"], ["p_touch_no", "integer"], ["p_channel", "text"], ["p_occurred_on", "date"], ["p_summary", "text"], ["p_actor", "text"],
+      ["p_next_action", "text"], ["p_next_owner", "text"], ["p_next_due_on", "date"],
+    ],
+  },
+  crm_link_prospect_inquiry: { params: [["p_prospect_id", "uuid"], ["p_inquiry_id", "uuid"], ["p_actor", "text"]] },
+  crm_inquiry_list: { params: [["p_filters", "jsonb"]] },
+  crm_inquiry_extra: { params: [["p_inquiry_id", "uuid"]] },
+  crm_overview: { params: [["p_today", "date"]] },
+  crm_company_list: { params: [["p_q", "text"]] },
+  crm_company_get: { params: [["p_id", "uuid"]] },
+  crm_contact_get: { params: [["p_id", "uuid"]] },
+  crm_search: { params: [["p_q", "text"]] },
+  crm_duplicates_report: { params: [] },
+  crm_prospect_list: { params: [] },
+  crm_prospect_get: { params: [["p_id", "uuid"]] },
+  crm_proposal_list: { params: [["p_statuses", "jsonb"]] },
+  crm_project_list: { params: [] },
+  crm_project_get: { params: [["p_id", "uuid"]] },
+  crm_metrics: { params: [["p_from", "date"], ["p_to", "date"], ["p_today", "date"]] },
+  crm_export: { params: [["p_kind", "text"], ["p_actor", "text"]] },
   // Local demo simulations of booking webhooks (see isLocalDashboardDemo).
   apply_booking_created: { params: [["p_inquiry_id", "uuid"], ["p_uid", "text"], ["p_start_time", "timestamptz"], ["p_timezone", "text"], ["p_event_at", "timestamptz"]] },
   apply_booking_rescheduled: {
@@ -49,6 +89,27 @@ export const SQL_FUNCTIONS = {
 } satisfies Record<string, Signature>;
 
 export type SqlFunction = keyof typeof SQL_FUNCTIONS;
+
+// A failed call. `code` is the name of an exception the database raised on
+// purpose (for example loss_reason_required), "invalid_input" for a value that
+// broke a table constraint, or "failed" for anything else. The message never
+// contains data.
+export class SqlError extends Error {
+  constructor(
+    readonly fn: string,
+    readonly code: string,
+  ) {
+    super(`sql_${fn}_failed`);
+  }
+}
+
+export function sqlErrorCode(message: string | undefined | null, pgCode?: string | null): string {
+  const named = /(?:^|ERROR:\s+)([a-z][a-z0-9_]{2,60})\s*$/m.exec(message ?? "");
+  if (named && !/^(error|fatal)$/.test(named[1]) && !named[1].includes("violates")) return named[1];
+  if (pgCode && /^(23|22)/.test(pgCode)) return "invalid_input";
+  if (/violates|invalid input|out of range|value too long/i.test(message ?? "")) return "invalid_input";
+  return "failed";
+}
 
 export interface SqlGateway {
   readonly kind: "supabase" | "local-demo";
@@ -77,7 +138,7 @@ function supabaseGateway(): SqlGateway {
     kind: "supabase",
     async call(fn, args = {}) {
       const { data, error } = await getSupabaseServerClient().rpc(fn, args);
-      if (error) throw new Error(`sql_${fn}_failed`);
+      if (error) throw new SqlError(fn, sqlErrorCode(error.message, error.code));
       return data as never;
     },
   };
@@ -115,15 +176,17 @@ function localPgGateway(port: number): SqlGateway {
           env: { ...process.env, PGCLIENTENCODING: "UTF8" },
         });
         let out = "";
+        let err = "";
         child.stdout.setEncoding("utf8").on("data", (d) => (out += d));
-        child.on("error", () => reject(new Error(`sql_${fn}_failed`)));
+        child.stderr.setEncoding("utf8").on("data", (d) => (err += d));
+        child.on("error", () => reject(new SqlError(fn, "failed")));
         child.on("close", (code) => {
-          if (code !== 0) return reject(new Error(`sql_${fn}_failed`));
+          if (code !== 0) return reject(new SqlError(fn, sqlErrorCode(err.split(/\r?\n/).find((l) => l.startsWith("ERROR:")) ?? err)));
           try {
             const parsed = JSON.parse(out.trim());
             resolve(SQL_FUNCTIONS[fn] && (SQL_FUNCTIONS[fn] as Signature).returnsSet ? parsed : parsed.v);
           } catch {
-            reject(new Error(`sql_${fn}_failed`));
+            reject(new SqlError(fn, "failed"));
           }
         });
         child.stdin.end(sql, "utf8");

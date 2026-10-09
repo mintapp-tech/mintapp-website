@@ -1,6 +1,5 @@
 import "server-only";
-import { getSqlGateway, type SqlFunction } from "@/lib/sql-gateway";
-import { assertSyntheticReviewDatabase } from "@/lib/admin/review-guard";
+import { adminSql } from "@/lib/admin/sql";
 import type { InquiryForPreparation } from "@/lib/preparation/input";
 
 // Typed access to the dashboard's database functions. Callers must have
@@ -85,17 +84,7 @@ export interface FollowUp {
   done_by: string | null;
 }
 
-// Every dashboard call passes the review guard first: on a Preview of the
-// admin application, only the synthetic review database may answer.
-const sql = () => {
-  const gateway = getSqlGateway();
-  return {
-    async call<T = unknown>(fn: SqlFunction, args?: Record<string, unknown>): Promise<T> {
-      await assertSyntheticReviewDatabase();
-      return gateway.call<T>(fn, args);
-    },
-  };
-};
+const sql = adminSql;
 
 export const listInquiries = async () => (await sql().call<InquiryRow[] | null>("dashboard_inquiries")) ?? [];
 export const getInquiry = (id: string) => sql().call<InquiryDetail | null>("dashboard_inquiry", { p_inquiry_id: id });
