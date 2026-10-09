@@ -214,3 +214,22 @@ test("the interface works in Arabic, right to left", async ({ browser }) => {
   await page.getByRole("button", { name: "التبديل إلى الواجهة الإنجليزية" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
+
+test("repeated wrong passwords lock the account for a while, even for the right password", async ({ browser }) => {
+  // The outsider is used because locking an allowlisted account would lock out the other tests.
+  let page = await passwordStep(browser, OUTSIDER, "not-the-password");
+  for (let i = 1; i < 8; i++) {
+    await expect(page.locator('p[role="alert"]'), `attempt ${i}`).toHaveText("That email and password do not match a Mintapp team account.");
+    await page.getByLabel("Password").fill("still-not-the-password");
+    await page.getByRole("button", { name: "Sign in" }).click();
+  }
+  await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
+  // The right password is refused while the lock holds, and no session starts.
+  page = await passwordStep(browser, OUTSIDER);
+  await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
+  await expect(page).toHaveURL(/\/login$/);
+  expect(await authCookies(page.context())).toEqual([]);
+  // Another account is not affected.
+  const other = await passwordStep(browser, OMAR);
+  await other.waitForURL("**/login/mfa");
+});
