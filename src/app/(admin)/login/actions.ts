@@ -54,7 +54,7 @@ export type MfaState = { error: "invalidCode" | "unavailable" | null };
 export async function startEnrollmentAction(): Promise<EnrollState> {
   // Only for an allowlisted account that has no authenticator yet.
   const state = await adminState();
-  if (state.status !== "mfa_enroll") redirect(state.status === "ok" ? "/inquiries" : state.status === "mfa_challenge" ? "/login/mfa" : "/login");
+  if (state.status !== "mfa_enroll") redirect(state.status === "ok" ? "/dashboard" : state.status === "mfa_challenge" ? "/login/mfa" : "/login");
   const client = (await serverAuthClient())!;
   try {
     const { data: factors } = await client.auth.mfa.listFactors();
@@ -72,7 +72,7 @@ export async function verifyMfaAction(_previous: MfaState, form: FormData): Prom
   const code = String(form.get("code") ?? "").replace(/\s+/g, "");
   if (!/^\d{6}$/.test(code)) return { error: "invalidCode" };
   const state = await adminState();
-  if (state.status !== "mfa_enroll" && state.status !== "mfa_challenge") redirect(state.status === "ok" ? "/inquiries" : "/login");
+  if (state.status !== "mfa_enroll" && state.status !== "mfa_challenge") redirect(state.status === "ok" ? "/dashboard" : "/login");
   const config = supabaseAuthConfig()!;
   const client = (await serverAuthClient())!;
   try {
@@ -98,7 +98,7 @@ export async function verifyMfaAction(_previous: MfaState, form: FormData): Prom
     console.error("admin_mfa_verify_failed");
     return { error: "unavailable" };
   }
-  redirect("/inquiries");
+  redirect("/dashboard");
 }
 
 // ---------------------------------------------------------------------------

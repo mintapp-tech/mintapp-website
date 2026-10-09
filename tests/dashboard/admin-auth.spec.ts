@@ -26,7 +26,7 @@ async function passwordStep(browser: Browser, email: string, password = AUTH_DEM
 async function enterCode(page: Page, secret: string) {
   await page.getByLabel("6-digit code").fill(totp(secret));
   await page.getByRole("button", { name: "Verify" }).click();
-  await page.waitForURL("**/inquiries");
+  await page.waitForURL("**/dashboard");
 }
 
 // Full sign-in, enrolling an authenticator the first time.

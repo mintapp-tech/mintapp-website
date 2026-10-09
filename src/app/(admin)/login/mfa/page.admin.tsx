@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: "Authenticator" };
 // its current code. Required for every account; there is no way around it.
 export default async function MfaPage() {
   const state = await adminState();
-  if (state.status === "ok") redirect("/inquiries");
+  if (state.status === "ok") redirect("/dashboard");
   if (state.status !== "mfa_enroll" && state.status !== "mfa_challenge") redirect("/login");
   const { locale, t } = await adminText();
   // Only plain strings can be passed to the client forms.

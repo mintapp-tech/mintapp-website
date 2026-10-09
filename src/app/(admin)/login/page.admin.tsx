@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: "Sign in" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ expired?: string }> }) {
   const state = await adminState();
-  if (state.status === "ok") redirect("/inquiries");
+  if (state.status === "ok") redirect("/dashboard");
   if (state.status === "mfa_enroll" || state.status === "mfa_challenge") redirect("/login/mfa");
   const { locale, t } = await adminText();
   const mode = authMode();

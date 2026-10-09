@@ -23,7 +23,9 @@ export async function signInAs(browser: Browser, email: string, origin: string):
   }
   await page.getByLabel("6-digit code").fill(totp(secrets.get(email)!));
   await page.getByRole("button", { name: "Verify" }).click();
-  await page.waitForURL("**/inquiries");
-  await expect(page).toHaveURL(/\/inquiries$/);
+  // Signing in lands on the dashboard; most flows start from the inquiries list.
+  await page.waitForURL("**/dashboard");
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await page.goto("/inquiries");
   return page;
 }
