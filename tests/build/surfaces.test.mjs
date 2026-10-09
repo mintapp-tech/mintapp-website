@@ -9,7 +9,7 @@
 import { after, before, describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync, statSync } from "node:fs";
 import { request } from "node:http";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
@@ -102,9 +102,11 @@ async function serve(env, port, work) {
 
 describe("public build", () => {
   before(() => {
-    // --webpack: the public site's Manrope font query fails to build under Turbopack in this
-    // environment on main too (a pre-existing failure, reported separately).
-    run(["build", "--webpack"], { ...BASE_ENV, APP_SURFACE: undefined });
+    // Start from a clean build directory. A stale .next left by earlier dev and build runs made Turbopack
+    // fail on the Manrope font ("next/font/google queries have exactly one entry") on one machine, on main
+    // too; the same code builds from a clean directory (see docs/crm-release-1.md, "Build notes").
+    rmSync(join(root, ".next"), { recursive: true, force: true });
+    run(["build"], { ...BASE_ENV, APP_SURFACE: undefined });
   });
 
   test("has no CRM or admin routes at all", () => {
@@ -132,6 +134,7 @@ describe("public build", () => {
 
 describe("admin build", () => {
   before(() => {
+    rmSync(join(root, ".next-admin"), { recursive: true, force: true });
     run(["build"], { ...BASE_ENV, APP_SURFACE: "admin" });
   });
 

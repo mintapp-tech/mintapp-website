@@ -164,6 +164,16 @@ languages, phone and desktop widths, accessibility scans, forged requests, the
 sign-in flow), `npm run test:build` (both production builds, route and secret
 scans). No test reaches the network or sends mail.
 
+## Build notes
+
+- A public `next build` (Turbopack, the default) once failed on one Windows machine with
+  `next/font/google queries have exactly one entry` for Manrope, on `main` as well as this
+  branch. The cause was the machine's stale `.next` directory, not the code, the network or
+  Vercel: deleting `.next` (or building into another `distDir`) made the identical code
+  compile, a warm second build and a webpack build over it stayed fine, and a build with the
+  network blocked fails with a different, explicit message. If it appears again, delete `.next`
+  and `.next-admin` and rebuild. `npm run test:build` starts from clean directories.
+
 ## Still to do by hand
 
 See [crm-release-1-launch.md](crm-release-1-launch.md): Supabase Auth settings,
