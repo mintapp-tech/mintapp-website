@@ -100,8 +100,9 @@ describe("cookies and hosts", () => {
   });
 
   test("only admin pages are served by the admin application", () => {
-    for (const p of ["/login", "/login/mfa", "/inquiries", "/inquiries/11111111-0000-4000-8000-000000000001"]) expect(isAdminPage(p), p).toBe(true);
-    for (const p of ["/", "/en", "/ar/start", "/api/inquiries", "/internal/concept-pack", "/inquiries/x", "/login/../en"]) expect(isAdminPage(p), p).toBe(false);
+    const ID = "11111111-0000-4000-8000-000000000001";
+    for (const p of ["/login", "/login/mfa", "/dashboard", "/inquiries", `/inquiries/${ID}`, "/pipeline", "/outreach", `/outreach/${ID}`, "/companies", `/companies/${ID}`, `/contacts/${ID}`, "/proposals", "/projects", `/projects/${ID}`, "/metrics", "/search", "/export/contacts", "/export/inquiries/"]) expect(isAdminPage(p), p).toBe(true);
+    for (const p of ["/", "/en", "/ar/start", "/api/inquiries", "/internal/concept-pack", "/inquiries/x", "/login/../en", "/contacts", "/export", "/export/everything", "/export/contacts/extra", `/dashboard/${ID}`, `/search/${ID}`, "/companies/not-an-id"]) expect(isAdminPage(p), p).toBe(false);
   });
 
   test("token claims are read only for session id and assurance level", () => {
@@ -189,12 +190,22 @@ describe("admin state (Supabase mode)", () => {
   });
 
   test("every action that changes data refuses without full sign-in, before touching data", async () => {
-    const actions = await import("@/app/(admin)/inquiries/actions");
+    // Every server action of the workspace: the dashboard's, the inquiry CRM's, companies, outreach and projects.
+    const modules = {
+      inquiries: await import("@/app/(admin)/(workspace)/inquiries/actions"),
+      crm: await import("@/app/(admin)/(workspace)/inquiries/crm-actions"),
+      companies: await import("@/app/(admin)/(workspace)/companies/actions"),
+      outreach: await import("@/app/(admin)/(workspace)/outreach/actions"),
+      projects: await import("@/app/(admin)/(workspace)/projects/actions"),
+    } as unknown as Record<string, Record<string, (f: FormData) => Promise<void>>>;
     const form = new FormData();
-    form.set("inquiryId", "11111111-0000-4000-8000-000000000001");
-    const names = Object.keys(actions).filter((k) => typeof (actions as Record<string, unknown>)[k] === "function");
-    expect(names.length).toBeGreaterThanOrEqual(10);
-    const run = (name: string) => (actions as unknown as Record<string, (f: FormData) => Promise<void>>)[name](form);
+    for (const key of ["inquiryId", "companyId", "contactId", "prospectId", "projectId", "proposalId"]) form.set(key, "11111111-0000-4000-8000-000000000001");
+    const names = Object.entries(modules).flatMap(([m, exported]) => Object.keys(exported).filter((k) => typeof exported[k] === "function").map((k) => `${m}.${k}`));
+    expect(names.length).toBeGreaterThanOrEqual(32);
+    const run = (name: string) => {
+      const [m, fn] = name.split(".");
+      return modules[m][fn](form);
+    };
     const active = () => jar.set("__Host-mintapp-admin-activity", activityToken("sess-1", SECRET));
     // Each case has a valid activity record unless that is what is being tested,
     // so only the condition named is blocking access.
@@ -214,7 +225,7 @@ describe("admin state (Supabase mode)", () => {
     signedIn("omar@mintapp.tech", "aal2", TOTP);
     active();
     sqlCall.mockResolvedValue(true);
-    await run("retryAction");
+    await run("inquiries.retryAction");
     expect(sqlCall).toHaveBeenCalled();
   });
 

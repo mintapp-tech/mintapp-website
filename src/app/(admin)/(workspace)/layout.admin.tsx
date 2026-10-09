@@ -4,7 +4,8 @@ import { requireAdmin } from "@/lib/admin/auth/state";
 import { adminText } from "@/lib/admin/locale";
 import { isLocalDashboardDemo } from "@/lib/sql-gateway";
 
-// Chrome for every inquiries page, so loading, error and not-found states
+// Chrome for every page of the signed-in workspace (dashboard, inquiries, pipeline,
+// outreach, companies, proposals, projects, metrics, search), so loading, error and not-found states
 // render inside it. Each page and action still checks the session itself:
 // layouts are not re-run on client-side navigation.
 export default async function InquiriesLayout({ children }: { children: ReactNode }) {

@@ -24,8 +24,8 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
         <button type="button" onClick={reset} className={primary}>
           {t.tryAgain}
         </button>
-        <Link href="/inquiries" className={button}>
-          {messagesFor(lang).common.allInquiries}
+        <Link href="/dashboard" className={button}>
+          {messagesFor(lang).crm.nav.dashboard}
         </Link>
       </div>
       {error.digest && <p className="mt-6 mb-0 text-[12px] text-ink-faint">{t.reference(error.digest)}</p>}

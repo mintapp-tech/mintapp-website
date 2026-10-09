@@ -70,7 +70,7 @@ async function adminProxy(request: NextRequest) {
   if (!isAdminHost(request.headers.get("host"))) return notFound();
   if (pathname.startsWith("/_next/") || /^\/(favicon\.ico|icon\.svg|apple-icon\.png)$/.test(pathname)) return NextResponse.next();
   if (pathname === "/robots.txt") return withAdminHeaders(new NextResponse("User-agent: *\nDisallow: /\n", { headers: { "Content-Type": "text/plain" } }));
-  if (pathname === "/") return withAdminHeaders(NextResponse.redirect(new URL("/inquiries", request.url)));
+  if (pathname === "/") return withAdminHeaders(NextResponse.redirect(new URL("/dashboard", request.url)));
   // Public pages, API routes and anything else are not part of the admin application.
   if (!isAdminPage(pathname)) return notFound();
 

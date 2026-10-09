@@ -91,7 +91,7 @@ export interface InquiryFilters {
   preparation?: string;
   origin?: string;
   campaign?: string;
-  attention?: boolean;
+  attention?: string;
 }
 
 export interface ProposalFields {

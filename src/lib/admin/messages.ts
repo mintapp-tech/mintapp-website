@@ -1,6 +1,8 @@
 // Interface text for the private admin application, in English and Arabic.
 // Inquiry content itself is shown as the client wrote it.
 
+import { CRM_MESSAGES } from "./crm-messages";
+
 export type AdminLocale = "en" | "ar";
 export const ADMIN_LOCALES: readonly AdminLocale[] = ["en", "ar"];
 export const ADMIN_LOCALE_COOKIE = "mintapp_admin_lang";
@@ -8,6 +10,7 @@ export const isAdminLocale = (value: unknown): value is AdminLocale => value ===
 export const directionOf = (locale: AdminLocale) => (locale === "ar" ? "rtl" : "ltr");
 
 const en = {
+  crm: CRM_MESSAGES.en,
   common: {
     team: "Team",
     skip: "Skip to content",
@@ -173,6 +176,7 @@ const en = {
 export type AdminMessages = typeof en;
 
 const ar: AdminMessages = {
+  crm: CRM_MESSAGES.ar,
   common: {
     team: "الفريق",
     skip: "انتقل إلى المحتوى الرئيسي",

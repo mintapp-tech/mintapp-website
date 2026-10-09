@@ -16,11 +16,14 @@ import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "@/lib
 import { label, labelsFor, preparationNotice } from "@/lib/dashboard/status";
 import { isLocalDashboardDemo } from "@/lib/sql-gateway";
 import { selectGenerator } from "@/lib/preparation/config";
+import Notice from "@/components/crm/Notice";
+import { ActivityPanel, ConversionPanel, LinkPanel, ProposalPanel, SourcePanel, StagePanel } from "@/components/crm/InquiryCrm";
+import { companyList, inquiryExtra } from "@/lib/crm/data";
+import { setOwnersAction } from "../crm-actions";
 import {
   addNoteAction,
   addFollowUpAction,
   completeFollowUpAction,
-  setOwnersAction,
   demoBookingAction,
   demoGenerateAction,
   markManualAction,
@@ -72,12 +75,13 @@ function Hidden({ inquiryId, extra }: { inquiryId: string; extra?: Record<string
   );
 }
 
-export default async function InquiryPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function InquiryPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const me = await requireAdmin();
   const { id } = await params;
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound();
-  const detail = await getInquiry(id);
-  if (!detail) notFound();
+  const [detail, extra, companies] = await Promise.all([getInquiry(id), inquiryExtra(id), companyList()]);
+  if (!detail || !extra) notFound();
+  const sp = await searchParams;
 
   const { locale, t } = await adminText();
   const L = labelsFor(locale);
@@ -154,6 +158,8 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
         </h1>
         <p className="mt-1.5 mb-0 text-[13.5px] text-ink-soft">{d.received(when(inquiry.created_at))}</p>
       </header>
+
+      <Notice n={sp.n} e={sp.e} t={t.crm} />
 
       <dl className={`${card} mb-5 grid grid-cols-2 gap-px overflow-hidden bg-line sm:grid-cols-4`}>
         {facts.map(([title, value, sub]) => (
@@ -349,9 +355,14 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
               </details>
             )}
           </Section>
+
+          <ProposalPanel inquiryId={id} extra={extra} t={t} locale={locale} members={members} me={me} />
+          <ConversionPanel inquiryId={id} extra={extra} t={t} />
         </div>
 
         <div className="flex flex-col gap-5">
+          <StagePanel inquiryId={id} extra={extra} t={t} locale={locale} members={members} />
+
           <Section title={d.owner.title} id="owner" aside={<span className="text-[13px] font-semibold" data-owners>{ownersLabel(inquiry.owners, members, d.owner.unassigned)}</span>}>
             <form action={setOwnersAction} className="flex flex-col gap-3">
               <Hidden inquiryId={id} />
@@ -491,6 +502,9 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
             )}
           </Section>
 
+          <SourcePanel inquiryId={id} extra={extra} t={t} />
+          <LinkPanel inquiryId={id} extra={extra} t={t} companies={companies} hasCompanyName={Boolean(inquiry.company_name)} />
+
           <details className={`group ${card} p-5 sm:p-6`}>
             <summary className={`${summary} text-[15px]`}>
               <Chevron />
@@ -520,6 +534,8 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
               )}
             </dl>
           </details>
+
+          <ActivityPanel extra={extra} t={t} locale={locale} members={members} />
 
           {demo && (
             <section aria-labelledby="demo" className="rounded-2xl border-2 border-dashed border-amber-400 bg-amber-50 p-5">

@@ -4,6 +4,7 @@ import { logoutAction, logoutEverywhereAction } from "@/app/(admin)/login/action
 import type { TeamMember } from "@/lib/admin/auth/config";
 import type { AdminLocale, AdminMessages } from "@/lib/admin/messages";
 import { LogoMark } from "@/components/Logo";
+import NavLinks from "@/components/crm/NavLinks";
 import LanguageSwitch from "./LanguageSwitch";
 import SubmitButton from "./SubmitButton";
 
@@ -32,17 +33,40 @@ export default function Shell({ member, demo, locale, t, children }: { member: T
       )}
       <header className="bg-dark text-white">
         <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3.5 sm:px-6">
-          <Link href="/inquiries" className="flex items-center gap-2.5 rounded-md text-white" dir="ltr">
+          <Link href="/dashboard" className="flex items-center gap-2.5 rounded-md text-white" dir="ltr">
             <LogoMark size={24} variant="white" />
             <span className="text-[18px] font-bold tracking-[-0.03em]">mintapp</span>
             <span className="rounded-full bg-mint/15 px-2 py-0.5 text-[11px] font-bold tracking-[0.08em] text-mint uppercase">Admin</span>
           </Link>
-          <nav aria-label={t.common.nav} className="order-3 w-full sm:order-none sm:w-auto">
-            <Link href="/inquiries" aria-current="page" className="inline-block border-b-2 border-mint pb-0.5 text-[14px] font-semibold text-white">
-              {t.common.inquiries}
-            </Link>
-          </nav>
+          <NavLinks
+            label={t.common.nav}
+            items={[
+              { href: "/dashboard", label: t.crm.nav.dashboard },
+              { href: "/inquiries", label: t.crm.nav.inquiries },
+              { href: "/pipeline", label: t.crm.nav.pipeline },
+              { href: "/outreach", label: t.crm.nav.outreach },
+              { href: "/companies", label: t.crm.nav.companies },
+              { href: "/proposals", label: t.crm.nav.proposals },
+              { href: "/projects", label: t.crm.nav.projects },
+              { href: "/metrics", label: t.crm.nav.metrics },
+            ]}
+          />
           <div className="ms-auto flex items-center gap-2.5 text-[13.5px] sm:gap-3">
+            <form action="/search" method="get" role="search" className="flex items-center">
+              <label htmlFor="global-search" className="sr-only">
+                {t.crm.nav.searchLabel}
+              </label>
+              <input
+                id="global-search"
+                name="q"
+                type="search"
+                minLength={2}
+                maxLength={120}
+                dir="auto"
+                placeholder={t.crm.nav.searchPlaceholder}
+                className="w-28 rounded-full border border-white/25 bg-white/10 px-3.5 py-1.5 text-[13.5px] text-white placeholder:text-white/60 focus:border-mint focus:outline-none sm:w-40"
+              />
+            </form>
             <LanguageSwitch
               to={locale === "ar" ? "en" : "ar"}
               label={t.common.switchLanguage}

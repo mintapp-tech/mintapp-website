@@ -23,20 +23,6 @@ const refresh = (inquiryId: string) => {
   revalidatePath("/inquiries");
 };
 
-// Owners: "" (unassigned) or comma-separated ids of current team members.
-export async function setOwnersAction(form: FormData) {
-  await requireAdmin();
-  const inquiryId = id.parse(form.get("inquiryId"));
-  const known = new Set(teamMembers().map((m) => m.id));
-  const owners = String(form.get("owners") ?? "")
-    .split(",")
-    .map((o) => o.trim())
-    .filter(Boolean);
-  if (owners.some((o) => !known.has(o))) return;
-  await data.setOwners(inquiryId, [...new Set(owners)]);
-  refresh(inquiryId);
-}
-
 // A follow-up always has exactly one responsible team member and a due date.
 const followUp = z.object({
   action: z.string().trim().min(1).max(500),

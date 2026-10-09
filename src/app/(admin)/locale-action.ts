@@ -13,5 +13,5 @@ export async function setAdminLocaleAction(form: FormData) {
   if (isAdminLocale(locale)) {
     (await cookies()).set(ADMIN_LOCALE_COOKIE, locale, { httpOnly: true, secure: true, sameSite: "strict", path: "/", maxAge: 60 * 60 * 24 * 365 });
   }
-  redirect(isAdminPage(back.split("?")[0]) ? back : "/inquiries");
+  redirect(isAdminPage(back.split("?")[0]) ? back : "/dashboard");
 }

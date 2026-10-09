@@ -29,7 +29,38 @@ export function adminHosts(env: Env = process.env): string[] {
 export const isAdminHost = (host: string | null | undefined, env: Env = process.env) => !!host && adminHosts(env).includes(normalizeHost(host));
 
 const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
-const ADMIN_PAGES = new RegExp(`^/(login|login/mfa|inquiries|inquiries/${UUID})/?$`, "i");
+
+// Every page and route of the admin application. Anything else is not found.
+//   /login, /login/mfa                 sign-in
+//   /dashboard, /pipeline, /metrics    overview, board and numbers
+//   /inquiries[/id]                    inquiries and their detail
+//   /outreach[/id], /companies[/id]    prospects, companies
+//   /contacts/id, /projects[/id]       contacts, projects
+//   /proposals, /search                lists
+//   /export/kind                       CSV exports (POST only)
+const ADMIN_PAGES = new RegExp(
+  [
+    "login",
+    "login/mfa",
+    "dashboard",
+    "pipeline",
+    "metrics",
+    "proposals",
+    "search",
+    "inquiries",
+    `inquiries/${UUID}`,
+    "outreach",
+    `outreach/${UUID}`,
+    "companies",
+    `companies/${UUID}`,
+    `contacts/${UUID}`,
+    "projects",
+    `projects/${UUID}`,
+    "export/(inquiries|companies|contacts|prospects)",
+  ].reduce((all, p, i) => `${all}${i ? "|" : ""}${p}`, "^/(") + ")/?$",
+  "i",
+);
 
 export const isAdminPage = (pathname: string) => ADMIN_PAGES.test(pathname);
-export const isProtectedAdminPage = (pathname: string) => /^\/inquiries(\/|$)/.test(pathname);
+// Everything except the sign-in pages needs a signed-in session.
+export const isProtectedAdminPage = (pathname: string) => isAdminPage(pathname) && !/^\/login(\/|$)/.test(pathname);

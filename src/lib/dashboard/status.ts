@@ -4,6 +4,7 @@
 // inquiry is flagged as needing attention with the manual path offered.
 
 import { PROJECT_TYPE_WORDS } from "./project-type";
+import { CRM_MESSAGES } from "@/lib/admin/crm-messages";
 
 export type Tone = "attention" | "info" | "ok";
 export type Locale = "en" | "ar";
@@ -139,7 +140,7 @@ const LABELS = {
     review: { draft: "Draft", in_review: "Ready for review", approved: "Approved for the meeting", superseded: "Superseded" },
     meeting: { not_booked: "Not booked", booked: "Booked", cancelled: "Cancelled", completed: "Completed", no_show: "No show" },
     preparation: { queued: "Queued", running: "Preparing", retry_scheduled: "Retrying", succeeded: "Draft generated", failed: "Failed", paused: "Paused", manual: "Manual" },
-    lead: { new: "New", reviewing: "Reviewing", qualified: "Qualified", converted: "Converted", not_a_fit: "Not a fit", archived: "Archived" },
+    lead: CRM_MESSAGES.en.stages,
     // The four choices on the public form, in its words. Older stored values are not listed: see project-type.ts.
     projectType: PROJECT_TYPE_WORDS.en,
     briefField: {
@@ -155,7 +156,7 @@ const LABELS = {
     review: { draft: "مسودة", in_review: "جاهزة للمراجعة", approved: "معتمدة للاجتماع", superseded: "نسخة سابقة" },
     meeting: { not_booked: "لم يُحجز", booked: "محجوز", cancelled: "أُلغي", completed: "تمّ", no_show: "لم يحضر" },
     preparation: { queued: "في الانتظار", running: "قيد التحضير", retry_scheduled: "إعادة محاولة", succeeded: "مسودة جاهزة", failed: "فشل", paused: "متوقف مؤقتًا", manual: "يدوي" },
-    lead: { new: "جديد", reviewing: "قيد المراجعة", qualified: "مؤهَّل", converted: "أصبح عميلًا", not_a_fit: "غير مناسب", archived: "مؤرشف" },
+    lead: CRM_MESSAGES.ar.stages,
     projectType: PROJECT_TYPE_WORDS.ar,
     briefField: {
       "Project type": "نوع المشروع",
