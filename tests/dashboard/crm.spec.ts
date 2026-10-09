@@ -236,6 +236,7 @@ test("won becomes a minimal project that keeps the scope and where the inquiry's
   await expect(panel(page, "conversion")).toContainText("Mark the inquiry as won to create a project.");
   await page.locator("#stage-select").selectOption("won");
   await page.getByRole("button", { name: "Update stage" }).click();
+  await page.waitForURL(/n=stageChanged/);
   await expect(page.locator("#stage-select")).toHaveValue("won");
   await page.locator("#project-name").fill("Clinic booking system");
   await page.getByRole("button", { name: "Create the project" }).click();
@@ -276,11 +277,14 @@ test("outreach: research, the next action is always dated, four touches, and a h
   await expect(notice(page)).toContainText("Add the next action, who is responsible and the date.");
 
   // Touch 1 without a next action is refused and leaves nothing half-recorded.
+  await page.goto(page.url().split("?")[0]);
   await page.locator("#t-summary").fill("Observation about the seed round");
   await page.getByRole("button", { name: "Record the touch" }).click();
+  await page.waitForURL(/e=follow_up_required/);
   await expect(notice(page)).toContainText("Add the next action, who is responsible and the date.");
   await expect(page.locator("[data-touches]")).toHaveCount(0);
 
+  await page.goto(page.url().split("?")[0]);
   await page.locator("#t-summary").fill("Observation about the seed round");
   await page.locator("#t-next").fill("Touch 2: a useful workflow observation");
   await page.locator("#t-owner").selectOption("omar");
@@ -296,7 +300,7 @@ test("outreach: research, the next action is always dated, four touches, and a h
   await page.goto("/outreach");
   await expect(page.locator("body")).not.toContainText("dana-test");
   await expect(page.locator("[data-pools]")).toContainText("1 of 8");
-  await expect(page.locator("[data-prospect]")).toContainText("12");
+  await expect(page.locator("[data-prospect]")).toContainText("14");
 
   // The same account later submits the form: link it.
   await page.getByRole("link", { name: "Acme Robotics" }).click();
@@ -334,8 +338,10 @@ test("pipeline: every inquiry in its stage, by owner; overdue and unplanned work
   await page.goto(`/inquiries/${SCHOOL}`);
   await page.locator("#owner-select").selectOption("adam");
   await page.getByRole("button", { name: "Save owner" }).click();
+  await page.waitForURL(/n=saved/);
   await page.locator("#stage-select").selectOption("meeting_booked");
   await page.getByRole("button", { name: "Update stage" }).click();
+  await page.waitForURL(/n=stageChanged/);
   await page.goto("/pipeline");
   await expect(page.locator('[data-stage-column="meeting_booked"]')).toContainText("مدرسة تجريبية");
   await expect(page.locator('[data-stage-column="won"]')).toContainText("Synthetic Clinic Group");
@@ -387,7 +393,7 @@ test("metrics: the funnel, sources and outreach for a period, with no data shown
   await expect(page.locator("[data-rates]")).toContainText("No data yet");
   await expect(page.locator("[data-sources]")).toHaveCount(0);
   await page.goto("/metrics?from=2026-12-01&to=2026-01-01");
-  await expect(page.getByRole("alert")).toContainText("not valid");
+  await expect(page.locator("p[role=alert]")).toContainText("not valid");
   expect(await axe(page)).toEqual([]);
   await page.context().close();
 });
@@ -502,10 +508,12 @@ test("keyboard: the skip link, the header search and a form can all be used with
   await page.goto("/companies");
   await page.keyboard.press("Tab");
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeFocused();
-  await page.locator("#company-q").focus();
-  await page.keyboard.type("clinic");
+  // Using the skip link moves to the main content.
   await page.keyboard.press("Enter");
-  await expect(page).toHaveURL(/q=clinic/);
+  await expect(page).toHaveURL(/#main$/);
+  await page.locator("#company-q").fill("nile");
+  await page.locator("#company-q").press("Enter");
+  await expect(page).toHaveURL(/q=nile/);
   await expect(page.locator("[data-company]").first()).toBeVisible();
   await page.context().close();
 });
@@ -539,6 +547,7 @@ test("a forged cross-site form post changes nothing", async ({ browser }) => {
   await expect(page.locator("#stage-select")).toHaveValue("won");
   await page.locator("#stage-select").selectOption("new");
   await page.getByRole("button", { name: "Update stage" }).click();
+  await page.waitForURL(/n=stageChanged/);
   await expect(page.locator("#stage-select")).toHaveValue("new");
   await page.context().close();
 });

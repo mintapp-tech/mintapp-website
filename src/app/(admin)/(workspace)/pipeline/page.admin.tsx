@@ -97,7 +97,7 @@ export default async function PipelinePage({ searchParams }: { searchParams: Pro
                   <div key={stage} data-stage-column={stage} className="min-w-0 rounded-2xl bg-surface-2/60 p-3">
                     <h3 className="m-0 mb-2 flex items-baseline justify-between gap-2 text-[14px] font-semibold">
                       <span>{t.crm.stages[stage]}</span>
-                      <span className={smallMuted}>{p.count(items.length)}</span>
+                      <span className="text-[12.5px] font-normal text-ink-soft">{p.count(items.length)}</span>
                     </h3>
                     {items.length === 0 ? (
                       <Empty>{p.empty}</Empty>

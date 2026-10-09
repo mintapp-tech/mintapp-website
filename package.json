@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:dashboard": "node scripts/run-dashboard-tests.mjs",
+    "test:build": "node --test --test-concurrency=1 --test-timeout=900000 \"tests/build/*.test.mjs\"",
     "test:db": "node --test --test-concurrency=1 \"tests/db/*.test.mjs\"",
     "check:commits": "node scripts/check-commits.mjs",
     "email:preview": "node scripts/email-previews.mjs"
