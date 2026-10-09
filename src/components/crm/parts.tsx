@@ -46,18 +46,21 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 export function Stat({ value, title, tone, href }: { value: number | string; title: string; tone?: "attention"; href?: string }) {
-  const inner = (
-    <>
-      <dt className="mt-1.5 text-[12.5px] font-semibold text-ink-soft">{title}</dt>
+  // A card that links somewhere keeps the definition-list structure: the link
+  // is the term, stretched over the whole card.
+  return (
+    <div className={`${card} relative flex flex-col-reverse px-4 py-3.5 ${href ? "transition-colors focus-within:border-ink/40 hover:border-ink/30" : ""}`}>
+      <dt className="mt-1.5 text-[12.5px] font-semibold text-ink-soft">
+        {href ? (
+          <Link href={href} className="after:absolute after:inset-0 after:content-['']">
+            {title}
+          </Link>
+        ) : (
+          title
+        )}
+      </dt>
       <dd className={`m-0 text-[26px] leading-none font-bold tracking-[-0.02em] ${tone === "attention" && Number(value) > 0 ? "text-red-700" : ""}`}>{value}</dd>
-    </>
-  );
-  return href ? (
-    <Link href={href} className={`${card} flex flex-col-reverse px-4 py-3.5 transition-colors hover:border-ink/30`}>
-      {inner}
-    </Link>
-  ) : (
-    <div className={`${card} flex flex-col-reverse px-4 py-3.5`}>{inner}</div>
+    </div>
   );
 }
 
