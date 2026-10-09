@@ -23,6 +23,7 @@ begin;
 drop trigger if exists project_inquiries_pack_on_booking on public.project_inquiries;
 drop trigger if exists project_inquiries_pack_on_owners on public.project_inquiries;
 
+drop function if exists public.automation_paused();
 drop function if exists public.growth_prospect_list();
 drop function if exists public.crm_command_centre(date);
 drop function if exists public.lead_detail(uuid);

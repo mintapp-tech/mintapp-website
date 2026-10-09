@@ -173,12 +173,25 @@ as $$
   from public.crm_prospects as p;
 $$;
 
+-- Which automation providers are paused (for example the free allowance is used
+-- up), so lists can say "Needs manual action" instead of "Preparing".
+create or replace function public.automation_paused()
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(jsonb_build_object('provider', c.provider, 'paused_reason', c.paused_reason) order by c.provider), '[]'::jsonb)
+  from public.automation_control as c where c.paused;
+$$;
+
 do $$
 declare
   f text;
 begin
   foreach f in array array[
-    'public.pack_latest(uuid)', 'public.lead_list(jsonb)', 'public.lead_detail(uuid)', 'public.crm_command_centre(date)', 'public.growth_prospect_list()'
+    'public.pack_latest(uuid)', 'public.lead_list(jsonb)', 'public.lead_detail(uuid)', 'public.crm_command_centre(date)', 'public.growth_prospect_list()', 'public.automation_paused()'
   ] loop
     execute format('revoke execute on function %s from public, anon, authenticated', f);
     execute format('grant execute on function %s to service_role', f);

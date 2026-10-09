@@ -80,6 +80,7 @@ const NOTICES = {
     paused: ["Automation is paused", (err: string) => `Paused because ${err}. Prepare it manually, or resume automation once that is resolved.`],
     waitingOff: ["Waiting for manual preparation", "Automated preparation is turned off. Prepare it manually."],
     waitingPaused: ["Waiting: automation is paused", (err: string) => `Automation is paused because ${err}. Prepare it manually, or resume automation.`],
+    waitingBooking: ["Waiting for booking", "The pack is prepared once the client books a meeting. Prepare it now if you need it sooner."],
     queued: ["Queued for automated preparation", "It will be prepared on the next worker run."],
     retrying: ["Retrying automatically", (a: number, m: number, err: string, next: string) => `Attempt ${a} of ${m} failed (${err}). Next try ${next}.`],
     running: ["Preparing now", "A draft is being generated."],
@@ -93,6 +94,7 @@ const NOTICES = {
     paused: ["التحضير الآلي متوقف مؤقتًا", (err: string) => `توقّف مؤقتًا. السبب: ${err}. حضّره يدويًا، أو استأنف التحضير الآلي بعد حلّ المشكلة.`],
     waitingOff: ["بانتظار التحضير اليدوي", "التحضير الآلي غير مفعّل. حضّره يدويًا."],
     waitingPaused: ["بانتظار: التحضير الآلي متوقف مؤقتًا", (err: string) => `التحضير الآلي متوقف مؤقتًا. السبب: ${err}. حضّره يدويًا أو استأنف التحضير الآلي.`],
+    waitingBooking: ["بانتظار الحجز", "تُحضَّر الحزمة بعد أن يحجز العميل اجتماعًا. حضّرها الآن إن احتجت إليها قبل ذلك."],
     queued: ["في قائمة التحضير الآلي", "سيُحضَّر في دورة المعالجة التالية."],
     retrying: ["إعادة المحاولة تلقائيًا", (a: number, m: number, err: string, next: string) => `فشلت المحاولة ${a} من ${m}. السبب: ${err}. المحاولة التالية ${next}.`],
     running: ["جارٍ التحضير الآن", "يجري إنشاء مسودة."],
@@ -124,6 +126,8 @@ export function preparationNotice(
       return prep.status === "queued"
         ? plain(n.queued, "info")
         : { tone: "info", title: n.retrying[0], detail: n.retrying[1](prep.attempts, prep.max_attempts, err(prep.last_error), new Date(prep.next_attempt_at).toUTCString()) };
+    case "waiting_booking":
+      return plain(n.waitingBooking, "info");
     case "running":
       return plain(n.running, "info");
     case "manual":
@@ -139,7 +143,7 @@ const LABELS = {
   en: {
     review: { draft: "Draft", in_review: "Ready for review", approved: "Approved for the meeting", superseded: "Superseded" },
     meeting: { not_booked: "Not booked", booked: "Booked", cancelled: "Cancelled", completed: "Completed", no_show: "No show" },
-    preparation: { queued: "Queued", running: "Preparing", retry_scheduled: "Retrying", succeeded: "Draft generated", failed: "Failed", paused: "Paused", manual: "Manual" },
+    preparation: { waiting_booking: "Waiting for booking", queued: "Queued", running: "Preparing", retry_scheduled: "Retrying", succeeded: "Draft generated", failed: "Failed", paused: "Paused", manual: "Manual" },
     lead: CRM_MESSAGES.en.stages,
     // The four choices on the public form, in its words. Older stored values are not listed: see project-type.ts.
     projectType: PROJECT_TYPE_WORDS.en,
@@ -155,7 +159,7 @@ const LABELS = {
   ar: {
     review: { draft: "مسودة", in_review: "جاهزة للمراجعة", approved: "معتمدة للاجتماع", superseded: "نسخة سابقة" },
     meeting: { not_booked: "لم يُحجز", booked: "محجوز", cancelled: "أُلغي", completed: "تمّ", no_show: "لم يحضر" },
-    preparation: { queued: "في الانتظار", running: "قيد التحضير", retry_scheduled: "إعادة محاولة", succeeded: "مسودة جاهزة", failed: "فشل", paused: "متوقف مؤقتًا", manual: "يدوي" },
+    preparation: { waiting_booking: "بانتظار الحجز", queued: "في الانتظار", running: "قيد التحضير", retry_scheduled: "إعادة محاولة", succeeded: "مسودة جاهزة", failed: "فشل", paused: "متوقف مؤقتًا", manual: "يدوي" },
     lead: CRM_MESSAGES.ar.stages,
     projectType: PROJECT_TYPE_WORDS.ar,
     briefField: {

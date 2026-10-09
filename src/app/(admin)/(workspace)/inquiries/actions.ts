@@ -18,9 +18,10 @@ import type { PreparationGenerator } from "@/lib/preparation/generator";
 // validates its input. Next.js additionally rejects cross-origin action calls.
 
 const id = z.string().uuid();
+// Every tab of the lead shows this data.
 const refresh = (inquiryId: string) => {
-  revalidatePath(`/inquiries/${inquiryId}`);
-  revalidatePath("/inquiries");
+  revalidatePath(`/leads/${inquiryId}`, "layout");
+  revalidatePath("/leads");
 };
 
 // A follow-up always has exactly one responsible team member and a due date.
@@ -144,6 +145,8 @@ export async function demoGenerateAction(form: FormData) {
   if (!isLocalDashboardDemo()) return;
   const inquiryId = id.parse(form.get("inquiryId"));
   const outcome = z.enum(["mock", "invalid", "quota"]).parse(form.get("outcome"));
+  // A lead still waiting for its booking is queued first, as "Prepare now" does.
+  await data.retryPreparation(inquiryId);
   await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: demoGenerator(outcome), monthlyTokenBudget: 0, inquiryId });
   refresh(inquiryId);
 }

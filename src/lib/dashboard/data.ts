@@ -28,6 +28,8 @@ export interface InquiryRow {
 export interface DraftRow {
   id: string;
   version: number;
+  // The Pre-meeting Pack part (design, proposal, discovery) or the older single note.
+  artifact?: "note" | "design" | "proposal" | "discovery";
   content: unknown;
   source: string;
   model: string | null;
@@ -76,7 +78,9 @@ export interface InquiryDetail {
 export interface FollowUp {
   id: string;
   action: string;
-  owner: string;
+  // Null only for an automatic review action no one has taken yet.
+  owner: string | null;
+  kind?: "manual" | "pack_review";
   due_on: string;
   created_by: string;
   created_at: string;

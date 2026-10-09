@@ -32,17 +32,25 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
 // Every page and route of the admin application. Anything else is not found.
 //   /login, /login/mfa                 sign-in
-//   /dashboard, /pipeline, /metrics    overview, board and numbers
-//   /inquiries[/id]                    inquiries and their detail
-//   /outreach[/id], /companies[/id]    prospects, companies
-//   /contacts/id, /projects[/id]       contacts, projects
-//   /proposals, /search                lists
+//   /dashboard                         the command centre
+//   /leads[/id[/pack[/design]|/deal|/activity]]  Leads & Clients and each lead
+//   /growth, /outreach[/id]            Growth: prospects
+//   /projects[/id]                     won work
+//   /settings, /companies[/id]         the secondary menu
+//   /contacts/id, /search              contacts, search
 //   /export/kind                       CSV exports (POST only)
+//   /inquiries[/id], /pipeline, /proposals, /metrics   older addresses, redirected
 const ADMIN_PAGES = new RegExp(
   [
     "login",
     "login/mfa",
     "dashboard",
+    "leads",
+    `leads/${UUID}`,
+    `leads/${UUID}/(pack|deal|activity)`,
+    `leads/${UUID}/pack/design`,
+    "growth",
+    "settings",
     "pipeline",
     "metrics",
     "proposals",

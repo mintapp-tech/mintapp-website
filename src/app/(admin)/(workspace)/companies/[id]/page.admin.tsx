@@ -129,7 +129,7 @@ export default async function CompanyPage({ params, searchParams }: { params: Pr
               <ul className="m-0 list-none p-0 text-[14px]">
                 {inquiries.map((i) => (
                   <li key={i.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-2.5 first:border-t-0 first:pt-0">
-                    <Link href={`/inquiries/${i.id}`} className={linkClass}>
+                    <Link href={`/leads/${i.id}`} className={linkClass}>
                       <bdi>{i.client_name}</bdi>
                     </Link>
                     <span className="flex items-center gap-2">

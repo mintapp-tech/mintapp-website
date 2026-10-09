@@ -149,7 +149,7 @@ export default async function ProjectPage({ params, searchParams }: { params: Pr
             </ul>
             {inquiry && (
               <p className="mt-3 mb-0">
-                <Link href={`/inquiries/${inquiry.id}`} className={linkClass}>
+                <Link href={`/leads/${inquiry.id}`} className={linkClass}>
                   {p.openInquiry}: <bdi>{inquiry.client_name}</bdi>
                 </Link>
               </p>

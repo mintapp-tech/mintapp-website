@@ -22,6 +22,7 @@ import type {
   SearchResults,
   Stage,
 } from "./types";
+import type { CommandCentre, CrmSettings, GrowthProspect, LeadDetail, LeadRow } from "./lead-types";
 
 // Typed access to the CRM's database functions. Callers must have passed
 // requireAdmin() first; every call also passes the review guard (adminSql).
@@ -124,3 +125,25 @@ export const logTouch = (
   });
 export const linkProspectInquiry = (prospectId: string, inquiryId: string, actor: string) =>
   sql().call<boolean>("crm_link_prospect_inquiry", { p_prospect_id: prospectId, p_inquiry_id: inquiryId, p_actor: actor });
+
+// ----- The two-founder workflow: Leads & Clients, the Pre-meeting Pack, the
+// command centre, Growth and settings.
+
+export const leadList = async (filters: { q?: string; owner?: string; stages?: string[]; priority?: string; paused?: string } = {}) =>
+  (await sql().call<LeadRow[] | null>("lead_list", { p_filters: filters })) ?? [];
+export const leadDetail = (id: string) => sql().call<LeadDetail | null>("lead_detail", { p_inquiry_id: id });
+export const commandCentre = (today: string) => sql().call<CommandCentre>("crm_command_centre", { p_today: today });
+export const growthProspects = async () => (await sql().call<GrowthProspect[] | null>("growth_prospect_list")) ?? [];
+export const automationPaused = async () => (await sql().call<{ provider: string; paused_reason: string | null }[] | null>("automation_paused")) ?? [];
+export const settings = async () => (await sql().call<CrmSettings | null>("crm_get_settings")) ?? {};
+
+export const saveLead = (inquiryId: string, fields: Record<string, unknown>, actor: string) => sql().call<boolean>("crm_save_lead", { p_inquiry_id: inquiryId, p_fields: fields, p_actor: actor });
+export const setSetting = (key: "default_owner", value: string, actor: string) => sql().call<boolean>("crm_set_setting", { p_key: key, p_value: value, p_actor: actor });
+export const assignFollowUp = (inquiryId: string, followUpId: string, owner: string, actor: string) =>
+  sql().call<boolean>("crm_assign_follow_up", { p_inquiry_id: inquiryId, p_follow_up_id: followUpId, p_owner: owner, p_actor: actor });
+export const setProspectPriority = (id: string, priority: string, actor: string) => sql().call<boolean>("crm_set_prospect_priority", { p_id: id, p_priority: priority, p_actor: actor });
+
+export const packSaveArtifact = (inquiryId: string, artifact: "design" | "proposal" | "discovery", content: unknown, source: "manual" | "edited", author: string) =>
+  sql().call<number | null>("pack_save_artifact", { p_inquiry_id: inquiryId, p_artifact: artifact, p_content: content, p_source: source, p_author: author });
+export const packSaveAll = (inquiryId: string, artifacts: Record<"design" | "proposal" | "discovery", unknown>, source: "manual" | "edited", author: string) =>
+  sql().call<number | null>("pack_save_all", { p_inquiry_id: inquiryId, p_artifacts: artifacts, p_source: source, p_author: author });

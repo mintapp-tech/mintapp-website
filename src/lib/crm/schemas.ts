@@ -208,6 +208,46 @@ export const dateRange = z
 
 export const exportKind = z.enum(["inquiries", "companies", "contacts", "prospects"]);
 
+// ----- Leads & Clients (the two-founder workflow)
+
+export const PRIORITIES = ["high", "medium", "low"] as const;
+export type Priority = (typeof PRIORITIES)[number];
+export const CONTRACT_STATUSES = ["not_started", "sent", "signed", "declined"] as const;
+export type ContractStatus = (typeof CONTRACT_STATUSES)[number];
+
+// The commercial position, in the seven simple steps (Closed is Won or Lost).
+export const positionSchema = z
+  .object({
+    position: z.enum(["new", "reviewing", "meeting", "qualified", "proposal", "decision", "won", "lost"]),
+    reason: optEnum(LOSS_REASONS),
+    note: text(500),
+  })
+  .refine((v) => v.position !== "lost" || v.reason !== null, { message: "loss_reason_required", path: ["reason"] });
+
+// Pausing is a flag with a date to look again, not a stage. An empty date resumes.
+export const pauseSchema = z.object({ pausedUntil: optDay });
+export const prioritySchema = z.object({ priority: optEnum(PRIORITIES) });
+
+// The deal: contract status and reference (no e-signature), commercial notes.
+export const dealSchema = z
+  .object({
+    contract_status: optEnum(CONTRACT_STATUSES),
+    contract_signed_on: optDay,
+    contract_reference: text(200),
+    commercial_notes: text(4000),
+  })
+  .refine((v) => v.contract_status !== "signed" || v.contract_signed_on !== null, { message: "signed_date_required", path: ["contract_signed_on"] });
+
+export const leadFiltersSchema = z.object({
+  q: z.string().trim().max(120).catch(""),
+  owner: z.string().regex(/^(unassigned|[a-z][a-z0-9-]{0,31})?$/).catch(""),
+  stage: z.union([z.literal(""), z.enum(["new", "reviewing", "meeting", "qualified", "proposal", "decision", "closed"])]).catch(""),
+  priority: z.union([z.literal(""), z.enum(PRIORITIES)]).catch(""),
+  paused: z.union([z.literal(""), z.enum(["yes", "no"])]).catch(""),
+});
+
+export const settingsSchema = z.object({ default_owner: z.union([z.literal(""), member]) });
+
 // Turns a posted form into a plain object of strings, one entry per field.
 export function formObject(form: FormData): Record<string, string> {
   const out: Record<string, string> = {};

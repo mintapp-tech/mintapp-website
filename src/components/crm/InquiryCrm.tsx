@@ -235,7 +235,7 @@ export function LinkPanel({ inquiryId, extra, t, companies, hasCompanyName }: Pi
             {d.inquiries.map((i) => (
               <li key={i.id}>
                 {l.sameClient}:{" "}
-                <Link href={`/inquiries/${i.id}`} className={linkClass}>
+                <Link href={`/leads/${i.id}`} className={linkClass}>
                   <bdi>{i.client_name}</bdi>
                 </Link>
               </li>

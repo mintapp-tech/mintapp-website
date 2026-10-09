@@ -52,7 +52,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
                     {results.inquiries.map((r) => (
                       <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-2.5 first:border-t-0 first:pt-0">
                         <span>
-                          <Link href={`/inquiries/${r.id}`} className={linkClass}>
+                          <Link href={`/leads/${r.id}`} className={linkClass}>
                             <bdi>{r.name}</bdi>
                           </Link>
                           {r.company && (

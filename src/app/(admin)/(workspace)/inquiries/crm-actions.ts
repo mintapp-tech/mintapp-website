@@ -4,12 +4,14 @@ import { z } from "zod";
 import { requireAdmin } from "@/lib/admin/auth/state";
 import * as crm from "@/lib/crm/data";
 import { detailsSchema, proposalMove, proposalSchema, stageSchema } from "@/lib/crm/schemas";
+import { leadPath, type LeadTab } from "@/lib/crm/lead-path";
 import { memberId, mutate, optionalUuid, parseForm, uuid } from "../mutate";
 
 // Server actions for an inquiry's CRM side. Each one re-checks the signed-in
 // team member, validates what was posted, and records who did it.
 
-const pathOf = (inquiryId: string) => `/inquiries/${inquiryId}`;
+// Back to the lead's tab that holds the form: the proposal and the project are on Deal.
+const pathOf = (inquiryId: string, tab: LeadTab = "overview") => leadPath(inquiryId, tab);
 
 export async function setStageAction(form: FormData) {
   const member = await requireAdmin();
@@ -54,7 +56,7 @@ export async function linkCompanyAction(form: FormData) {
 export async function startProposalAction(form: FormData) {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
-  await mutate(pathOf(inquiryId), "proposalSaved", async () => {
+  await mutate(pathOf(inquiryId, "deal"), "proposalSaved", async () => {
     await crm.createProposal(inquiryId, parseForm(proposalSchema, form), member.email);
   }, "proposal");
 }
@@ -63,7 +65,7 @@ export async function startProposalAction(form: FormData) {
 export async function saveProposalAction(form: FormData) {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
-  await mutate(pathOf(inquiryId), "proposalSaved", async () => {
+  await mutate(pathOf(inquiryId, "deal"), "proposalSaved", async () => {
     await crm.updateProposal(uuid(form, "proposalId"), parseForm(proposalSchema, form), member.email);
   }, "proposal");
 }
@@ -72,7 +74,7 @@ export async function saveProposalAction(form: FormData) {
 export async function reviseProposalAction(form: FormData) {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
-  await mutate(pathOf(inquiryId), "proposalSaved", async () => {
+  await mutate(pathOf(inquiryId, "deal"), "proposalSaved", async () => {
     await crm.createProposal(inquiryId, parseForm(proposalSchema, form), member.email);
   }, "proposal");
 }
@@ -82,7 +84,7 @@ export async function reviseProposalAction(form: FormData) {
 export async function proposalMoveAction(form: FormData) {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
-  await mutate(pathOf(inquiryId), "proposalMoved", async () => {
+  await mutate(pathOf(inquiryId, "deal"), "proposalMoved", async () => {
     const to = proposalMove.parse(form.get("to"));
     const proposalId = uuid(form, "proposalId");
     if (to === "approved") {
@@ -100,7 +102,7 @@ export async function proposalMoveAction(form: FormData) {
 export async function convertAction(form: FormData) {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
-  await mutate(pathOf(inquiryId), "projectCreated", async () => {
+  await mutate(pathOf(inquiryId, "deal"), "projectCreated", async () => {
     const name = z.string().trim().max(160).parse(form.get("name") ?? "");
     await crm.convertToProject(inquiryId, name === "" ? null : name, member.email);
   }, "conversion");

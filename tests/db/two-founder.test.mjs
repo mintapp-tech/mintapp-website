@@ -261,6 +261,14 @@ describe("simplified reads", () => {
     assert.equal(svc(`select public.crm_set_prospect_priority(${lit(id)}, 'high', ${lit(OMAR)})`), "t");
     assert.match(fail(`select public.crm_set_prospect_priority(${lit(id)}, 'urgent', ${lit(OMAR)})`), /priority_values/);
   });
+
+  test("paused automation is listed, so a waiting pack reads as needing a person", () => {
+    assert.deepEqual(json("select public.automation_paused()"), []);
+    svc("select public.pause_preparation_automation('codecraft', 'quota_exhausted', null)");
+    assert.deepEqual(json("select public.automation_paused()"), [{ provider: "codecraft", paused_reason: "quota_exhausted" }]);
+    svc("select public.resume_preparation_automation('codecraft')");
+    assert.deepEqual(json("select public.automation_paused()"), []);
+  });
 });
 
 describe("access", () => {
@@ -268,7 +276,7 @@ describe("access", () => {
     for (const role of ["anon", "authenticated"]) {
       assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.crm_settings`), /permission denied/);
       for (const call of [
-        "public.crm_command_centre(current_date)", "public.lead_list('{}')", `public.lead_detail('${A}')`, "public.growth_prospect_list()", `public.pack_latest('${A}')`,
+        "public.crm_command_centre(current_date)", "public.lead_list('{}')", `public.lead_detail('${A}')`, "public.growth_prospect_list()", `public.pack_latest('${A}')`, "public.automation_paused()",
         `public.complete_pack('${A}', '{}', 'x', 'x')`, `public.pack_save_all('${A}', '{}', 'manual', 'x')`, `public.crm_save_lead('${A}', '{}', 'x')`, "public.crm_set_setting('default_owner', 'omar', 'x')",
       ]) {
         assert.match(db.psqlExpectError(`set role ${role}; select ${call}`), /permission denied/, `${role} ${call}`);

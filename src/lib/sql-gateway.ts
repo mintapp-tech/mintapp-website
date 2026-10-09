@@ -31,6 +31,7 @@ export const SQL_FUNCTIONS = {
   lead_detail: { params: [["p_inquiry_id", "uuid"]] },
   crm_command_centre: { params: [["p_today", "date"]] },
   growth_prospect_list: { params: [] },
+  automation_paused: { params: [] },
   complete_preparation: { params: [["p_inquiry_id", "uuid"], ["p_content", "jsonb"], ["p_source", "text"], ["p_model", "text"]] },
   fail_preparation: { params: [["p_inquiry_id", "uuid"], ["p_error", "text"], ["p_retryable", "boolean"], ["p_retry_after_seconds", "integer"]] },
   pause_preparation_automation: { params: [["p_provider", "text"], ["p_reason", "text"], ["p_inquiry_id", "uuid"]] },

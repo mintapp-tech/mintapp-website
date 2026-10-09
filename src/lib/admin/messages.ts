@@ -2,6 +2,7 @@
 // Inquiry content itself is shown as the client wrote it.
 
 import { CRM_MESSAGES } from "./crm-messages";
+import { LEAD_MESSAGES } from "./lead-messages";
 
 export type AdminLocale = "en" | "ar";
 export const ADMIN_LOCALES: readonly AdminLocale[] = ["en", "ar"];
@@ -11,6 +12,7 @@ export const directionOf = (locale: AdminLocale) => (locale === "ar" ? "rtl" : "
 
 const en = {
   crm: CRM_MESSAGES.en,
+  lead: LEAD_MESSAGES.en,
   common: {
     team: "Team",
     skip: "Skip to content",
@@ -177,6 +179,7 @@ export type AdminMessages = typeof en;
 
 const ar: AdminMessages = {
   crm: CRM_MESSAGES.ar,
+  lead: LEAD_MESSAGES.ar,
   common: {
     team: "الفريق",
     skip: "انتقل إلى المحتوى الرئيسي",

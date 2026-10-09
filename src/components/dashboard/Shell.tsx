@@ -5,6 +5,7 @@ import type { TeamMember } from "@/lib/admin/auth/config";
 import type { AdminLocale, AdminMessages } from "@/lib/admin/messages";
 import { LogoMark } from "@/components/Logo";
 import NavLinks from "@/components/crm/NavLinks";
+import MoreMenu from "@/components/crm/MoreMenu";
 import LanguageSwitch from "./LanguageSwitch";
 import SubmitButton from "./SubmitButton";
 
@@ -41,16 +42,20 @@ export default function Shell({ member, demo, locale, t, children }: { member: T
           <NavLinks
             label={t.common.nav}
             items={[
-              { href: "/dashboard", label: t.crm.nav.dashboard },
-              { href: "/inquiries", label: t.crm.nav.inquiries },
-              { href: "/pipeline", label: t.crm.nav.pipeline },
-              { href: "/outreach", label: t.crm.nav.outreach },
-              { href: "/companies", label: t.crm.nav.companies },
-              { href: "/proposals", label: t.crm.nav.proposals },
-              { href: "/projects", label: t.crm.nav.projects },
-              { href: "/metrics", label: t.crm.nav.metrics },
+              { href: "/dashboard", label: t.lead.nav.dashboard },
+              { href: "/leads", label: t.lead.nav.leads },
+              { href: "/projects", label: t.lead.nav.projects },
+              { href: "/growth", label: t.lead.nav.growth, also: ["/outreach"] },
             ]}
-          />
+          >
+            <MoreMenu
+              label={t.lead.nav.more}
+              items={[
+                { href: "/settings", label: t.lead.nav.settings },
+                { href: "/companies", label: t.lead.nav.companies },
+              ]}
+            />
+          </NavLinks>
           <div className="ms-auto flex items-center gap-2.5 text-[13.5px] sm:gap-3">
             <form action="/search" method="get" role="search" className="flex items-center">
               <label htmlFor="global-search" className="sr-only">

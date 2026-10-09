@@ -176,7 +176,7 @@ export default async function ProspectPage({ params, searchParams }: { params: P
             {inquiry ? (
               <p className="m-0 text-[14px]" data-linked-inquiry>
                 {o.linked}:{" "}
-                <Link href={`/inquiries/${inquiry.id}`} className={linkClass}>
+                <Link href={`/leads/${inquiry.id}`} className={linkClass}>
                   <bdi>{inquiry.client_name}</bdi>
                 </Link>{" "}
                 <Chip>{t.crm.stages[inquiry.stage]}</Chip>

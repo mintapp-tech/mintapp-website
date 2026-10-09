@@ -149,7 +149,7 @@ export default async function CompaniesPage({ searchParams }: { searchParams: Pr
                   {g.map((m, i) => (
                     <span key={m.id}>
                       {i > 0 && " · "}
-                      <Link href={`/inquiries/${m.id}`} className={linkClass}>
+                      <Link href={`/leads/${m.id}`} className={linkClass}>
                         <bdi>{m.name}</bdi>
                       </Link>
                     </span>

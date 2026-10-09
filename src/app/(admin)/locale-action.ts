@@ -9,7 +9,7 @@ import { isAdminPage } from "@/lib/admin/surface";
 // admin paths are accepted as the return address.
 export async function setAdminLocaleAction(form: FormData) {
   const locale = form.get("locale");
-  const back = String(form.get("back") ?? "/inquiries");
+  const back = String(form.get("back") ?? "/dashboard");
   if (isAdminLocale(locale)) {
     (await cookies()).set(ADMIN_LOCALE_COOKIE, locale, { httpOnly: true, secure: true, sameSite: "strict", path: "/", maxAge: 60 * 60 * 24 * 365 });
   }
