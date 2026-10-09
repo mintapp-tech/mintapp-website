@@ -23,3 +23,11 @@ If the team later wants full CLI workflows (`supabase db push`, `supabase db dif
 Without the CLI, the SQL in `migrations/` can be run directly in the Supabase SQL editor, in filename order. Each file is idempotent-safe (`if not exists` / `or replace` / `drop ... if exists` guards) so re-running one that's already applied should not error or duplicate objects.
 
 See [`docs/supabase-database-permissions.md`](../docs/supabase-database-permissions.md) for why the schema and grants look the way they do, and for a safe checklist to verify the result against the live project.
+
+## Recovery scripts (not migrations)
+
+`rollback/` holds two recovery-only scripts for Operations/CRM v1
+(`01_stop_new_preparation_jobs.sql`, `02_remove_operations_crm_v1.sql`). They are never
+applied as migrations, only by hand when `docs/operations-crm-v1-launch.md` says so,
+and each says so on its first line. `tests/db/production-upgrade.test.mjs` applies both
+on a throwaway database and checks that the schema returns exactly to its pre-launch state.

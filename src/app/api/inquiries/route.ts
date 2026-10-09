@@ -9,6 +9,7 @@ import { getTurnstileSecretKey, getAllowedTurnstileHostnames } from "@/lib/turns
 import { inquirySchema } from "@/lib/inquiry-schema";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 import { signBookingContext } from "@/lib/cal-booking-context";
+import { kickPreparationAfterSubmission } from "@/lib/preparation/run";
 import type { z } from "zod";
 
 export const runtime = "nodejs";
@@ -250,6 +251,11 @@ export async function POST(request: NextRequest) {
     // Both helpers handle their own errors; this only catches the unexpected.
     for (const result of results) if (result.status === "rejected") console.error("inquiry_email_task_failed");
   });
+
+  // Meeting preparation: the job was created with the inquiry row (a database
+  // trigger), so this best-effort start can fail without losing it. Does
+  // nothing unless a generator is explicitly enabled.
+  after(() => kickPreparationAfterSubmission());
 
   // 12: success response.
   return acceptedInquiryResponse(inquiryId, 201, false);

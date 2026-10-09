@@ -41,6 +41,9 @@ vi.mock("@/lib/send-inquiry-notification", () => ({
   sendInquiryNotification: (...args: unknown[]) => sendInquiryNotification(...args),
 }));
 
+const kickPreparationAfterSubmission = vi.fn();
+vi.mock("@/lib/preparation/run", () => ({ kickPreparationAfterSubmission: (...args: unknown[]) => kickPreparationAfterSubmission(...args) }));
+
 const sendClientAcknowledgment = vi.fn();
 vi.mock("@/lib/send-client-acknowledgment", () => ({ sendClientAcknowledgment: (...args: unknown[]) => sendClientAcknowledgment(...args) }));
 
@@ -217,13 +220,17 @@ describe("POST /api/inquiries — success path (after() mocked and executed dete
 
     expect(findInquiryIdByToken).toHaveBeenCalledTimes(1);
     expect(insertInquiry).toHaveBeenCalledTimes(1);
-    expect(afterCallbacks.length).toBe(1);
+    // Two post-response steps: the notification and the best-effort start of
+    // meeting preparation (whose job already exists with the inquiry row).
+    expect(afterCallbacks.length).toBe(2);
     expect(sendInquiryNotification).not.toHaveBeenCalled(); // not yet — only once the scheduled callback actually runs
+    expect(kickPreparationAfterSubmission).not.toHaveBeenCalled();
 
     expect(createRealResendSender).toHaveBeenCalledTimes(1);
 
     await runScheduledAfterCallbacks();
     expect(sendInquiryNotification).toHaveBeenCalledTimes(1);
+    expect(kickPreparationAfterSubmission).toHaveBeenCalledTimes(1);
     expect(sendInquiryNotification).toHaveBeenCalledWith(
       { fake: "client" },
       { fake: "sender" },
