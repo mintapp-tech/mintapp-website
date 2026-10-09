@@ -135,7 +135,7 @@ describe("admin build", () => {
     run(["build"], { ...BASE_ENV, APP_SURFACE: "admin" });
   });
 
-  test("contains the CRM routes and none of the public site", () => {
+  test("contains every CRM route", () => {
     const routes = routesOf(join(root, ".next-admin"));
     for (const expected of ["/login", "/login/mfa", "/dashboard", "/inquiries", "/inquiries/[id]", "/pipeline", "/outreach", "/outreach/[id]", "/companies", "/companies/[id]", "/contacts/[id]", "/proposals", "/projects", "/projects/[id]", "/metrics", "/search", "/export/[kind]"]) {
       assert.ok(routes.includes(expected), `${expected} is missing from the admin build`);
