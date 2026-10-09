@@ -14,7 +14,7 @@ import { createCodeCraftGenerator } from "./codecraft-generator";
 //   CODECRAFT_CLIENT_DATA_APPROVED     "true" only once the model's upstream
 //                                      provider and data terms are verified
 //   PREPARATION_MONTHLY_TOKEN_BUDGET   default 600000 (free tier is 1M in+out)
-//   PREPARATION_MAX_OUTPUT_TOKENS      default 3000
+//   PREPARATION_MAX_OUTPUT_TOKENS      default 6000 (a Pre-meeting Pack)
 //   CODECRAFT_TIMEOUT_MS               default 60000
 
 export type Env = Record<string, string | undefined>;
@@ -50,7 +50,7 @@ export function selectGenerator(env: Env = process.env, options: { syntheticOnly
       apiKey,
       model,
       baseUrl: env.CODECRAFT_BASE_URL?.trim() || DEFAULT_CODECRAFT_BASE_URL,
-      maxOutputTokens: int(env.PREPARATION_MAX_OUTPUT_TOKENS, 3000, 2048, 8192),
+      maxOutputTokens: int(env.PREPARATION_MAX_OUTPUT_TOKENS, 6000, 2048, 8192),
       timeoutMs: int(env.CODECRAFT_TIMEOUT_MS, 60_000, 5_000, 180_000),
     }),
   };

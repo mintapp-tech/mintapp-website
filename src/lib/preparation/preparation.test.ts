@@ -7,6 +7,8 @@ import { selectGenerator } from "./config";
 import { runPreparationBatch, type PreparationStore } from "./worker";
 import { SYNTHETIC_BRIEFS } from "./synthetic-briefs";
 import type { PreparationGenerator } from "./generator";
+import { validatePack } from "@/lib/pack/schema";
+import { clinicPack } from "@/lib/pack/test-fixtures";
 
 const clinic = SYNTHETIC_BRIEFS[0];
 
@@ -86,16 +88,17 @@ describe("draft validation", () => {
 });
 
 describe("mock generator on synthetic briefs", () => {
-  test.each(SYNTHETIC_BRIEFS.map((b) => [b.id, b] as const))("%s: produces a valid, clearly labelled draft", async (_id, brief) => {
+  test.each(SYNTHETIC_BRIEFS.map((b) => [b.id, b] as const))("%s: produces a valid, clearly labelled Pre-meeting Pack", async (_id, brief) => {
     const input = buildGenerationInput(brief.inquiry);
     const result = await createMockGenerator().generate(input);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
-    const validation = validateDraft(result.raw, input.brief, input.language);
+    const validation = validatePack(result.raw, { brief: input.brief, language: input.language, projectType: input.projectType });
     expect(validation.ok, JSON.stringify(validation)).toBe(true);
     if (validation.ok) {
-      expect(validation.draft.summary.startsWith("[MOCK]")).toBe(true);
-      if (brief.kind === "incomplete") expect(validation.draft.missingInformation.length).toBeGreaterThanOrEqual(3);
+      expect(validation.pack.proposal.understanding.startsWith("[MOCK]")).toBe(true);
+      // A clear project type gets a library pattern; "not sure" falls back to a hand-made design.
+      expect(validation.pack.design_blueprint.pattern === null).toBe(!["website", "web_app", "mobile_app"].includes(input.projectType ?? ""));
     }
   });
 });
@@ -204,6 +207,8 @@ function fakeStore(over: Partial<PreparationStore> = {}) {
     claimInquiry: async (_provider, id) => (calls.push(`claimInquiry:${id}`), [{ inquiryId: id, attempts: 1 }]),
     loadInquiry: async () => clinic.inquiry,
     complete: async (id, _content, source) => (calls.push(`complete:${id}:${source}`), 1),
+    completePack: async (id, artifacts, source) => (calls.push(`completePack:${id}:${source}:${Object.keys(artifacts).join("+")}`), 3),
+    recordPayload: async (id) => void calls.push(`payload:${id}`),
     fail: async (id, error, retryable) => (calls.push(`fail:${id}:${error}:${retryable}`), retryable ? "retry_scheduled" : "failed"),
     pause: async (provider, reason) => void calls.push(`pause:${provider}:${reason}`),
     monthlyTokens: async () => 0,
@@ -222,15 +227,15 @@ const fixedGenerator = (result: Awaited<ReturnType<PreparationGenerator["generat
 describe("worker", () => {
   test("saves a validated draft and records usage", async () => {
     const { store, calls } = fakeStore();
-    const generator = fixedGenerator({ ok: true, raw: baseDraft(), model: "m", usage: { promptTokens: 900, completionTokens: 600, totalTokens: 1500, reported: true } });
+    const generator = fixedGenerator({ ok: true, raw: clinicPack(), model: "m", usage: { promptTokens: 900, completionTokens: 600, totalTokens: 1500, reported: true } });
     const summary = await runPreparationBatch({ store, generator, monthlyTokenBudget: 600_000 });
     expect(summary).toMatchObject({ claimed: 1, succeeded: 1 });
-    expect(calls).toEqual(["usage:succeeded:1500", "complete:inq-1:codecraft"]);
+    expect(calls).toEqual(["payload:inq-1", "usage:succeeded:1500", "completePack:inq-1:codecraft:design+proposal+discovery"]);
   });
 
   test("never saves a draft that breaks the rules; retries within the limit", async () => {
     const { store, calls } = fakeStore();
-    const bad = baseDraft({ nextStep: "Quote $9,999." });
+    const bad = clinicPack({ proposal: { ...clinicPack().proposal, next_step: "Quote $9,999." } });
     const summary = await runPreparationBatch({ store, generator: fixedGenerator({ ok: true, raw: bad, model: "m", usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2, reported: true } }), monthlyTokenBudget: 600_000 });
     expect(summary.retrying).toBe(1);
     expect(calls.some((c) => c.startsWith("complete"))).toBe(false);
@@ -243,12 +248,12 @@ describe("worker", () => {
     const summary = await runPreparationBatch({ store, generator, monthlyTokenBudget: 600_000 });
     expect(summary.paused).toBe(1);
     expect(generator.generate).toHaveBeenCalledTimes(1);
-    expect(calls).toEqual(["pause:codecraft:quota_exhausted"]);
+    expect(calls).toEqual(["payload:inq-1", "pause:codecraft:quota_exhausted"]);
   });
 
   test("enforces the application budget before calling the provider", async () => {
     const { store, calls } = fakeStore({ monthlyTokens: async () => 598_000 });
-    const generator = fixedGenerator({ ok: true, raw: baseDraft(), model: "m", usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, reported: true } }, 4000);
+    const generator = fixedGenerator({ ok: true, raw: clinicPack(), model: "m", usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, reported: true } }, 4000);
     await runPreparationBatch({ store, generator, monthlyTokenBudget: 600_000 });
     expect(generator.generate).not.toHaveBeenCalled();
     expect(calls).toEqual(["pause:codecraft:budget_exhausted"]);
@@ -257,7 +262,7 @@ describe("worker", () => {
   test("rate limits are retried later, with usage recorded when reported", async () => {
     const { store, calls } = fakeStore();
     await runPreparationBatch({ store, generator: fixedGenerator({ ok: false, failure: "rate_limited", retryable: true, pauseAutomation: false, retryAfterSeconds: 120 }), monthlyTokenBudget: 600_000 });
-    expect(calls).toEqual(["fail:inq-1:rate_limited:true"]);
+    expect(calls).toEqual(["payload:inq-1", "fail:inq-1:rate_limited:true"]);
   });
 
   test("a missing inquiry fails visibly without calling the provider", async () => {
@@ -271,13 +276,13 @@ describe("worker", () => {
   test("can be limited to one inquiry", async () => {
     const { store, calls } = fakeStore();
     await runPreparationBatch({ store, generator: createMockGenerator(), monthlyTokenBudget: 0, inquiryId: "inq-9" });
-    expect(calls).toEqual(["claimInquiry:inq-9", "complete:inq-9:mock"]);
+    expect(calls).toEqual(["claimInquiry:inq-9", "completePack:inq-9:mock:design+proposal+discovery"]);
   });
 
   test("the mock generator runs end to end without usage or budget", async () => {
     const { store, calls } = fakeStore({ monthlyTokens: async () => 10_000_000 });
     const summary = await runPreparationBatch({ store, generator: createMockGenerator(), monthlyTokenBudget: 0 });
     expect(summary.succeeded).toBe(1);
-    expect(calls).toEqual(["complete:inq-1:mock"]);
+    expect(calls).toEqual(["completePack:inq-1:mock:design+proposal+discovery"]);
   });
 });

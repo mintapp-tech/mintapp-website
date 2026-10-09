@@ -1,6 +1,6 @@
 import type { GenerationInput } from "./input";
 import type { GenerationFailure, GenerationResult, PreparationGenerator, Usage } from "./generator";
-import { buildMessages } from "./prompt";
+import { buildPackMessages as buildMessages } from "@/lib/pack/prompt";
 
 // CodeCraft API (https://codecraftapi.com/docs/chat-completions): an
 // OpenAI-style gateway. Documented: POST {base}/chat/completions with model,

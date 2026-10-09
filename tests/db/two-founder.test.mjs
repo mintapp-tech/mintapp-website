@@ -142,6 +142,10 @@ describe("the Pre-meeting Pack", () => {
     assert.equal(db.psql(`select string_agg(version || ':' || artifact || ':' || source || ':' || review_status, ',' order by version) from public.preparation_drafts where inquiry_id = ${lit(A)}`),
       "1:design:codecraft:draft,2:proposal:codecraft:draft,3:discovery:codecraft:draft");
     assert.equal(job(A), "succeeded");
+    assert.equal(json(`select public.pack_latest(${lit(A)})`).design.unsupported, false);
+    // A generated design that no library pattern fits is flagged for a hand-made design.
+    svc(`select public.pack_save_artifact(${lit(A)}, 'design', ${obj({ format: "pack-design", blueprint: { pattern: null, unsupported_reason: "x" }, screens: [], user_flow: [] })}, 'manual', ${lit(OMAR)})`);
+    assert.equal(json(`select public.pack_latest(${lit(A)})`).design.unsupported, true);
   });
 
   test("an edit is a new version of one artifact; every version is kept", () => {

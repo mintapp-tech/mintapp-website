@@ -24,6 +24,8 @@ export interface GenerationInput {
   language: BriefLanguage;
   // The exact text sent to a generator and used to check evidence.
   brief: string;
+  // The client's own project-type answer (one of the form's four, or null).
+  projectType: string | null;
 }
 
 const LABELS: Record<BriefLanguage, Record<"type" | "budget" | "timeline" | "country" | "description", string>> = {
@@ -46,5 +48,5 @@ export function buildGenerationInput(inquiry: InquiryForPreparation): Generation
     // (or a copied prompt) gets the brief, not a way to reach the client.
     scrubContactDetails(inquiry.project_description.trim(), inquiry.redact),
   ].filter((line): line is string => line !== null);
-  return { language, brief: lines.join("\n") };
+  return { language, brief: lines.join("\n"), projectType };
 }

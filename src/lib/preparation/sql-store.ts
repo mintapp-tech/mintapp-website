@@ -24,6 +24,10 @@ export function createSqlPreparationStore(sql: SqlGateway): PreparationStore {
       return { ...input, redact };
     },
     complete: (inquiryId, content, source, model) => sql.call<number | null>("complete_preparation", { p_inquiry_id: inquiryId, p_content: content, p_source: source, p_model: model }),
+    completePack: (inquiryId, artifacts, source, model) => sql.call<number | null>("complete_pack", { p_inquiry_id: inquiryId, p_artifacts: artifacts, p_source: source, p_model: model }),
+    async recordPayload(inquiryId, payload) {
+      await sql.call("record_pack_payload", { p_inquiry_id: inquiryId, p_payload: payload });
+    },
     fail: (inquiryId, error, retryable, retryAfterSeconds) =>
       sql.call<string | null>("fail_preparation", { p_inquiry_id: inquiryId, p_error: error, p_retryable: retryable, p_retry_after_seconds: retryAfterSeconds }),
     async pause(provider, reason, inquiryId) {

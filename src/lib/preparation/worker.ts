@@ -1,6 +1,7 @@
 import { buildGenerationInput, type InquiryForPreparation } from "./input";
 import type { PreparationGenerator } from "./generator";
-import { validateDraft } from "./draft";
+import { splitPack, validatePack } from "@/lib/pack/schema";
+import { PACK_PROMPT_VERSION } from "@/lib/pack/prompt";
 
 // Processes due preparation jobs. Submission and booking never wait on this:
 // jobs exist from the moment an inquiry is saved, and this runs separately
@@ -14,6 +15,10 @@ export interface PreparationStore {
   claimInquiry(provider: string, inquiryId: string, leaseSeconds: number): Promise<{ inquiryId: string; attempts: number }[]>;
   loadInquiry(inquiryId: string): Promise<InquiryForPreparation | null>;
   complete(inquiryId: string, content: unknown, source: string, model: string | null): Promise<number | null>;
+  // Saves a validated pack as three artifact versions and finishes the job.
+  completePack(inquiryId: string, artifacts: ReturnType<typeof splitPack>, source: string, model: string | null): Promise<number | null>;
+  // The exact, already sanitised input about to be sent (for audit).
+  recordPayload(inquiryId: string, payload: Record<string, unknown>): Promise<void>;
   fail(inquiryId: string, error: string, retryable: boolean, retryAfterSeconds: number | null): Promise<string | null>;
   pause(provider: string, reason: string, inquiryId: string | null): Promise<void>;
   monthlyTokens(provider: string): Promise<number>;
@@ -69,6 +74,11 @@ export async function runPreparationBatch(opts: {
       }
     }
 
+    // What is about to leave, kept for audit: the scrubbed brief, the prompt version and the model. Never a key.
+    if (generator.id !== "mock") {
+      await store.recordPayload(job.inquiryId, { provider: generator.id, model: generator.model, prompt_version: PACK_PROMPT_VERSION, language: input.language, project_type: input.projectType, brief: input.brief, at: new Date().toISOString() });
+    }
+
     const result = await generator.generate(input);
 
     if (!result.ok) {
@@ -85,7 +95,7 @@ export async function runPreparationBatch(opts: {
       continue;
     }
 
-    const validation = validateDraft(result.raw, input.brief, input.language);
+    const validation = validatePack(result.raw, { brief: input.brief, language: input.language, projectType: input.projectType });
     const outcome = validation.ok ? "succeeded" : `invalid_${validation.problems[0].kind}`;
     if (generator.id !== "mock") await store.recordUsage({ inquiryId: job.inquiryId, provider: generator.id, model: result.model, ...tokens(result.usage), outcome });
     count(outcome);
@@ -99,7 +109,7 @@ export async function runPreparationBatch(opts: {
       continue;
     }
 
-    await store.complete(job.inquiryId, validation.draft, generator.id, result.model);
+    await store.completePack(job.inquiryId, splitPack(validation.pack), generator.id, result.model);
     summary.succeeded++;
   }
   return summary;

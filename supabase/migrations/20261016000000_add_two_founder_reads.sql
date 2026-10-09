@@ -11,9 +11,11 @@ stable
 security invoker
 set search_path = ''
 as $$
-  select coalesce(jsonb_object_agg(x.artifact, jsonb_build_object('version', x.version, 'review_status', x.review_status, 'source', x.source, 'created_by', x.created_by)), '{}'::jsonb)
+  -- "unsupported": a generated design with no library pattern, to be made by hand.
+  select coalesce(jsonb_object_agg(x.artifact, jsonb_build_object('version', x.version, 'review_status', x.review_status, 'source', x.source, 'created_by', x.created_by,
+           'unsupported', coalesce(x.content ->> 'format' = 'pack-design' and x.content -> 'blueprint' -> 'pattern' = 'null'::jsonb, false))), '{}'::jsonb)
   from (
-    select distinct on (d.artifact) d.artifact, d.version, d.review_status, d.source, d.created_by
+    select distinct on (d.artifact) d.artifact, d.version, d.review_status, d.source, d.created_by, d.content
     from public.preparation_drafts as d
     where d.inquiry_id = p_inquiry_id and d.artifact <> 'note'
     order by d.artifact, d.version desc
