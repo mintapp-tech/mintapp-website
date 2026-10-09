@@ -2,6 +2,8 @@ import "server-only";
 import { z } from "zod";
 import { INQUIRY_LIMITS } from "./inquiry-limits";
 import { PROJECT_TYPES } from "./project-types";
+import { BUDGET_VALUES, TIMELINE_VALUES } from "./form-options";
+import { EXISTING_LINK_MAX, normalizeExistingLink } from "./existing-link";
 
 // Server-side source of truth. This schema only validates *shape* — the
 // honeypot deliberately accepts any string here rather than enforcing
@@ -39,6 +41,25 @@ export const inquirySchema = z.object({
   utmMedium: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   utmCampaign: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   utmContent: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
+  // Budget, timeline and the existing link: the current form always sends the
+  // first two; all three stay optional so an older cached form still gets through.
+  budget: z.enum(BUDGET_VALUES).optional(),
+  timeline: z.enum(TIMELINE_VALUES).optional(),
+  // Stored normalized (https://..., no fragment); unsafe or unusable links are refused.
+  existingUrl: z
+    .string()
+    .trim()
+    .max(EXISTING_LINK_MAX)
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return undefined;
+      const normalized = normalizeExistingLink(v);
+      if (!normalized) {
+        ctx.addIssue({ code: "custom", message: "invalid_url" });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
 });
 
 export type InquiryInput = z.infer<typeof inquirySchema>;

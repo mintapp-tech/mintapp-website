@@ -103,6 +103,8 @@ function issueToCode(issue: z.core.$ZodIssue): string {
       if (issue.path[0] === "consent") return "consent_required";
       if (issue.path[0] === "lang") return "invalid_locale";
       return "invalid_value";
+    case "custom":
+      return issue.path[0] === "existingUrl" ? "invalid_url" : "invalid";
     default:
       return "invalid";
   }

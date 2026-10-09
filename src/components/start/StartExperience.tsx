@@ -9,6 +9,8 @@ import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 import { PROJECT_TYPES, type ProjectType } from "@/lib/project-types";
+import { BUDGET_OPTIONS, TIMELINE_OPTIONS } from "@/lib/form-options";
+import { EXISTING_LINK_MAX, normalizeExistingLink } from "@/lib/existing-link";
 import TurnstileWidget, { type TurnstileWidgetHandle } from "./TurnstileWidget";
 import ScheduleEmbed from "./ScheduleEmbed";
 
@@ -25,14 +27,17 @@ interface FormState {
   email: string;
   phone: string;
   projectType: ProjectType | "";
+  budget: string;
+  timeline: string;
+  existingUrl: string;
   desc: string;
 }
 
-const emptyForm: FormState = { name: "", company: "", email: "", phone: "", projectType: "", desc: "" };
+const emptyForm: FormState = { name: "", company: "", email: "", phone: "", projectType: "", budget: "", timeline: "", existingUrl: "", desc: "" };
 
 // Visual/reading order of the fields that can carry a server-side error —
 // used to find "the first invalid field" for focus management.
-const FIELD_ORDER: (keyof FormState)[] = ["name", "company", "email", "phone", "projectType", "desc"];
+const FIELD_ORDER: (keyof FormState)[] = ["name", "company", "email", "phone", "projectType", "budget", "timeline", "existingUrl", "desc"];
 
 const inputClass =
   "w-full rounded-[14px] border border-ink/[.14] bg-canvas px-4 py-3 text-[15.5px] text-ink placeholder:text-ink-faint transition-colors focus:border-mint-deep focus:outline-none";
@@ -76,6 +81,9 @@ export default function StartExperience() {
   const emailFieldRef = useRef<HTMLInputElement>(null);
   const phoneFieldRef = useRef<HTMLInputElement>(null);
   const projectTypeFieldRef = useRef<HTMLInputElement>(null);
+  const budgetFieldRef = useRef<HTMLSelectElement>(null);
+  const timelineFieldRef = useRef<HTMLSelectElement>(null);
+  const existingUrlFieldRef = useRef<HTMLInputElement>(null);
   const descFieldRef = useRef<HTMLTextAreaElement>(null);
 
   // A callback ref (not a useEffect keyed on `submitted`) so focus is
@@ -117,15 +125,24 @@ export default function StartExperience() {
       case "projectType":
         projectTypeFieldRef.current?.focus();
         break;
+      case "budget":
+        budgetFieldRef.current?.focus();
+        break;
+      case "timeline":
+        timelineFieldRef.current?.focus();
+        break;
+      case "existingUrl":
+        existingUrlFieldRef.current?.focus();
+        break;
       case "desc":
         descFieldRef.current?.focus();
         break;
     }
   }, [fieldErrors]);
 
-  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.projectType && form.desc.trim() && consent && turnstileToken);
+  const canSubmit = Boolean(form.name.trim() && form.email.trim() && form.projectType && form.budget && form.timeline && form.desc.trim() && consent && turnstileToken);
 
-  const updateField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const updateField = (key: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setForm((prev) => ({ ...prev, [key]: e.target.value }));
     // Clear this field's server-reported error the moment the user changes
     // it — the old error may no longer be true, and re-validating fully
@@ -169,6 +186,11 @@ export default function StartExperience() {
       return;
     }
     if (!canSubmit || submitting || !turnstileToken) return;
+    // The server decides; this only saves a round trip for an obviously unusable link.
+    if (form.existingUrl.trim() && !normalizeExistingLink(form.existingUrl)) {
+      setFieldErrors({ existingUrl: "invalid_url" });
+      return;
+    }
 
     setSubmitting(true);
     setSubmitError(null);
@@ -184,6 +206,9 @@ export default function StartExperience() {
           email: form.email.trim(),
           phone: form.phone.trim() || undefined,
           projectType: form.projectType || undefined,
+          budget: form.budget || undefined,
+          timeline: form.timeline || undefined,
+          existingUrl: form.existingUrl.trim() || undefined,
           desc: form.desc.trim(),
           lang,
           consent,
@@ -380,7 +405,7 @@ export default function StartExperience() {
                     </label>
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                       {t.start.fCompany}{" "}
-                      <span className="font-normal text-ink-faint">({t.start.optional})</span>
+                      <span className="font-normal text-ink-soft">({t.start.optional})</span>
                       <input
                         ref={companyFieldRef}
                         maxLength={INQUIRY_LIMITS.companyMax}
@@ -416,7 +441,7 @@ export default function StartExperience() {
                       )}
                     </label>
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
-                      {t.start.fPhone} <span className="font-normal text-ink-faint">({t.start.optional})</span>
+                      {t.start.fPhone} <span className="font-normal text-ink-soft">({t.start.optional})</span>
                       <input
                         ref={phoneFieldRef}
                         maxLength={INQUIRY_LIMITS.phoneMax}
@@ -482,6 +507,112 @@ export default function StartExperience() {
                     )}
                   </fieldset>
 
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
+                      {t.start.fBudget}
+                      <select
+                        ref={budgetFieldRef}
+                        required
+                        name="budget"
+                        value={form.budget}
+                        onChange={updateField("budget")}
+                        aria-invalid={!!fieldErrors.budget}
+                        aria-describedby={fieldErrors.budget ? "budget-error" : undefined}
+                        className={`${inputClass} ${fieldErrors.budget ? "border-red-500" : ""}`}
+                      >
+                        <option value="" disabled>
+                          {t.start.chooseOne}
+                        </option>
+                        {BUDGET_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o[lang]}
+                          </option>
+                        ))}
+                      </select>
+                      {fieldErrors.budget && (
+                        <span id="budget-error" className="text-[12.5px] font-medium text-red-600">
+                          {messageForCode(fieldErrors.budget)}
+                        </span>
+                      )}
+                    </label>
+                    <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
+                      {t.start.fTimeline}
+                      <select
+                        ref={timelineFieldRef}
+                        required
+                        name="timeline"
+                        value={form.timeline}
+                        onChange={updateField("timeline")}
+                        aria-invalid={!!fieldErrors.timeline}
+                        aria-describedby={fieldErrors.timeline ? "timeline-error" : undefined}
+                        className={`${inputClass} ${fieldErrors.timeline ? "border-red-500" : ""}`}
+                      >
+                        <option value="" disabled>
+                          {t.start.chooseOne}
+                        </option>
+                        {TIMELINE_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o[lang]}
+                          </option>
+                        ))}
+                      </select>
+                      {fieldErrors.timeline && (
+                        <span id="timeline-error" className="text-[12.5px] font-medium text-red-600">
+                          {messageForCode(fieldErrors.timeline)}
+                        </span>
+                      )}
+                    </label>
+                  </div>
+
+                  <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
+                    <span>
+                      {t.start.fExistingLink} <span className="font-normal text-ink-soft">({t.start.optional})</span>
+                    </span>
+                    <span id="existing-url-help" className="text-[13px] font-normal leading-[1.6] text-ink-soft">
+                      {t.start.fExistingLinkHelp}
+                    </span>
+                    <input
+                      ref={existingUrlFieldRef}
+                      type="text"
+                      inputMode="url"
+                      dir="ltr"
+                      autoComplete="url"
+                      name="existingUrl"
+                      maxLength={EXISTING_LINK_MAX}
+                      value={form.existingUrl}
+                      onChange={updateField("existingUrl")}
+                      placeholder={t.start.fExistingLinkPh}
+                      aria-invalid={!!fieldErrors.existingUrl}
+                      aria-describedby={fieldErrors.existingUrl ? "existing-url-help existing-url-error" : "existing-url-help"}
+                      className={`${inputClass} text-start ${fieldErrors.existingUrl ? "border-red-500" : ""}`}
+                    />
+                    {fieldErrors.existingUrl && (
+                      <span id="existing-url-error" className="text-[12.5px] font-medium text-red-600">
+                        {messageForCode(fieldErrors.existingUrl)}
+                      </span>
+                    )}
+                  </label>
+
+                  <aside id="sensitive-note" aria-labelledby="sensitive-note-title" data-sensitive-note className="rounded-[14px] border border-amber-300/70 bg-amber-50/70 px-4 py-3.5">
+                    <h2 id="sensitive-note-title" className="m-0 mb-1.5 flex items-center gap-2 text-[13.5px] font-semibold text-ink">
+                      <svg aria-hidden viewBox="0 0 20 20" className="size-4 flex-none text-amber-700" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <rect x="4" y="9" width="12" height="8" rx="2" />
+                        <path d="M7 9V6.5a3 3 0 0 1 6 0V9" strokeLinecap="round" />
+                      </svg>
+                      {t.start.confidentialTitle}
+                    </h2>
+                    <p className="m-0 mb-1.5 text-[13px] leading-[1.6] text-ink-soft">{t.start.confidentialIntro}</p>
+                    <ul className="m-0 flex list-none flex-col gap-1 p-0">
+                      {t.start.confidentialItems.map((item) => (
+                        <li key={item} className="flex items-start gap-2 text-[13px] leading-[1.6] text-ink-soft">
+                          <span aria-hidden className="mt-[7px] block h-[4px] w-[4px] flex-none rounded-full bg-amber-700" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="m-0 mt-2 text-[12.5px] leading-[1.6] text-ink-soft">{t.start.confidentialNote}</p>
+                  </aside>
+
                   <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                     {t.start.fDesc}
                     <span className="text-[13.5px] font-normal leading-[1.6] text-ink-soft">{t.start.fDescHelp}</span>
@@ -495,7 +626,7 @@ export default function StartExperience() {
                       placeholder={t.start.fDescPh}
                       rows={5}
                       aria-invalid={!!fieldErrors.desc}
-                      aria-describedby={fieldErrors.desc ? "desc-error" : undefined}
+                      aria-describedby={fieldErrors.desc ? "sensitive-note desc-error" : "sensitive-note"}
                       className={`${inputClass} resize-none ${fieldErrors.desc ? "border-red-500" : ""}`}
                     />
                     {fieldErrors.desc && (
@@ -504,19 +635,6 @@ export default function StartExperience() {
                       </span>
                     )}
                   </label>
-
-                  <div className="rounded-[14px] border border-ink/[.1] bg-canvas px-4 py-3.5">
-                    <div className="mb-2 text-[13px] font-semibold text-ink">{t.start.confidentialTitle}</div>
-                    <div className="flex flex-col gap-1.5">
-                      {t.start.confidentialItems.map((item) => (
-                        <div key={item} className="flex items-start gap-2 text-[13px] leading-[1.6] text-ink-soft">
-                          <span className="mt-[7px] block h-[4px] w-[4px] flex-none rounded-full bg-ink-faint" />
-                          {item}
-                        </div>
-                      ))}
-                    </div>
-                    <p className="m-0 mt-2.5 text-[12.5px] leading-[1.6] text-ink-faint">{t.start.confidentialNote}</p>
-                  </div>
 
                   <div className="flex flex-col gap-2">
                     <label className="flex cursor-pointer items-start gap-3 text-[13.5px] leading-[1.65] text-ink">

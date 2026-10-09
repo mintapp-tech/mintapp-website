@@ -32,6 +32,10 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
       // Added by the CRM migration; sent only when the visitor came from a
       // tracked link, so a database without the column is unaffected otherwise.
       ...(body.utmContent ? { utm_content: body.utmContent } : {}),
+      // Columns present since 2026-08; only sent when the client answered.
+      ...(body.budget ? { budget_range: body.budget } : {}),
+      ...(body.timeline ? { timeline: body.timeline } : {}),
+      ...(body.existingUrl ? { company_url: body.existingUrl } : {}),
       // Only an explicit choice on the form is stored; a missing value stays
       // null ("not provided") and is never inferred from the brief.
       ...(body.projectType ? { project_type: body.projectType } : {}),

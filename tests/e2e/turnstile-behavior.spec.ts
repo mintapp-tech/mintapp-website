@@ -11,6 +11,8 @@ async function fillMinimumValidForm(page: import("@playwright/test").Page) {
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
   await page.locator('label:has(input[name="projectType"][value="website"])').click();
+  await page.locator('select[name="budget"]').selectOption("Not sure yet");
+  await page.locator('select[name="timeline"]').selectOption("Not sure yet");
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }

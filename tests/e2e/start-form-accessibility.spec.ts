@@ -13,6 +13,8 @@ async function fillMinimumValidForm(page: Page) {
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
   await page.locator('label:has(input[name="projectType"][value="website"])').click();
+  await page.locator('select[name="budget"]').selectOption("Not sure yet");
+  await page.locator('select[name="timeline"]').selectOption("Not sure yet");
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }
@@ -56,7 +58,15 @@ test.describe("keyboard-only progression", () => {
     await expect(page.locator('input[name="projectType"][value="web_app"]')).toBeFocused();
     await expect(page.locator('input[name="projectType"][value="web_app"]')).toBeChecked();
 
-    // Description (one Tab leaves the whole group).
+    // Budget and timeline (one Tab leaves the whole project-type group), then the optional link.
+    await page.keyboard.press("Tab");
+    await expect(page.locator('select[name="budget"]')).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator('select[name="timeline"]')).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(page.locator('input[name="existingUrl"]')).toBeFocused();
+
+    // Description.
     await page.keyboard.press("Tab");
     const descInput = page.locator("form textarea").first();
     await expect(descInput).toBeFocused();

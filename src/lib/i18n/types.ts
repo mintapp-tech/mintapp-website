@@ -133,6 +133,13 @@ export interface HomeContent {
     fDesc: string;
     fDescHelp: string;
     fDescPh: string;
+    fBudget: string;
+    fTimeline: string;
+    chooseOne: string;
+    fExistingLink: string;
+    fExistingLinkHelp: string;
+    fExistingLinkPh: string;
+    confidentialIntro: string;
     confidentialTitle: string;
     confidentialItems: string[];
     confidentialNote: string;
@@ -153,6 +160,7 @@ export interface HomeContent {
       consent_required: string;
       invalid_format: string;
       invalid_value: string;
+      invalid_url: string;
       invalid: string;
     };
     turnstileFailed: string;

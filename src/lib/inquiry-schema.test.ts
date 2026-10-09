@@ -74,3 +74,29 @@ describe("inquirySchema — project type", () => {
     if (!result.success) expect(result.error.issues[0].path).toEqual(["projectType"]);
   });
 });
+
+describe("inquirySchema — budget, timeline and existing link", () => {
+  test("an older cached form without the three new fields is still accepted", () => {
+    const parsed = inquirySchema.parse(validBase);
+    expect(parsed.budget).toBeUndefined();
+    expect(parsed.timeline).toBeUndefined();
+    expect(parsed.existingUrl).toBeUndefined();
+  });
+
+  test("budget and timeline accept the listed choices, including Not sure yet, and nothing else", () => {
+    expect(inquirySchema.parse({ ...validBase, budget: "Not sure yet", timeline: "Not sure yet" })).toMatchObject({ budget: "Not sure yet", timeline: "Not sure yet" });
+    expect(inquirySchema.parse({ ...validBase, budget: "USD 5,000 - 15,000", timeline: "Within 3 months" }).budget).toBe("USD 5,000 - 15,000");
+    expect(inquirySchema.safeParse({ ...validBase, budget: "a million" }).success).toBe(false);
+    expect(inquirySchema.safeParse({ ...validBase, timeline: "yesterday" }).success).toBe(false);
+  });
+
+  test("the existing link is stored normalized; unsafe links are refused", () => {
+    expect(inquirySchema.parse({ ...validBase, existingUrl: "acme.example.com/app#top" }).existingUrl).toBe("https://acme.example.com/app");
+    expect(inquirySchema.parse({ ...validBase, existingUrl: "  " }).existingUrl).toBeUndefined();
+    for (const bad of ["javascript:alert(1)", "data:text/html,x", "ftp://acme.example.com", "https://user:pass@acme.example.com", "http://localhost:3000", "http://192.168.0.1", "not a url", "x".repeat(301)]) {
+      const r = inquirySchema.safeParse({ ...validBase, existingUrl: bad });
+      expect(r.success, bad).toBe(false);
+      if (!r.success) expect(r.error.issues[0].path[0]).toBe("existingUrl");
+    }
+  });
+});
