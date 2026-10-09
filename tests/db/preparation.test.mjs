@@ -18,6 +18,9 @@ const prep = (id) => {
 };
 const asService = (sql) => db.psql(`set role service_role; ${sql}`);
 const claim = (provider = "mock", limit = 10) => asService(`select string_agg(inquiry_id::text || ':' || attempts, ',' order by inquiry_id) from public.claim_preparation_jobs(${lit(provider)}, ${limit}, 600)`);
+// "Prepare now": the only way a pack is queued before a booking (a booking queues it too).
+const prepareNow = (id) => asService(`select public.dashboard_retry_preparation(${lit(id)})`);
+const queued = (id) => (insertInquiry(id), prepareNow(id));
 const makeDue = (id) => db.psql(`update public.inquiry_preparations set next_attempt_at = now() - interval '1 second' where inquiry_id = ${lit(id)}`);
 
 const A = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -34,7 +37,7 @@ before(async () => {
 after(() => db?.stop());
 
 beforeEach(() => {
-  db.psql(`delete from public.crm_activity; delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
+  db.psql(`delete from public.crm_activity; delete from public.inquiry_follow_ups; delete from public.preparation_drafts; delete from public.generation_usage; delete from public.automation_control;
            delete from public.inquiry_preparations where inquiry_id <> ${lit(LEGACY)};
            delete from public.project_inquiries where id <> ${lit(LEGACY)};`);
 });
@@ -45,18 +48,28 @@ describe("every inquiry gets a job", () => {
     assert.equal(claim(), "");
   });
 
-  test("a new inquiry is queued in the same transaction", () => {
+  test("a new inquiry gets its job in the same transaction, waiting for a booking (nothing is generated yet)", () => {
     insertInquiry(A);
+    assert.equal(prep(A).status, "waiting_booking");
+    assert.equal(claim(), "", "a job waiting for a booking is never claimed");
+    assert.equal(prepareNow(A), "t", "Prepare now queues it");
     assert.equal(prep(A).status, "queued");
   });
 
-  test("the live form's insert (as service_role, returning the id) still succeeds and queues a job", () => {
+  test("booking the meeting queues the waiting job", () => {
+    insertInquiry(A);
+    db.psql(`update public.project_inquiries set booking_status = 'booked', cal_booking_id = 'uid-q', meeting_start_at = now() + interval '3 days' where id = ${lit(A)}`);
+    assert.equal(prep(A).status, "queued");
+    assert.equal(claim(), `${A}:1`);
+  });
+
+  test("the live form's insert (as service_role, returning the id) still succeeds and creates its job", () => {
     // Mirrors src/lib/insert-inquiry.ts: the trigger runs with the caller's
     // privileges, so a missing grant would break public submissions.
     const id = asService(`insert into public.project_inquiries (full_name, email, project_description, preferred_language, consent_given, consent_at, source_page, submission_token)
                           values ('Form Client', 'form@example.com', 'Submitted through the public form.', 'ar', true, now(), '/ar/start', ${lit(B)}) returning id`).split("\n")[0];
     assert.match(id, /^[0-9a-f-]{36}$/);
-    assert.equal(prep(id).status, "queued");
+    assert.equal(prep(id).status, "waiting_booking");
   });
 
   test("if the inquiry insert rolls back, no orphan job remains; if it commits, the job exists", () => {
@@ -69,7 +82,7 @@ describe("every inquiry gets a job", () => {
 
 describe("worker lifecycle", () => {
   test("claim -> complete saves draft version 1; a second run saves version 2", () => {
-    insertInquiry(A);
+    queued(A);
     assert.equal(claim(), `${A}:1`);
     assert.equal(prep(A).status, "running");
     assert.equal(claim(), "", "a running job is not claimed twice");
@@ -83,13 +96,13 @@ describe("worker lifecycle", () => {
   });
 
   test("completing a job the worker no longer holds is refused", () => {
-    insertInquiry(A);
+    queued(A);
     assert.equal(asService(`select public.complete_preparation(${lit(A)}, '{}', 'mock', null)`), "");
     assert.equal(Number(db.psql("select count(*) from public.preparation_drafts")), 0);
   });
 
   test("retryable failures back off and are retried, then fail visibly after max attempts", () => {
-    insertInquiry(A);
+    queued(A);
     for (let attempt = 1; attempt <= 3; attempt++) {
       assert.equal(claim(), `${A}:${attempt}`);
       const status = asService(`select public.fail_preparation(${lit(A)}, 'timeout', true, 0)`);
@@ -106,14 +119,14 @@ describe("worker lifecycle", () => {
   });
 
   test("a non-retryable failure fails immediately and stays visible", () => {
-    insertInquiry(A);
+    queued(A);
     claim();
     assert.equal(asService(`select public.fail_preparation(${lit(A)}, 'invalid_output', false, null)`), "failed");
     assert.equal(prep(A).lastError, "invalid_output");
   });
 
   test("a crashed worker's job is reclaimed after its lease expires, and failed once attempts run out", () => {
-    insertInquiry(A);
+    queued(A);
     claim();
     db.psql(`update public.inquiry_preparations set lease_expires_at = now() - interval '1 second' where inquiry_id = ${lit(A)}`);
     assert.equal(claim(), `${A}:2`);
@@ -124,14 +137,14 @@ describe("worker lifecycle", () => {
   });
 
   test("deleted inquiries are never processed", () => {
-    insertInquiry(A);
+    queued(A);
     db.psql(`update public.project_inquiries set deleted_at = now() where id = ${lit(A)}`);
     assert.equal(claim(), "");
   });
 
   test("concurrent workers never claim the same job", async () => {
-    insertInquiry(A);
-    insertInquiry(B);
+    queued(A);
+    queued(B);
     const sql = `set role service_role; begin; select string_agg(inquiry_id::text, ',') from public.claim_preparation_jobs('mock', 1, 600); select pg_sleep(1); commit;`;
     const [one, two] = await Promise.all([db.psqlAsync(sql), db.psqlAsync(sql)]);
     assert.equal(one.code + two.code, 0, one.err + two.err);
@@ -142,8 +155,8 @@ describe("worker lifecycle", () => {
 
 describe("pausing on quota or budget", () => {
   test("pause stops claims for that provider without spending the attempt; resume requeues", () => {
-    insertInquiry(A);
-    insertInquiry(B);
+    queued(A);
+    queued(B);
     claim("codecraft", 1);
     const held = db.psql("select inquiry_id from public.inquiry_preparations where status = 'running'");
     asService(`select public.pause_preparation_automation('codecraft', 'quota_exhausted', ${lit(held)})`);
@@ -170,7 +183,7 @@ describe("usage accounting", () => {
 
 describe("independent of meetings", () => {
   test("cancelling or rescheduling the meeting leaves preparation and drafts untouched", () => {
-    insertInquiry(A);
+    queued(A);
     claim();
     asService(`select public.complete_preparation(${lit(A)}, '{"summary":"x"}', 'mock', null)`);
     db.psql(`update public.project_inquiries set booking_status = 'booked', cal_booking_id = 'uid-1', meeting_start_at = now() + interval '3 days' where id = ${lit(A)}`);

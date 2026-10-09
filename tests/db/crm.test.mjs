@@ -151,8 +151,12 @@ describe("ownership and the activity trail", () => {
     svc(`select public.apply_booking_created(${lit(A)}, 'h-1', now() + interval '3 days', 'Africa/Cairo', now())`);
     svc(`select public.apply_booking_rescheduled(${lit(A)}, 'h-1', 'h-2', now() + interval '4 days', 'Africa/Cairo', now() + interval '1 minute')`);
     svc(`select public.apply_booking_cancelled(${lit(A)}, 'h-2', now() + interval '4 days', 'Africa/Cairo', now() + interval '2 minutes')`);
-    assert.equal(actions(A), "booking_booked,booking_rescheduled,booking_cancelled");
-    assert.equal(svc(`select string_agg(distinct actor, ',') from public.crm_activity where inquiry_id = ${lit(A)}`), "cal.com");
+    // The automatic review action is created with the booking and closed by the cancellation.
+    // Entries written in the same statement share a timestamp, so compare them as a set.
+    assert.deepEqual(actions(A).split(",").sort(), ["booking_booked", "booking_cancelled", "booking_rescheduled", "follow_up_added", "follow_up_done"]);
+    assert.equal(svc(`select string_agg(distinct actor, ',') from public.crm_activity where inquiry_id = ${lit(A)} and action like 'booking_%'`), "cal.com");
+    // The automatic review action is the system's, not a person's.
+    assert.equal(svc(`select string_agg(distinct actor, ',') from public.crm_activity where inquiry_id = ${lit(A)} and action like 'follow_up_%'`), "system");
     assert.deepEqual(Object.keys(json(`select detail from public.crm_activity where action = 'booking_booked'`)).sort(), ["start", "status"]);
   });
 

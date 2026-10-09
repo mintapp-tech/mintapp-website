@@ -49,7 +49,7 @@ describe("reads", () => {
     const list = json("select public.dashboard_inquiries()");
     assert.equal(list.length, 1);
     assert.equal(list[0].booking_status, "not_booked");
-    assert.equal(list[0].preparation_status, "queued");
+    assert.equal(list[0].preparation_status, "waiting_booking", "nothing is prepared before a booking unless someone asks");
     assert.equal(detail(B), null);
   });
 });
@@ -102,7 +102,7 @@ describe("owner, notes, retry", () => {
     const add = (action, owner, due) => svc(`select public.dashboard_add_follow_up(${lit(A)}, ${lit(action)}, ${lit(owner)}, ${due === null ? "null" : `${lit(due)}::date`}, 'omar@mintapp.tech')`);
     assert.equal(add("Send meeting questions", "adam", "2026-10-09"), "t");
     assert.equal(add("Call to confirm scope", "omar", "2026-10-07"), "t");
-    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'No owner', null, '2026-10-08'::date, 'x')`), /null value in column "owner"/);
+    assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'No owner', null, '2026-10-08'::date, 'x')`), /inquiry_follow_ups_owner_required/, "a follow-up a person adds always has one responsible person");
     assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'No date', 'omar', null, 'x')`), /null value in column "due_on"/);
     assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, 'Two people', 'omar,adam', '2026-10-08'::date, 'x')`), /inquiry_follow_ups_owner_shape/);
     assert.match(db.psqlExpectError(`set role service_role; select public.dashboard_add_follow_up(${lit(A)}, '   ', 'omar', '2026-10-08'::date, 'x')`), /inquiry_follow_ups_action_length/);
@@ -141,6 +141,7 @@ describe("prepare one inquiry now", () => {
   test("claims only that inquiry's waiting job, even before its retry time, and not while paused", () => {
     insertInquiry(A);
     insertInquiry(B);
+    svc(`select public.dashboard_retry_preparation(${lit(B)})`);
     db.psql(`update public.inquiry_preparations set status = 'retry_scheduled', attempts = 1, next_attempt_at = now() + interval '1 hour' where inquiry_id = ${lit(A)}`);
     assert.equal(svc(`select string_agg(inquiry_id::text || ':' || attempts, ',') from public.claim_preparation_job_for('mock', ${lit(A)}, 300)`), `${A}:2`);
     assert.equal(prep(B).status, "queued", "other inquiries are untouched");
@@ -169,7 +170,8 @@ describe("login throttling", () => {
 describe("one inquiry, end to end through the real booking functions", () => {
   test("prepared without a booking; then booked, rescheduled, cancelled, a generator failure and manual recovery: nothing is lost", () => {
     insertInquiry(A);
-    // Prepared with no booking at all (mock content stands in for any generator).
+    // Prepared with no booking at all, because someone chose "Prepare now" (mock content stands in for any generator).
+    svc(`select public.dashboard_retry_preparation(${lit(A)})`);
     svc(`select * from public.claim_preparation_jobs('mock', 1, 300)`);
     assert.equal(svc(`select public.complete_preparation(${lit(A)}, '{"summary":"[MOCK] prepared"}', 'mock', 'mock-v1')`), "1");
     svc(`select public.dashboard_add_note(${lit(A)}, 'omar@mintapp.tech', 'Looks like a good fit')`);

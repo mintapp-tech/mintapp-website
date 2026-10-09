@@ -109,7 +109,7 @@ export async function startCluster() {
           delete from public.generation_usage; delete from public.automation_control; delete from public.admin_auth_throttle;
           do $$ begin
             if to_regclass('public.crm_contacts') is not null then
-              delete from public.crm_contacts; delete from public.crm_companies; delete from public.crm_activity;
+              delete from public.crm_contacts; delete from public.crm_companies; delete from public.crm_activity; delete from public.crm_prospects;
             end if;
           end $$;`);
 

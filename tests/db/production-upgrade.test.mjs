@@ -34,6 +34,8 @@ const RELEASE_1 = [
   "20261013000000_add_crm_outreach.sql",
   "20261014000000_add_crm_reads.sql",
 ];
+// The corrected two-founder workflow, after Release 1.
+const TWO_FOUNDER = ["20261015000000_add_two_founder_workflow.sql", "20261016000000_add_two_founder_reads.sql"];
 const ROLLBACK_DIR = join(process.cwd(), "supabase", "rollback");
 
 // The SQL in the launch runbook is run here, so the document cannot drift from the database.
@@ -99,7 +101,7 @@ after(() => db?.stop());
 describe("the chain used here is the one production has", () => {
   test("the CRM migrations are exactly the ones not yet applied, and nothing else is pending or excluded by accident", () => {
     const onDisk = readdirSync(join(process.cwd(), "supabase", "migrations")).filter((f) => f.endsWith(".sql")).sort();
-    assert.deepEqual([...PRODUCTION_BEFORE, ...CRM, ...RELEASE_1].sort(), onDisk, "supabase/migrations changed: update the runbook and this rehearsal");
+    assert.deepEqual([...PRODUCTION_BEFORE, ...CRM, ...RELEASE_1, ...TWO_FOUNDER].sort(), onDisk, "supabase/migrations changed: update the runbook and this rehearsal");
   });
   test("the runbook's pre-check queries run and show the documented pre-launch state", () => {
     preChecks = lines(db.psql(runbookSql("## 4. Pre-checks")));
@@ -303,6 +305,62 @@ describe("CRM Release 1, applied on top of Operations/CRM v1, file by file", () 
   });
 });
 
+describe("the two-founder workflow, applied on top of Release 1, file by file", () => {
+  let preWorkflow;
+  let booked;
+  before(() => {
+    preWorkflow = inquiryFingerprint();
+    booked = db.psql("select string_agg(id::text, ',' order by id) from public.project_inquiries where deleted_at is null and booking_status = 'booked' and meeting_start_at > now()").split(",").filter(Boolean);
+    for (const file of TWO_FOUNDER) db.applyMigration(file);
+  });
+
+  test("existing inquiries are exactly as they were", () => {
+    assert.equal(inquiryFingerprint(), preWorkflow);
+  });
+
+  test("every booked meeting still ahead gets one review action, due the day before, with no owner until one is set", () => {
+    assert.ok(booked.length >= 1, "the rehearsal has a booked meeting ahead");
+    for (const b of booked) {
+      assert.equal(db.psql(`select count(*) || '|' || coalesce(max(owner), 'none') || '|' || (max(due_on) = public.pack_review_due(max(i.meeting_start_at)))::text
+                            from public.inquiry_follow_ups f join public.project_inquiries i on i.id = f.inquiry_id where f.inquiry_id = ${lit(b)} and f.kind = 'pack_review' and f.done_at is null`), "1|none|true");
+    }
+    assert.equal(count("select count(*) from public.inquiry_follow_ups where kind = 'pack_review'"), booked.length, "only for meetings still ahead");
+  });
+
+  test("existing manual jobs stay manual; nothing is queued for an inquiry without a booking", () => {
+    assert.equal(count("select count(*) from public.inquiry_preparations where status = 'manual'"), before_.rows, "the pre-launch inquiries' backfilled jobs");
+    assert.equal(count("select count(*) from public.inquiry_preparations p join public.project_inquiries i on i.id = p.inquiry_id where p.status in ('queued', 'retry_scheduled') and i.booking_status <> 'booked'"), 0);
+    assert.equal(count("select count(*) from public.preparation_drafts where artifact <> 'note'"), 0, "earlier drafts are labelled 'note'");
+  });
+
+  test("a new public inquiry waits for a booking; booking it queues the pack and creates the action", () => {
+    const fresh = id(94);
+    svc(`insert into public.project_inquiries (id, full_name, email, project_description, preferred_language, consent_given, consent_at, budget_range, timeline, company_url)
+         values (${lit(fresh)}, 'Form Client', 'form@example.com', 'Submitted after the workflow.', 'en', true, now(), 'Not sure yet', 'Within 3 months', 'https://acme.example.com/')`);
+    assert.equal(db.psql(`select status from public.inquiry_preparations where inquiry_id = ${lit(fresh)}`), "waiting_booking");
+    svc(`select public.apply_booking_created(${lit(fresh)}, 'tf-1', now() + interval '6 days', 'Africa/Cairo', now())`);
+    assert.equal(db.psql(`select status from public.inquiry_preparations where inquiry_id = ${lit(fresh)}`), "queued");
+    assert.equal(count(`select count(*) from public.inquiry_follow_ups where inquiry_id = ${lit(fresh)} and kind = 'pack_review' and done_at is null`), 1);
+    db.psql(`delete from public.crm_activity where inquiry_id = ${lit(fresh)}; delete from public.inquiry_follow_ups where inquiry_id = ${lit(fresh)}; delete from public.inquiry_preparations where inquiry_id = ${lit(fresh)}; delete from public.project_inquiries where id = ${lit(fresh)}`);
+  });
+
+  test("the public roles can read none of the new tables and run none of the new functions", () => {
+    for (const role of ["anon", "authenticated"]) {
+      assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.crm_settings`), /permission denied/);
+      for (const call of ["public.crm_command_centre(current_date)", "public.lead_list('{}')", `public.lead_detail(${lit(BOOKED)})`, "public.growth_prospect_list()", `public.pack_latest(${lit(BOOKED)})`]) {
+        assert.match(db.psqlExpectError(`set role ${role}; select ${call}`), /permission denied/, `${role} ${call}`);
+      }
+    }
+  });
+
+  test("applying it a second time changes nothing and creates no second action", () => {
+    const actions = count("select count(*) from public.inquiry_follow_ups");
+    for (const file of TWO_FOUNDER) db.applyMigration(file);
+    assert.equal(count("select count(*) from public.inquiry_follow_ups"), actions);
+    assert.equal(inquiryFingerprint(), preWorkflow);
+  });
+});
+
 describe("recovery scripts", () => {
   test("script 1 stops new jobs and keeps all data; an inquiry submitted afterwards still saves", () => {
     const jobs = count("select count(*) from public.inquiry_preparations");
@@ -322,7 +380,11 @@ describe("recovery scripts", () => {
   });
 
   test("script 2 removes everything the CRM added, and the database is exactly what it was before the launch", () => {
-    // Release 1 comes off first (its own script), then v1.
+    // The two-founder workflow comes off first, then Release 1 (its own script), then v1.
+    applyRollback("04_remove_two_founder_workflow.sql");
+    assert.equal(count("select count(*) from information_schema.tables where table_schema = 'public' and table_name = 'crm_settings'"), 0);
+    assert.equal(count("select count(*) from information_schema.columns where table_schema = 'public' and table_name in ('inquiry_follow_ups', 'preparation_drafts') and column_name in ('kind', 'artifact')"), 0);
+    assert.equal(count("select count(*) from public.inquiry_preparations where status = 'waiting_booking'"), 0);
     applyRollback("03_remove_crm_release_1.sql");
     assert.equal(count("select count(*) from information_schema.tables where table_schema = 'public' and (table_name like 'crm\_%' or table_name in ('inquiry_crm', 'admin_auth_throttle'))"), 0);
     assert.equal(count("select count(*) from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and (p.proname like 'crm\_%' or p.proname like 'admin\_auth\_%')"), 0);
@@ -347,7 +409,7 @@ describe("recovery scripts", () => {
   });
 
   test("after a full removal the launch can be done again from the same files", () => {
-    for (const file of [...CRM, ...RELEASE_1]) db.applyMigration(file);
+    for (const file of [...CRM, ...RELEASE_1, ...TWO_FOUNDER]) db.applyMigration(file);
     assert.equal(count("select count(*) from public.inquiry_preparations"), count("select count(*) from public.project_inquiries"));
     assert.equal(count("select count(*) from public.inquiry_preparations where status = 'manual'"), count("select count(*) from public.project_inquiries"));
   });
