@@ -28,7 +28,9 @@ export const estimatePromptTokens = (text: string) => Math.ceil(text.length / 2)
 const fail = (failure: GenerationFailure, extra: Partial<Extract<GenerationResult, { ok: false }>> = {}): GenerationResult => ({
   ok: false,
   failure,
-  retryable: ["timeout", "rate_limited", "provider_error", "provider_unreachable", "malformed_response", "invalid_output", "truncated"].includes(failure),
+  // A cut-off answer is not retried: the same request is likely to be cut off again
+  // and would spend the free allowance twice. Quota, key and model problems pause.
+  retryable: ["timeout", "rate_limited", "provider_error", "provider_unreachable", "malformed_response", "invalid_output"].includes(failure),
   pauseAutomation: ["quota_exhausted", "auth_failed", "model_unavailable"].includes(failure),
   ...extra,
 });

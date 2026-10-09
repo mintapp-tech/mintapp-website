@@ -117,7 +117,70 @@ destinations (their addresses redirect), and technical status names on the dashb
    until set, such an action is shown as *Needs an owner*.
 3. **Review deadline**: the day before the meeting. One constant; change on request.
 
-## 6. Later in this document
+## 6. The Pre-meeting Pack
+
+One generation (or one manual paste) returns one strict JSON object
+(`src/lib/pack/schema.ts`), validated before anything is saved, then split into three
+artifacts stored as versions in `preparation_drafts`:
+
+| Artifact | Content |
+| --- | --- |
+| Initial design (`design`) | pattern id, audience, primary goal, information hierarchy, responsive notes, brand context, 2-4 screens (template id + short text slots), user flow |
+| Draft proposal (`proposal`) | understanding, recommended solution, first-release scope, phases, deliverables, assumptions, exclusions, what affects cost or schedule, next step. Always shown under *Initial draft for discussion — not a final quote or commitment.* |
+| Discovery pack (`discovery`) | client facts (each quoting the brief), assumptions, missing information, questions with their purpose, risks, decisions the client must take, meeting agenda, what to confirm before scope and pricing |
+
+Rejected before saving: unknown keys, a fact whose evidence is not in the brief, any
+figure the client did not state, a promise or guarantee (English or Arabic), a pattern
+or template outside the library, a pattern that contradicts the client's project type,
+fewer than two screens, a flow through screens that do not exist. A brief no pattern
+fits gets `pattern: null` and a reason: the design is then made by hand and the pack
+shows *Needs manual action*. Each artifact is reviewed and approved separately by the
+founder who did not write it; approving a new version supersedes only that artifact's
+earlier approval.
+
+## 7. CodeCraft (OpenAI-compatible gateway)
+
+- Adapter: `src/lib/preparation/codecraft-generator.ts` behind the `PreparationGenerator`
+  interface; JSON mode; the key is read only on the server and never logged or returned.
+- **Off by default.** Real inquiries also need `CODECRAFT_CLIENT_DATA_APPROVED=true`,
+  which is not set anywhere.
+- Failure handling: 402, "insufficient / quota / balance / credit / allowance" wording,
+  401/403 and unknown model pause automation (no retry) and the pack shows *Needs manual
+  action*; timeouts, 429 (with Retry-After), 5xx and malformed output are retried with
+  increasing delays, at most 3 attempts; a cut-off answer is not retried. The inquiry
+  and the booking never wait for any of it.
+- Budget: the app's monthly limit (default 600,000 tokens, never above 1,000,000) is
+  checked before every request against the worst case (prompt estimate plus the output
+  limit). Usage is recorded as counts with the model id.
+- Output limit: `PREPARATION_MAX_OUTPUT_TOKENS`, default 10,000. Reasoning models count
+  hidden reasoning as completion tokens; see the evaluation below.
+- Audit: the exact sanitised input sent (brief, prompt version, model, language, project
+  type) is stored in `inquiry_preparations.last_payload` and shown on the pack tab.
+
+### Model discovery and synthetic evaluation (10 Oct 2026)
+
+`GET /v1/models` returned 33 models, every one advertising `json_mode` (most also
+reasoning, tools, vision), with per-1k pricing metadata. Evaluated on synthetic briefs
+only (`src/lib/preparation/eval.live.test.ts`), hard cap 60,000 tokens:
+
+| Call | Model | Result | Tokens |
+| --- | --- | --- | --- |
+| English clinic brief, 6,000 output limit | `claude-sonnet-5` | provider 5xx after 34 s | 9,111 counted (worst case; not reported) |
+| Diagnostic, same brief | `claude-sonnet-5` | cut off at 6,000 completion tokens | 7,652 |
+| Five one-line pings (JSON mode, reasoning overhead) | four models | all valid | 3,196 |
+| English clinic brief, 8,192 output limit | `claude-sonnet-5` | cut off again | 9,844 |
+| English clinic brief | **`gemini-3.7-flash`** | valid pack, all checks pass, 4/4 expected facts, `scheduling_app` | 6,139 |
+| Arabic school brief | **`gemini-3.7-flash`** | valid pack, all checks pass, 4/4 expected facts, `academy_site` | 9,410 |
+| **Total** | | | **45,352 (at most)** |
+
+Selected exact model id: **`gemini-3.7-flash`** (context 1,048,576; reasoning, vision,
+tools, JSON mode). The Arabic output is fluent Modern Standard Arabic, with facts quoting
+the brief and no invented figures; its completion used 7,701 tokens, close to the old
+8,192 limit, hence the 10,000 default. Pricing metadata is returned per 1k tokens; the
+free allowance and the gateway's data retention are not documented by the API and are
+not assumed.
+
+## 8. Later in this document
 
 Sections for the pack schema, CodeCraft, privacy, the renderer, failure recovery,
 migrations and rollback are added as each milestone lands.

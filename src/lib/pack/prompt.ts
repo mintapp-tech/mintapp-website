@@ -58,6 +58,7 @@ export function packSystemPrompt(language: "en" | "ar"): string {
     '- "brand_context": say what brand material the brief mentions; if none, say so. Do not invent a brand.',
     '- "proposal" is an internal first draft for discussion, not a quote or commitment: modest, tied to the brief, with what affects cost or schedule listed in "cost_schedule_factors" (factors only, no figures).',
     '- "discovery_questions": 3 to 10 specific questions, each with its purpose. "meeting_agenda": 2 to 8 items. "confirm_before_pricing": what must be confirmed before final scope and pricing.',
+    "- Be concise: short, plain sentences and the fewest list items that cover the brief. The whole object should stay well under 1,200 words.",
     "- This is internal. Do not address the client and never include contact details.",
     "Pattern catalogue:",
     catalogueText(),

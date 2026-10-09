@@ -164,6 +164,11 @@ describe("CodeCraft adapter", () => {
     expect(await adapter(respond(200, body) as unknown as typeof fetch).generate(input)).toMatchObject({ ok: false, failure });
   });
 
+  test("a cut-off answer is not retried (it would spend the allowance twice) and does not pause automation", async () => {
+    const body = completion("{", { choices: [{ message: { content: "{" }, finish_reason: "length" }] });
+    expect(await adapter(respond(200, body) as unknown as typeof fetch).generate(input)).toMatchObject({ failure: "truncated", retryable: false, pauseAutomation: false });
+  });
+
   test("missing usage is estimated conservatively and marked as not reported", async () => {
     const result = await adapter(respond(200, { choices: [{ message: { content: JSON.stringify(baseDraft()) }, finish_reason: "stop" }] }) as unknown as typeof fetch).generate(input);
     expect(result.ok && result.usage.reported).toBe(false);
