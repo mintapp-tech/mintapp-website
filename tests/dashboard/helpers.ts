@@ -6,7 +6,8 @@ import { totp } from "../admin/totp.mjs";
 // auth service is the local test stand-in (scripts/admin-local.mjs).
 
 const secrets = new Map<string, string>();
-export const PASSWORD = "local-demo-password-for-tests-only";
+// Live runs (REAL Supabase Auth in the synthetic review project) get a random password per run.
+export const PASSWORD = process.env.ADMIN_AUTH_LIVE === "1" ? (process.env.DASHBOARD_DEMO_PASSWORD ?? "") : "local-demo-password-for-tests-only";
 
 export async function signInAs(browser: Browser, email: string, origin: string): Promise<Page> {
   const context = await browser.newContext();

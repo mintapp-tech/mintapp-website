@@ -56,3 +56,4 @@ next-env.d.ts
 # screenshots (some show authenticator setup for synthetic accounts)
 /.next-admin/
 /review/
+/review-evidence/

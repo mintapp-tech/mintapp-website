@@ -11,6 +11,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:dashboard": "node scripts/run-dashboard-tests.mjs",
+    "test:review-live": "node --env-file=.env.review.local scripts/run-review-live-tests.mjs",
+    "review:verify": "node --env-file=.env.review.local scripts/review-verify.mjs",
     "test:build": "node --test --test-concurrency=1 --test-timeout=900000 \"tests/build/*.test.mjs\"",
     "test:db": "node --test --test-concurrency=1 \"tests/db/*.test.mjs\"",
     "check:commits": "node scripts/check-commits.mjs",

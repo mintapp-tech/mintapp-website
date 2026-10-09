@@ -9,8 +9,13 @@ import { defineConfig, devices } from "@playwright/test";
 //   npm run test:dashboard   (runs this after playwright.dashboard.config.ts)
 
 export const AUTH_DEMO_PORT = 3202;
-export const AUTH_DEMO_PASSWORD = "local-demo-password-for-tests-only";
-export const ACCOUNTS = { omar: "omar.demo@mintapp.local", adam: "adam.demo@mintapp.local", outsider: "outsider.demo@mintapp.local" };
+// With ADMIN_AUTH_LIVE=1 (scripts/run-review-live-tests.mjs) the same tests run against REAL
+// Supabase Auth in the isolated synthetic review project, with a random password per run.
+export const LIVE = process.env.ADMIN_AUTH_LIVE === "1";
+export const AUTH_DEMO_PASSWORD = LIVE ? (process.env.DASHBOARD_DEMO_PASSWORD ?? "") : "local-demo-password-for-tests-only";
+export const ACCOUNTS = LIVE
+  ? { omar: "omar.review@example.com", adam: "adam.review@example.com", outsider: "outsider.review@example.com" }
+  : { omar: "omar.demo@mintapp.local", adam: "adam.demo@mintapp.local", outsider: "outsider.demo@mintapp.local" };
 
 export default defineConfig({
   testDir: "./tests/dashboard",
