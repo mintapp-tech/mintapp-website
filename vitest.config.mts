@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     // Vitest already sets NODE_ENV=test by default when unset; asserted
     // explicitly here because the real-email fail-safe (email-sending-mode.ts)
     // and the Turnstile dummy-key relaxation both key safety-critical
