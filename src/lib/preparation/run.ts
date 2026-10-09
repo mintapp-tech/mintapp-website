@@ -20,6 +20,20 @@ export async function runConfiguredPreparation(limit = 3, env: Env = process.env
   return { ran: true, summary };
 }
 
+// Best-effort start right after a booking: the database trigger has just queued
+// this inquiry's pack. Never throws, never delays the webhook (it runs after the
+// response); if it fails or generation is off, the pack is prepared by hand or by
+// the scheduled worker. Logs a category only.
+export async function kickPreparationAfterBooking(inquiryId: string, env: Env = process.env): Promise<void> {
+  try {
+    const selection = selectGenerator(env);
+    if (!selection.enabled) return;
+    await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: selection.generator, monthlyTokenBudget: selection.monthlyTokenBudget, inquiryId });
+  } catch {
+    console.error("preparation_kick_failed");
+  }
+}
+
 // Best-effort start right after a submission. The job already exists (it is
 // created with the inquiry), so if this fails or is skipped, the scheduled
 // worker still picks it up. Never throws; logs a category only.

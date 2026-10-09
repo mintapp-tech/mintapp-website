@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
+import { kickPreparationAfterBooking } from "@/lib/preparation/run";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { getSupabaseServerClient } from "@/lib/supabase-server";
 import { getCalEventTypeId, getCalEventTypeSlug, getCalWebhookSecret } from "@/lib/cal-config";
@@ -212,6 +213,9 @@ export async function POST(request: NextRequest) {
       }),
     );
     if (result === "no_match") await noteDuplicateActiveBooking(context.inquiryId, payload.uid);
+    // The booking just queued this inquiry's Pre-meeting Pack (a database trigger).
+    // Start it after the response; the webhook's answer never waits for it.
+    if (result === "applied") after(() => kickPreparationAfterBooking(context.inquiryId));
     return resultResponse(result);
   }
 

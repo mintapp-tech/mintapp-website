@@ -8,6 +8,16 @@ const EVENT_TYPE_ID = 6790027;
 const SLUG = "mintapp-discovery-call";
 const INQUIRY_ID = "e8e7d808-9556-45b8-beae-49f852e98be9";
 
+// next/server's after() needs a real Next.js request context; captured here so a
+// test can see what the webhook schedules after its response.
+const afterCallbacks: Array<() => unknown> = [];
+vi.mock("next/server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("next/server")>();
+  return { ...actual, after: (cb: () => unknown) => void afterCallbacks.push(cb) };
+});
+const kickPreparationAfterBooking = vi.fn(async () => {});
+vi.mock("@/lib/preparation/run", () => ({ kickPreparationAfterBooking: (...args: unknown[]) => kickPreparationAfterBooking(...(args as [])) }));
+
 const getCalEventTypeId = vi.fn(() => EVENT_TYPE_ID);
 const getCalEventTypeSlug = vi.fn(() => SLUG);
 const getCalWebhookSecret = vi.fn(() => WEBHOOK_SECRET);
@@ -551,5 +561,25 @@ describe("BOOKING_CREATED — a second, different booking for an inquiry that al
     isDuplicateActiveBooking.mockRejectedValue(new Error("db down"));
     const res = await postCreated();
     expect(res.status).toBe(200);
+  });
+});
+
+describe("BOOKING_CREATED — the Pre-meeting Pack is started after the response, never before it", () => {
+  test("an applied booking schedules preparation for that inquiry; anything else schedules nothing", async () => {
+    for (const [result, expected] of [["applied", 1], ["no_match", 0], ["conflict", 0], ["internal_error", 0]] as const) {
+      afterCallbacks.length = 0;
+      kickPreparationAfterBooking.mockClear();
+      applyBookingCreated.mockResolvedValue(result);
+      isDuplicateActiveBooking.mockResolvedValue(false);
+      const body = baseCreatedPayload();
+      (body.payload as Record<string, unknown>).metadata = { bookingContext: validContext() };
+      const res = await POST(makeRequest(body));
+      expect(res.status, result).toBe(result === "internal_error" ? 502 : 200);
+      expect(afterCallbacks.length, result).toBe(expected);
+      expect(kickPreparationAfterBooking, result).not.toHaveBeenCalled();
+      for (const cb of afterCallbacks) await cb();
+      expect(kickPreparationAfterBooking.mock.calls.length, result).toBe(expected);
+      if (expected) expect(kickPreparationAfterBooking).toHaveBeenCalledWith(INQUIRY_ID);
+    }
   });
 });
