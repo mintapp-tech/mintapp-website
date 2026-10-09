@@ -38,6 +38,7 @@ export const inquirySchema = z.object({
   utmSource: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   utmMedium: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   utmCampaign: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
+  utmContent: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
 });
 
 export type InquiryInput = z.infer<typeof inquirySchema>;

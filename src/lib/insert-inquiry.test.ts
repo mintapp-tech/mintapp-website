@@ -132,4 +132,21 @@ describe("insertInquiry: project type", () => {
     expect(result).toEqual({ status: "duplicate", id: "already-there" });
     expect(payloads).toHaveLength(1);
   });
+  test("the campaign content identifier is stored when the visitor came from a tracked link, and only then", async () => {
+    const { payloads, client } = recordingSupabase([{ error: null }, { error: null }]);
+    await insertInquiry(client, { ...inquiryBody, utmContent: "flagship_en" });
+    await insertInquiry(client, inquiryBody);
+    expect(payloads[0].utm_content).toBe("flagship_en");
+    expect(payloads[1]).not.toHaveProperty("utm_content");
+  });
+
+  test("a database without the utm_content column still stores the inquiry, without it", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { payloads, client } = recordingSupabase([{ error: { code: "PGRST204", message: "Could not find the 'utm_content' column of 'project_inquiries' in the schema cache" } }, { error: null }]);
+    const result = await insertInquiry(client, { ...inquiryBody, utmContent: "flagship_en" });
+    expect(result).toEqual({ status: "inserted", id: "new-id" });
+    expect(payloads).toHaveLength(2);
+    expect(payloads[1]).not.toHaveProperty("utm_content");
+    log.mockRestore();
+  });
 });

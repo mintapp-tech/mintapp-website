@@ -29,6 +29,9 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
       utm_source: body.utmSource || null,
       utm_medium: body.utmMedium || null,
       utm_campaign: body.utmCampaign || null,
+      // Added by the CRM migration; sent only when the visitor came from a
+      // tracked link, so a database without the column is unaffected otherwise.
+      ...(body.utmContent ? { utm_content: body.utmContent } : {}),
       // Only an explicit choice on the form is stored; a missing value stays
       // null ("not provided") and is never inferred from the brief.
       ...(body.projectType ? { project_type: body.projectType } : {}),
@@ -49,6 +52,13 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
     if (insertError.code === "23514" && body.projectType && insertError.message.includes("project_type_values")) {
       console.error("project_type_rejected_by_database: stored the inquiry without it");
       return insertInquiry(supabase, { ...body, projectType: undefined });
+    }
+    // Same safety net for the campaign content identifier (utm_content): a
+    // database that has not yet had the CRM migration lacks the column. The
+    // inquiry matters more than that one tracking value, so keep it without it.
+    if (body.utmContent && /utm_content/.test(insertError.message)) {
+      console.error("utm_content_rejected_by_database: stored the inquiry without it");
+      return insertInquiry(supabase, { ...body, utmContent: undefined });
     }
     if (insertError.code === "23505") {
       // Unique-violation on submission_token: this exact submission was

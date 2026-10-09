@@ -43,7 +43,8 @@ function readUtmParams() {
   const utmSource = params.get("utm_source")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
   const utmMedium = params.get("utm_medium")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
   const utmCampaign = params.get("utm_campaign")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
-  return { utmSource, utmMedium, utmCampaign };
+  const utmContent = params.get("utm_content")?.slice(0, INQUIRY_LIMITS.utmMax) || undefined;
+  return { utmSource, utmMedium, utmCampaign, utmContent };
 }
 
 export default function StartExperience() {
