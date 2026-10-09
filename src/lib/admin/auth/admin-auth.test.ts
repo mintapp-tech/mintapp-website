@@ -14,15 +14,14 @@ const TEAM = JSON.stringify([
 ]);
 const SECRET = "s".repeat(40);
 const SUPABASE = { SUPABASE_URL: "https://example.supabase.co", SUPABASE_PUBLISHABLE_KEY: "pk", ADMIN_TEAM: TEAM, ADMIN_SESSION_SECRET: SECRET };
-const DEMO = { ADMIN_AUTH: "demo", DASHBOARD_DEMO: "1", DASHBOARD_LOCAL_PG_PORT: "5999" };
+// Settings of the removed local demo login: they must open nothing.
+const RETIRED = { ADMIN_AUTH: "demo", DASHBOARD_DEMO: "1", DASHBOARD_LOCAL_PG_PORT: "5999", TEAM_ACCOUNTS: "[]" };
 
 describe("sign-in mode", () => {
-  test("deployments use Supabase Auth; the custom demo login never runs in a production build", () => {
+  test("Supabase Auth is the only sign-in; the retired demo settings open nothing", () => {
     expect(authMode({ ...SUPABASE, NODE_ENV: "production" })).toBe("supabase");
-    expect(authMode({ ...DEMO, NODE_ENV: "development" })).toBe("demo");
-    // Demo settings in production close sign-in rather than enabling the demo login.
-    expect(authMode({ ...DEMO, ...SUPABASE, NODE_ENV: "production" })).toBe("off");
-    expect(authMode({ ADMIN_AUTH: "demo", NODE_ENV: "development" })).toBe("off");
+    expect(authMode({ ...RETIRED, NODE_ENV: "development" })).toBe("off");
+    expect(authMode({ ...RETIRED, NODE_ENV: "production" })).toBe("off");
   });
 
   test("incomplete Supabase settings close sign-in", () => {
@@ -238,9 +237,9 @@ describe("admin state (Supabase mode)", () => {
     await expect(loginAction({ error: null }, form("omar@mintapp.tech"))).rejects.toThrow("REDIRECT:/login/mfa");
   });
 
-  test("a production build with demo settings never accepts the custom login", async () => {
+  test("the retired demo settings never accept a sign-in", async () => {
     vi.unstubAllEnvs();
-    for (const [k, v] of Object.entries({ ...DEMO, NODE_ENV: "production", TEAM_ACCOUNTS: "[]", DASHBOARD_SESSION_SECRET: SECRET })) vi.stubEnv(k, v);
+    for (const [k, v] of Object.entries({ ...RETIRED, NODE_ENV: "development" })) vi.stubEnv(k, v);
     const { loginAction } = await import("@/app/(admin)/login/actions");
     const f = new FormData();
     f.set("email", "omar.demo@mintapp.local");

@@ -1,20 +1,15 @@
--- SYNTHETIC REVIEW DATABASE ONLY. Never apply to the live (production) database.
+-- TEST FIXTURE: SYNTHETIC DATA ONLY. Never apply to the live (production) database.
 --
--- Invented inquiries for reviewing the admin application, in English and
+-- Invented inquiries for testing the admin application, in English and
 -- Arabic. Project types follow the public form: web_app and website are
--- explicit choices, not_sure is the form's "Not sure yet" (it needs migration
--- 20261004000000), and one inquiry has none, like every inquiry sent before
--- the form asked. Used by the local demo (scripts/dashboard-demo.mjs) and by the
--- isolated review project. Safe to re-run: it also REPAIRS these rows.
+-- explicit choices, not_sure is the form's "Not sure yet", and one inquiry has
+-- none, like every inquiry sent before the form asked. Used by the local admin
+-- server (scripts/admin-local.mjs) and the browser tests only; it is not
+-- product data and is never part of supabase/migrations/.
 --
 -- THIS FILE MUST STAY ASCII-ONLY. Arabic is written as Postgres Unicode
 -- escapes (U&'...' with backslash-hex codes), so no code page, clipboard or
--- terminal pipe can re-encode it on the way in. Pasting readable Arabic
--- through the Windows clipboard once stored mojibake in the review project.
--- Do not paste Arabic here: src/lib/review-seed.test.ts fails unless the text
--- decodes to exactly the right words.
--- Apply it with `npm run review:seed`, or by opening the file in an editor and
--- copying from there. Never use `git show ... | clip` for SQL.
+-- terminal pipe can re-encode it on the way in.
 
 insert into public.project_inquiries (id, full_name, email, preferred_language, project_type, budget_range, timeline, country, project_description, consent_given, consent_at)
 values

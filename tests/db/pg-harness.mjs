@@ -14,9 +14,6 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const MIGRATIONS_DIR = join(process.cwd(), "supabase", "migrations");
-// SQL for the local synthetic demo only (its custom team login); never part
-// of a remote migration. Applied after the migrations where needed.
-const LOCAL_DEMO_DIR = join(process.cwd(), "supabase", "local-demo");
 const exe = process.platform === "win32" ? ".exe" : "";
 
 function findPgBin() {
@@ -102,9 +99,6 @@ export async function startCluster() {
   const applyFile = (path) =>
     execFileSync(bin("psql"), ["-h", "127.0.0.1", "-p", String(port), "-U", "postgres", "-d", "postgres", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-f", path], { stdio: ["ignore", "pipe", "pipe"] });
   const applyMigration = (file) => applyFile(join(MIGRATIONS_DIR, file));
-  const applyLocalDemo = () => {
-    for (const file of readdirSync(LOCAL_DEMO_DIR).filter((f) => f.endsWith(".sql")).sort()) applyFile(join(LOCAL_DEMO_DIR, file));
-  };
 
   psql("create role anon nologin; create role authenticated nologin; create role service_role nologin bypassrls;");
   const migrations = readdirSync(MIGRATIONS_DIR).filter((f) => f.endsWith(".sql")).sort();
@@ -117,7 +111,7 @@ export async function startCluster() {
     }
   };
 
-  return { port, psql, psqlExpectError, psqlAsync, applyFile, applyMigration, applyLocalDemo, migrations, stop };
+  return { port, psql, psqlExpectError, psqlAsync, applyFile, applyMigration, migrations, stop };
 }
 
 export const lit = (v) => (v === null || v === undefined ? "null" : `'${String(v).replace(/'/g, "''")}'`);

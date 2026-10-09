@@ -1,8 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { currentTeamMember } from "@/lib/team-auth/guard";
-import { authMode, findMember, supabaseAuthConfig, type TeamMember } from "./config";
+import { findMember, supabaseAuthConfig, type TeamMember } from "./config";
 import { ACTIVITY_COOKIE, checkActivity } from "./activity";
 import { createAuthClient, tokenClaims } from "./supabase-client";
 
@@ -40,15 +39,8 @@ export async function serverAuthClient() {
 }
 
 export async function adminState(): Promise<AdminState> {
-  const mode = authMode();
-  if (mode === "off") return { status: "off" };
-  if (mode === "demo") {
-    const session = await currentTeamMember();
-    const member = session ? findMember(session.email) : null;
-    return member ? { status: "ok", member } : { status: "signed_out" };
-  }
-
-  const config = supabaseAuthConfig()!;
+  const config = supabaseAuthConfig();
+  if (!config) return { status: "off" };
   const client = await serverAuthClient();
   try {
     const {

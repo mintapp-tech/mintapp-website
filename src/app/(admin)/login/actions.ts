@@ -1,19 +1,15 @@
 "use server";
 
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { getSqlGateway } from "@/lib/sql-gateway";
-import { attemptLogin } from "@/lib/team-auth/login";
-import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS, SESSION_TTL_SECONDS, createSessionToken, sessionIdHash, verifySessionToken } from "@/lib/team-auth/session";
 import { authMode, findMember, supabaseAuthConfig } from "@/lib/admin/auth/config";
 import { ACTIVITY_COOKIE, ACTIVITY_COOKIE_OPTIONS, activityToken } from "@/lib/admin/auth/activity";
 import { adminState, serverAuthClient } from "@/lib/admin/auth/state";
 import { AUTH_COOKIE, tokenClaims } from "@/lib/admin/auth/supabase-client";
 
 // Sign-in for the admin application.
-//   Supabase Auth (every deployment): password, then a required
-//   authenticator-app code; only allowlisted emails are let through.
-//   Demo (local synthetic demo only): the custom team login.
+//   Supabase Auth: password, then a required authenticator-app code; only
+//   allowlisted emails are let through.
 
 export type LoginError = "invalid" | "locked" | "notConfigured" | "unavailable";
 export type LoginState = { error: LoginError | null };
@@ -23,7 +19,6 @@ export async function loginAction(_previous: LoginState, form: FormData): Promis
   const password = String(form.get("password") ?? "");
   const mode = authMode();
   if (mode === "off") return { error: "notConfigured" };
-  if (mode === "demo") return demoLogin(email, password);
 
   const client = await serverAuthClient();
   try {
@@ -105,20 +100,6 @@ async function endSession(everywhere: boolean) {
     }
     for (const c of jar.getAll()) if (c.name.startsWith(AUTH_COOKIE)) jar.set(c.name, "", { httpOnly: true, secure: true, sameSite: "strict", path: "/", maxAge: 0 });
     jar.set(ACTIVITY_COOKIE, "", { ...ACTIVITY_COOKIE_OPTIONS, maxAge: 0 });
-  } else if (mode === "demo") {
-    const session = verifySessionToken(jar.get(SESSION_COOKIE)?.value);
-    if (session) {
-      try {
-        const sql = getSqlGateway();
-        if (everywhere) await sql.call("team_sessions_revoke_all", { p_email: session.email });
-        else await sql.call("team_session_revoke", { p_sid_hash: sessionIdHash(session.sid) });
-      } catch {
-        console.error("team_session_revoke_failed");
-      }
-    }
-    // A __Host- cookie can only be replaced by a Set-Cookie with matching
-    // Secure and Path, so it is overwritten with an expired empty value.
-    jar.set(SESSION_COOKIE, "", { ...SESSION_COOKIE_OPTIONS, maxAge: 0 });
   }
   redirect("/login");
 }
@@ -129,26 +110,4 @@ export async function logoutAction() {
 
 export async function logoutEverywhereAction() {
   await endSession(true);
-}
-
-// ---------------------------------------------------------------------------
-// LOCAL DEMO ONLY: the custom team login (authMode() is "demo" only outside
-// production builds, with the local demo database).
-
-async function demoLogin(email: string, password: string): Promise<LoginState> {
-  const h = await headers();
-  const client = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || h.get("x-real-ip") || "local";
-  const sql = getSqlGateway();
-  try {
-    const result = await attemptLogin(sql, email, password, client);
-    if (!result.ok) return { error: result.reason === "not_configured" ? "notConfigured" : result.reason };
-    const session = createSessionToken({ email: result.email });
-    if (!session) return { error: "notConfigured" };
-    await sql.call("team_session_create", { p_sid_hash: sessionIdHash(session.sid), p_email: result.email, p_expires_at: session.expiresAt.toISOString() });
-    (await cookies()).set(SESSION_COOKIE, session.token, { ...SESSION_COOKIE_OPTIONS, maxAge: SESSION_TTL_SECONDS });
-  } catch {
-    console.error("team_login_failed");
-    return { error: "unavailable" };
-  }
-  redirect("/inquiries");
 }

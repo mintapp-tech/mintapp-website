@@ -4,8 +4,7 @@ import { ACCOUNTS, AUTH_DEMO_PASSWORD } from "../../playwright.admin-auth.config
 import { totp } from "../admin/totp.mjs";
 
 // Supabase Auth sign-in for the admin application, against the local test
-// stand-in or (ADMIN_AUTH_LIVE=1) real Supabase Auth in the isolated review
-// project, with synthetic accounts and data only.
+// stand-in, with synthetic accounts and data only.
 
 const OMAR = ACCOUNTS.omar;
 const ADAM = ACCOUNTS.adam;

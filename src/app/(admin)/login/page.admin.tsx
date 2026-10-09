@@ -17,7 +17,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const mode = authMode();
   const expired = (await searchParams).expired === "1" || state.status === "expired";
   return (
-    <AuthFrame locale={locale} t={t} title={t.login.title} intro={t.login.intro} footnote={mode === "demo" ? t.login.demoNote : t.login.sessionNote}>
+    <AuthFrame locale={locale} t={t} title={t.login.title} intro={t.login.intro} footnote={t.login.sessionNote}>
       {mode === "off" ? (
         <p role="alert" className="m-0 rounded-xl border border-line bg-surface-2/70 p-4 text-[14px] text-ink-soft">
           {t.login.notConfigured}

@@ -38,13 +38,6 @@ export const SQL_FUNCTIONS = {
   dashboard_review: { params: [["p_inquiry_id", "uuid"], ["p_version", "integer"], ["p_to", "text"], ["p_reviewer", "text"]] },
   dashboard_retry_preparation: { params: [["p_inquiry_id", "uuid"]] },
   dashboard_mark_manual: { params: [["p_inquiry_id", "uuid"]] },
-  team_login_locked: { params: [["p_key", "text"]] },
-  team_login_record: { params: [["p_key", "text"], ["p_success", "boolean"]] },
-  team_login_record_limited: { params: [["p_key", "text"], ["p_success", "boolean"], ["p_limit", "integer"]] },
-  team_session_create: { params: [["p_sid_hash", "text"], ["p_email", "text"], ["p_expires_at", "timestamptz"]] },
-  team_session_touch: { params: [["p_sid_hash", "text"], ["p_email", "text"], ["p_idle_seconds", "integer"]] },
-  team_session_revoke: { params: [["p_sid_hash", "text"]] },
-  team_sessions_revoke_all: { params: [["p_email", "text"]] },
   // Local demo simulations of booking webhooks (see isLocalDashboardDemo).
   apply_booking_created: { params: [["p_inquiry_id", "uuid"], ["p_uid", "text"], ["p_start_time", "timestamptz"], ["p_timezone", "text"], ["p_event_at", "timestamptz"]] },
   apply_booking_rescheduled: {

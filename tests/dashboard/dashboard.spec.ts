@@ -1,8 +1,9 @@
-import { test, expect, type Browser, type BrowserContext, type Page, type Response } from "@playwright/test";
+import { test, expect, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { DEMO_PASSWORD } from "../../playwright.dashboard.config";
+import { DEMO_PORT } from "../../playwright.dashboard.config";
+import { signInAs } from "./helpers";
 
-// Local demo data (scripts/dashboard-demo.mjs): synthetic inquiries only.
+// Synthetic fixture data (tests/fixtures/synthetic-inquiries.sql), loaded by scripts/admin-local.mjs.
 const CLINIC = "11111111-0000-4000-8000-000000000001";
 const RESTAURANT = "11111111-0000-4000-8000-000000000003";
 const CRAFTS = "11111111-0000-4000-8000-000000000004";
@@ -11,17 +12,7 @@ const ADAM = "adam.demo@mintapp.local";
 
 test.describe.configure({ mode: "serial" });
 
-async function signIn(browser: Browser, email: string): Promise<Page> {
-  const context = await browser.newContext();
-  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://localhost:3201" });
-  const page = await context.newPage();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByLabel("Password").fill(DEMO_PASSWORD);
-  await page.getByRole("button", { name: "Sign in" }).click();
-  await page.waitForURL("**/inquiries");
-  return page;
-}
+const signIn = (browser: Browser, email: string): Promise<Page> => signInAs(browser, email, `http://localhost:${DEMO_PORT}`);
 
 // The paste panel starts open when there is no draft yet; open it only if closed.
 async function openPastePanel(page: Page) {
@@ -40,11 +31,6 @@ test("inquiry data is never served without a valid team session", async ({ page,
     expect([302, 303, 307, 308]).toContain(raw.status());
     expect(await raw.text()).not.toContain("physiotherapy");
   }
-  // A forged or tampered session is rejected by the page itself, not just the proxy.
-  await page.context().addCookies([{ name: "__Host-mintapp_team", value: "eyJ2IjoxLCJlIjoib21hci5kZW1vQG1pbnRhcHAubG9jYWwifQ.forged", domain: "localhost", path: "/", secure: true, httpOnly: true, sameSite: "Strict" }]);
-  await page.goto(`/inquiries/${CLINIC}`);
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.locator("body")).not.toContainText("physiotherapy");
 });
 
 test("a wrong password is refused with a generic message", async ({ page }) => {
@@ -394,88 +380,4 @@ test("overdue follow-ups are visible in the list, the summary and the inquiry, a
   await page.goto("/inquiries");
   await expect(row(page, RESTAURANT).locator("[data-next-follow-up]")).toHaveCount(0);
   await expect(page.locator("[data-summary]").locator("div", { hasText: "Overdue follow-ups" }).locator("dd")).toHaveText("0");
-});
-
-const isLoginPost = (r: Response) => r.request().method() === "POST" && new URL(r.url()).pathname === "/login";
-const isActionPost = (r: Response) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined;
-const setCookieOf = async (r: Response) => (await r.headersArray()).filter((h) => h.name.toLowerCase() === "set-cookie").map((h) => h.value).join("\n");
-const sessionCookie = async (context: BrowserContext) => (await context.cookies()).find((c) => c.name === "__Host-mintapp_team");
-
-// Opens the dashboard in a fresh browser holding only a copy of the cookie.
-async function replay(browser: Browser, cookie: NonNullable<Awaited<ReturnType<typeof sessionCookie>>>) {
-  const context = await browser.newContext();
-  await context.addCookies([cookie]);
-  const page = await context.newPage();
-  await page.goto("/inquiries");
-  const url = page.url();
-  await context.close();
-  return url;
-}
-
-test("the session cookie is host-only, HttpOnly, Secure and SameSite=Strict; a copied cookie dies at sign-out", async ({ browser }) => {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-  await page.goto("/login");
-  await page.getByLabel("Email").fill(OMAR);
-  await page.getByLabel("Password").fill(DEMO_PASSWORD);
-  const [login] = await Promise.all([page.waitForResponse(isLoginPost), page.getByRole("button", { name: "Sign in" }).click()]);
-  await page.waitForURL("**/inquiries");
-
-  const issued = await setCookieOf(login);
-  expect(issued).toMatch(/^__Host-mintapp_team=[^;]{40,};/);
-  for (const attribute of [/; Path=\/(;|$)/, /; Max-Age=43200(;|$)/, /; Secure(;|$)/i, /; HttpOnly(;|$)/i, /; SameSite=Strict(;|$)/i]) expect(issued).toMatch(attribute);
-  expect(issued).not.toMatch(/; Domain=/i);
-  const cookie = (await sessionCookie(context))!;
-  expect(cookie).toMatchObject({ path: "/", secure: true, httpOnly: true, sameSite: "Strict" });
-  expect(cookie.expires - Date.now() / 1000).toBeGreaterThan(43_100);
-
-  // A copy works while the session is live...
-  expect(await replay(browser, cookie)).toMatch(/\/inquiries$/);
-
-  const [logout] = await Promise.all([page.waitForResponse(isActionPost), page.getByRole("button", { name: "Sign out", exact: true }).click()]);
-  await expect(page).toHaveURL(/\/login$/);
-  const cleared = await setCookieOf(logout);
-  expect(cleared).toMatch(/^__Host-mintapp_team=;/);
-  for (const attribute of [/; Path=\/(;|$)/, /; Max-Age=0(;|$)/, /; Secure(;|$)/i]) expect(cleared).toMatch(attribute);
-  expect(await sessionCookie(context)).toBeUndefined();
-
-  // ...and is refused after sign-out, because the session was revoked on the server.
-  expect(await replay(browser, cookie)).toMatch(/\/login$/);
-  await context.close();
-});
-
-test("sign out everywhere ends that person's other sessions only", async ({ browser }) => {
-  const laptop = await signIn(browser, ADAM);
-  const phone = await signIn(browser, ADAM);
-  const omar = await signIn(browser, OMAR);
-  await phone.getByRole("button", { name: "Sign out everywhere" }).click();
-  await expect(phone).toHaveURL(/\/login$/);
-  await laptop.goto("/inquiries");
-  await expect(laptop).toHaveURL(/\/login$/);
-  await omar.goto("/inquiries");
-  await expect(omar).toHaveURL(/\/inquiries$/);
-});
-
-test("repeated wrong passwords lock sign-in for that account", async ({ page }) => {
-  await page.goto("/login");
-  for (let i = 0; i < 8; i++) {
-    await page.getByLabel("Email").fill(ADAM);
-    await page.getByLabel("Password").fill(`wrong-${i}`);
-    // Wait for each attempt's server response before the next one.
-    await Promise.all([
-      page.waitForResponse((r) => r.request().method() === "POST" && new URL(r.url()).pathname === "/login"),
-      page.getByRole("button", { name: "Sign in" }).click(),
-    ]);
-    await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
-  }
-  await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
-  // Even the right password is refused while locked.
-  await page.getByLabel("Email").fill(ADAM);
-  await page.getByLabel("Password").fill(DEMO_PASSWORD);
-  // Wait for this attempt's own answer: the alert is already showing from before.
-  const [answer] = await Promise.all([page.waitForResponse(isLoginPost), page.getByRole("button", { name: "Sign in" }).click()]);
-  await answer.finished();
-  await expect(page.getByRole("button", { name: "Sign in" })).toBeEnabled();
-  await expect(page).toHaveURL(/\/login$/);
-  await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
 });

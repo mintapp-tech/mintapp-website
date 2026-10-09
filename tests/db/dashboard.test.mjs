@@ -23,7 +23,6 @@ const review = (id, version, to, who = "adam@mintapp.tech") => svc(`select publi
 before(async () => {
   db = await startCluster();
   for (const file of db.migrations) db.applyMigration(file);
-  db.applyLocalDemo();
 });
 after(() => db?.stop());
 beforeEach(() => {

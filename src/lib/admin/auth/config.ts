@@ -1,17 +1,13 @@
 import { z } from "zod";
-import { teamAccounts } from "@/lib/team-auth/accounts";
 
 // How admin sign-in works on this deployment.
 //
 //   supabase  Supabase Auth: email and password, then a required
 //             authenticator-app code; only emails in ADMIN_TEAM get in.
 //             The only sign-in for any deployed admin application.
-//   demo      The custom team login, for the isolated local synthetic demo
-//             only. Never available in a production build (NODE_ENV is
-//             "production" for `next build`/`next start` and on Vercel).
 //   off       Not configured: sign-in is closed.
 
-export type AuthMode = "supabase" | "demo" | "off";
+export type AuthMode = "supabase" | "off";
 type Env = Record<string, string | undefined>;
 
 export interface TeamMember {
@@ -74,17 +70,12 @@ export function supabaseAuthConfig(env: Env = process.env): SupabaseAuthConfig |
 }
 
 export function authMode(env: Env = process.env): AuthMode {
-  if (env.ADMIN_AUTH === "demo") {
-    const localDemo = env.NODE_ENV !== "production" && env.DASHBOARD_DEMO === "1" && !!env.DASHBOARD_LOCAL_PG_PORT;
-    return localDemo ? "demo" : "off";
-  }
   return supabaseAuthConfig(env) ? "supabase" : "off";
 }
 
 export function teamMembers(env: Env = process.env): TeamMember[] {
   const mode = authMode(env);
   if (mode === "supabase") return adminTeam(env);
-  if (mode === "demo") return withIds(teamAccounts(env).map(({ email, name }) => ({ email, name })));
   return [];
 }
 

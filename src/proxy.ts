@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, isSupportedLocale, type SupportedLocale } from "@/lib/locales";
-import { appSurface, isAdminHost, isAdminPage, isProtectedAdminPage } from "@/lib/admin/surface";
+import { appSurface, isAdminHost, isAdminPage } from "@/lib/admin/surface";
 import { authMode } from "@/lib/admin/auth/config";
 import { syncAdminSession } from "@/lib/admin/auth/proxy-session";
 
@@ -74,11 +74,7 @@ async function adminProxy(request: NextRequest) {
   // Public pages, API routes and anything else are not part of the admin application.
   if (!isAdminPage(pathname)) return notFound();
 
-  const mode = authMode();
-  if (mode === "supabase") return withAdminHeaders(await syncAdminSession(request));
-  if (mode === "demo" && isProtectedAdminPage(pathname) && !request.cookies.get("__Host-mintapp_team")) {
-    return withAdminHeaders(NextResponse.redirect(new URL("/login", request.url)));
-  }
+  if (authMode() === "supabase") return withAdminHeaders(await syncAdminSession(request));
   return withAdminHeaders(NextResponse.next());
 }
 

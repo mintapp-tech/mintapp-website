@@ -1,6 +1,6 @@
-// Runs both admin suites (local demo login, then the Supabase Auth flow
-// against the local stand-in), then removes the throwaway databases left by
-// the demo servers (Playwright force-stops them, skipping their own cleanup).
+// Runs both admin suites (the dashboard and CRM flows, then the sign-in flow,
+// both against the local Supabase Auth stand-in), then removes the throwaway
+// databases left by the local servers (Playwright force-stops them, skipping their own cleanup).
 // Extra arguments go to both Playwright runs.
 import { spawnSync } from "node:child_process";
 import { sweepOrphanedClusters } from "../tests/db/pg-harness.mjs";
