@@ -28,7 +28,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
       {rows.length === 0 ? (
         <Empty>{p.empty}</Empty>
       ) : (
-        <div className={`${card} overflow-x-auto`}>
+        <div className={`${card} relative overflow-x-auto`}>
           <table className="w-full border-collapse text-start text-[14px]">
             <caption className="sr-only">{p.title}</caption>
             <thead className="border-b border-line bg-surface-2/60">
