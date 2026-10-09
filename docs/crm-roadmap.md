@@ -3,26 +3,36 @@
 The private admin application becomes Mintapp's internal CRM over time. Each
 phase ships on its own, with the same sign-in, server-side checks and tests.
 
-## This release: inquiries and meeting preparation
+**Campaign requirements.** Release 1 is built to support the approved
+go-to-market direction, "Start With Direction". Its source of truth is
+`mintapp-social/docs/Mintapp_Go_To_Market_Campaign_2026.md` (section 13, "CRM
+campaign requirements"); it is not copied into this repository. How each
+requirement is met is listed in [crm-release-1.md](crm-release-1.md).
 
-- **Intake:** inquiries from the Start Project form, in English and Arabic.
-- **Booking status:** meeting booked, rescheduled, cancelled (from Cal.com).
-- **Preparation:** a structured brief copied into the team's own Claude Pro
-  chat and pasted back (CodeCraft stays off for real inquiries).
-- **Review:** draft versions, marked ready by one person and approved by the
-  other.
-- **Ownership:** Omar, Adam, or Omar & Adam.
-- **Notes** for the team.
-- **Follow-ups:** each with one responsible person, a due date and an open or
-  done state; overdue items stand out in the list and are counted.
-- **Four separate states** per inquiry: meeting, preparation, review, and sales
-  stage (shown; changing it is a later step).
-- **Teammate approval:** nobody approves a preparation note they wrote.
-- **English and Arabic**, right to left, desktop and phone.
+## Shipped: operations and CRM v1 (meeting preparation)
 
-Not in v1, on purpose: contacts and companies, proposals, projects, hours,
-delivery, support, any GitHub connection, any automated preparation (CodeCraft
-stays off), invoices or payments.
+Inquiries from the Start Project form, booking status from Cal.com, preparation
+drafts with teammate approval, ownership, notes, and follow-ups with one
+responsible person and a date. Described in
+[operations-crm-v1-launch.md](operations-crm-v1-launch.md).
+
+## CRM Release 1 (this branch, not yet released)
+
+Dashboard overview, companies and contacts, the thirteen-stage sales pipeline,
+lead source and campaign attribution, qualification and lead score, proposal
+and scope records, conversion of a won deal into a minimal project, the
+outreach workflow for the first accounts, search, filters, metrics, safe CSV
+export, an activity trail, sign-in throttling, and the hardened preparation
+pipeline. See [crm-release-1.md](crm-release-1.md) and
+[crm-release-1-launch.md](crm-release-1-launch.md).
+
+## Deferred on purpose (documented only, nothing is built)
+
+Full project and milestone management, a GitHub connection or sync, hours
+tracking, retainers and capacity planning, a client file portal, invoicing and
+payments, profitability, delivery and handover, support contracts, client
+accounts, and any automation that publishes campaign content. Booking-ledger
+work stays with the booking system.
 
 ## How v1 extends without rewriting the inquiry workflow
 

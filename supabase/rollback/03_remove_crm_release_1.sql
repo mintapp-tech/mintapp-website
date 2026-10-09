@@ -53,6 +53,8 @@ begin
 end;
 $$;
 
+drop function if exists public.preparation_redactions(uuid);
+
 alter table public.project_inquiries drop constraint if exists lead_status_values;
 update public.project_inquiries
 set lead_status = case lead_status

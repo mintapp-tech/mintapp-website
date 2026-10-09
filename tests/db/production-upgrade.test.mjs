@@ -37,8 +37,9 @@ const RELEASE_1 = [
 const ROLLBACK_DIR = join(process.cwd(), "supabase", "rollback");
 
 // The SQL in the launch runbook is run here, so the document cannot drift from the database.
-const RUNBOOK = readFileSync(join(process.cwd(), "docs", "operations-crm-v1-launch.md"), "utf8");
-const runbookSql = (heading) => {
+const RUNBOOKS = { v1: readFileSync(join(process.cwd(), "docs", "operations-crm-v1-launch.md"), "utf8"), r1: readFileSync(join(process.cwd(), "docs", "crm-release-1-launch.md"), "utf8") };
+const runbookSql = (heading, book = "v1") => {
+  const RUNBOOK = RUNBOOKS[book];
   const start = RUNBOOK.indexOf(heading);
   assert.ok(start >= 0, `runbook heading not found: ${heading}`);
   const block = /```sql\r?\n([\s\S]*?)```/.exec(RUNBOOK.slice(start));
@@ -221,8 +222,12 @@ describe("CRM Release 1, applied on top of Operations/CRM v1, file by file", () 
   const LEGACY_STAGES = [id(95), id(96), id(97)];
   let stages;
   let preRelease;
+  let r1Pre;
+  let r1Post;
   before(() => {
     preRelease = inquiryFingerprint();
+    // The launch document's own checks, run as written.
+    r1Pre = lines(db.psql(runbookSql("### Pre-checks for Release 1", "r1")));
     // Inquiries sitting in the early sales stages that Release 1 replaces.
     ["converted", "not_a_fit", "archived"].forEach((stage, n) => {
       insertRow(LEGACY_STAGES[n], { type: "website" });
@@ -233,6 +238,16 @@ describe("CRM Release 1, applied on top of Operations/CRM v1, file by file", () 
     db.psql(`delete from public.crm_activity; delete from public.inquiry_preparations where inquiry_id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[]);
              delete from public.preparation_drafts where inquiry_id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[]);
              delete from public.project_inquiries where id = any (array[${LEGACY_STAGES.map(lit).join(",")}]::uuid[]);`);
+    r1Post = lines(db.psql(runbookSql("### Post-checks for Release 1", "r1")));
+  });
+
+  test("the launch document's pre-checks and post-checks give exactly the documented results", () => {
+    assert.deepEqual(r1Pre.slice(0, 2), ["0", "0"]);
+    assert.match(r1Pre[2], /^new:\d+$/, "every existing inquiry is still new");
+    assert.equal(r1Pre[3], String(count("select count(*) from public.project_inquiries")));
+    assert.deepEqual([r1Post[0], r1Post[1], r1Post[2]], ["0", "9", "1"]);
+    assert.equal(r1Post[3], r1Pre[2], "the same stage counts as before the release");
+    assert.deepEqual(r1Post.slice(4), ["0", "0", "0"]);
   });
 
   test("the early stage names carried over to their successors", () => {
