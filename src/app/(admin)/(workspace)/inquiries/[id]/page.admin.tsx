@@ -16,6 +16,7 @@ import { claudePrompt, draftText, structuredBrief, unstatedFigures } from "@/lib
 import { label, labelsFor, preparationNotice } from "@/lib/dashboard/status";
 import { isLocalDashboardDemo } from "@/lib/sql-gateway";
 import { selectGenerator } from "@/lib/preparation/config";
+import { knownDetails } from "@/lib/preparation/scrub";
 import Notice from "@/components/crm/Notice";
 import { ActivityPanel, ConversionPanel, LinkPanel, ProposalPanel, SourcePanel, StagePanel } from "@/components/crm/InquiryCrm";
 import { companyList, inquiryExtra } from "@/lib/crm/data";
@@ -106,6 +107,8 @@ export default async function InquiryPage({ params, searchParams }: { params: Pr
     budget_range: inquiry.budget_range,
     timeline: inquiry.timeline,
     country: inquiry.country,
+    // The copied prompt never carries the client's contact details, even if they typed them into the brief.
+    redact: knownDetails({ client_name: inquiry.client_name, company_name: inquiry.company_name, email: inquiry.email, phone: inquiry.phone, company_url: inquiry.company_url }),
   });
   const latest = drafts[0] ?? null;
   const latestText = latest ? draftText(latest.content) : "";

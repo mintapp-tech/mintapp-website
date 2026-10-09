@@ -16,6 +16,22 @@ as $$
   select '%' || replace(replace(replace(btrim(coalesce(p_q, '')), '\', '\\'), '%', '\%'), '_', '\_') || '%';
 $$;
 
+-- The inquiry's own contact values (name, company, email, phone, website host),
+-- used only to cut them out of the brief before it is shown to a generator or
+-- copied into a prompt. Returned to the server, never to a browser or a generator.
+create or replace function public.preparation_redactions(p_inquiry_id uuid)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select coalesce(jsonb_agg(v), '[]'::jsonb)
+  from public.project_inquiries as i,
+       lateral (values (i.full_name), (i.company_name), (i.email), (i.phone), (public.crm_host(i.company_url)), (regexp_replace(coalesce(i.phone, ''), '\D', '', 'g'))) as t(v)
+  where i.id = p_inquiry_id and i.deleted_at is null and nullif(btrim(v), '') is not null;
+$$;
+
 -- ============================================================
 -- 1. Inquiry list with filters
 -- ============================================================
@@ -534,7 +550,7 @@ declare
   f text;
 begin
   foreach f in array array[
-    'public.crm_like(text)', 'public.crm_inquiry_list(jsonb)', 'public.crm_inquiry_extra(uuid)', 'public.crm_overview(date)',
+    'public.preparation_redactions(uuid)', 'public.crm_like(text)', 'public.crm_inquiry_list(jsonb)', 'public.crm_inquiry_extra(uuid)', 'public.crm_overview(date)',
     'public.crm_company_list(text)', 'public.crm_company_get(uuid)', 'public.crm_contact_get(uuid)', 'public.crm_search(text)', 'public.crm_duplicates_report()',
     'public.crm_prospect_list()', 'public.crm_prospect_get(uuid)', 'public.crm_proposal_list(jsonb)', 'public.crm_project_list()', 'public.crm_project_get(uuid)',
     'public.crm_metrics(date, date, date)', 'public.crm_export(text, text)'

@@ -16,7 +16,13 @@ export function createSqlPreparationStore(sql: SqlGateway): PreparationStore {
       const rows = await sql.call<{ inquiry_id: string; attempts: number }[] | null>("claim_preparation_job_for", { p_provider: provider, p_inquiry_id: inquiryId, p_lease_seconds: leaseSeconds });
       return (rows ?? []).map((r) => ({ inquiryId: r.inquiry_id, attempts: r.attempts }));
     },
-    loadInquiry: (inquiryId) => sql.call<InquiryForPreparation | null>("preparation_input", { p_inquiry_id: inquiryId }),
+    async loadInquiry(inquiryId) {
+      const input = await sql.call<InquiryForPreparation | null>("preparation_input", { p_inquiry_id: inquiryId });
+      if (!input) return null;
+      // The inquiry's own contact values, only to cut them out of the brief.
+      const redact = (await sql.call<string[] | null>("preparation_redactions", { p_inquiry_id: inquiryId })) ?? [];
+      return { ...input, redact };
+    },
     complete: (inquiryId, content, source, model) => sql.call<number | null>("complete_preparation", { p_inquiry_id: inquiryId, p_content: content, p_source: source, p_model: model }),
     fail: (inquiryId, error, retryable, retryAfterSeconds) =>
       sql.call<string | null>("fail_preparation", { p_inquiry_id: inquiryId, p_error: error, p_retryable: retryable, p_retry_after_seconds: retryAfterSeconds }),

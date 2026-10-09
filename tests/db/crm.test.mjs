@@ -280,6 +280,18 @@ describe("companies and contacts", () => {
   });
 });
 
+describe("contact values for scrubbing a brief", () => {
+  test("the inquiry's own name, company, email, phone and website host come back for cutting out of the brief, and only to the server role", () => {
+    insertInquiry(A, { name: "Layla Hassan", company: "Cedar Labs", url: "https://www.cedar-labs.invalid/en" });
+    const values = json(`select public.preparation_redactions(${lit(A)})`);
+    for (const expected of ["Layla Hassan", "Cedar Labs", "client@crm-test.invalid", "+20 100 000 0001", "cedar-labs.invalid", "201000000001"]) assert.ok(values.includes(expected), expected);
+    assert.deepEqual(json(`select public.preparation_redactions(${lit(B)})`), []);
+    for (const role of ["anon", "authenticated"]) assert.match(db.psqlExpectError(`set role ${role}; select public.preparation_redactions('${A}')`), /permission denied/);
+    // The generator-facing input is unchanged: still only the brief and the client's answers.
+    assert.deepEqual(Object.keys(json(`select public.preparation_input(${lit(A)})`)).sort(), ["budget_range", "country", "preferred_language", "project_description", "project_type", "timeline"]);
+  });
+});
+
 describe("source, campaign and qualification", () => {
   test("origin, partner, campaign, content, tier and score are saved; the score is the sum of seven 0-2 categories", () => {
     insertInquiry(A, { source: "linkedin", medium: "organic", campaign: "start_with_direction", content: "flagship_en" });

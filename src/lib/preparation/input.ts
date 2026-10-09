@@ -4,6 +4,7 @@
 // every "client fact" in a draft must quote verbatim.
 
 import { PROJECT_TYPE_WORDS, clientProjectType } from "@/lib/dashboard/project-type";
+import { scrubContactDetails } from "./scrub";
 
 export type BriefLanguage = "en" | "ar";
 
@@ -14,6 +15,9 @@ export interface InquiryForPreparation {
   budget_range: string | null;
   timeline: string | null;
   country: string | null;
+  // The inquiry's own contact values (name, company, email, phone, website):
+  // removed from the brief wherever the client repeated them. Never sent anywhere.
+  redact?: readonly string[];
 }
 
 export interface GenerationInput {
@@ -38,7 +42,9 @@ export function buildGenerationInput(inquiry: InquiryForPreparation): Generation
     inquiry.timeline ? `${l.timeline}: ${inquiry.timeline}` : null,
     inquiry.country ? `${l.country}: ${inquiry.country}` : null,
     `${l.description}:`,
-    inquiry.project_description.trim(),
+    // Contact details the client typed into the description are removed: a generator
+    // (or a copied prompt) gets the brief, not a way to reach the client.
+    scrubContactDetails(inquiry.project_description.trim(), inquiry.redact),
   ].filter((line): line is string => line !== null);
   return { language, brief: lines.join("\n") };
 }

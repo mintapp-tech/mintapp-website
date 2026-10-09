@@ -26,6 +26,7 @@ export const SQL_FUNCTIONS = {
   },
   monthly_generation_tokens: { params: [["p_provider", "text"]] },
   preparation_input: { params: [["p_inquiry_id", "uuid"]] },
+  preparation_redactions: { params: [["p_inquiry_id", "uuid"]] },
   admin_auth_locked: { params: [["p_key", "text"]] },
   admin_auth_record: { params: [["p_key", "text"], ["p_success", "boolean"], ["p_limit", "integer"]] },
   dashboard_inquiries: { params: [] },
