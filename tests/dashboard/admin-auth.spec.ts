@@ -139,6 +139,8 @@ test("first sign-in requires setting up an authenticator; the password alone ope
   await expect(page.locator('p[role="alert"]')).toContainText("That code did not work");
   await enterCode(page, secret);
   secrets.set(OMAR, secret);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Dashboard");
+  await page.goto("/inquiries");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inquiries");
   await expect(page.locator("tbody tr")).toHaveCount(4);
 
@@ -201,6 +203,7 @@ test("sign out everywhere ends that person's other sessions only", async ({ brow
 
 test("the interface works in Arabic, right to left", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
+  await page.goto("/inquiries");
   await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
@@ -217,13 +220,22 @@ test("the interface works in Arabic, right to left", async ({ browser }) => {
 
 test("repeated wrong passwords lock the account for a while, even for the right password", async ({ browser }) => {
   // The outsider is used because locking an allowlisted account would lock out the other tests.
-  let page = await passwordStep(browser, OUTSIDER, "not-the-password");
-  for (let i = 1; i < 8; i++) {
-    await expect(page.locator('p[role="alert"]'), `attempt ${i}`).toHaveText("That email and password do not match a Mintapp team account.");
-    await page.getByLabel("Password").fill("still-not-the-password");
-    await page.getByRole("button", { name: "Sign in" }).click();
+  const page0 = await passwordStep(browser, OUTSIDER, "not-the-password");
+  // Each attempt is awaited: the button is disabled while one is in flight, so a click made too early is ignored.
+  const attempt = async () => {
+    await Promise.all([page0.waitForResponse((r) => r.request().method() === "POST"), page0.getByRole("button", { name: "Sign in" }).click()]);
+  };
+  await expect(page0.locator('p[role="alert"]')).toBeVisible();
+  // The earlier tests in this file already used a few of the allowed failures for this account.
+  for (let i = 0; i < 9; i++) {
+    if ((await page0.locator('p[role="alert"]').textContent())?.startsWith("Too many")) break;
+    // The form is cleared after each answer.
+    await page0.getByLabel("Email").fill(OUTSIDER);
+    await page0.getByLabel("Password").fill("still-not-the-password");
+    await attempt();
   }
-  await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
+  await expect(page0.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");
+  let page = page0;
   // The right password is refused while the lock holds, and no session starts.
   page = await passwordStep(browser, OUTSIDER);
   await expect(page.locator('p[role="alert"]')).toHaveText("Too many attempts. Try again in 15 minutes.");

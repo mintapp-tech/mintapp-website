@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
-import { DEMO_PORT } from "../../playwright.dashboard.config";
+import { DEMO_PORT } from "../../playwright.crm.config";
 import { signInAs } from "./helpers";
 
 // CRM Release 1 end to end, on the synthetic fixture (tests/fixtures/synthetic-inquiries.sql),

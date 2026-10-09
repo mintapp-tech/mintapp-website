@@ -5,15 +5,16 @@ import { defineConfig, devices } from "@playwright/test";
 // replaced by a LOCAL TEST STAND-IN (scripts/admin-local.mjs). Sign-in is the
 // real deployed path: password, then an authenticator-app code.
 //
-//   npm run test:dashboard   (via scripts/run-dashboard-tests.mjs: this suite, then
-//   playwright.admin-auth.config.ts, removing the throwaway databases afterwards)
+//   CRM Release 1 flows: its own server and database, so these tests and the
+//   dashboard tests never see each other's data.
+//   npm run test:dashboard   (via scripts/run-dashboard-tests.mjs)
 
-export const DEMO_PORT = 3201;
+export const DEMO_PORT = 3203;
 export const DEMO_PASSWORD = "local-demo-password-for-tests-only";
 
 export default defineConfig({
   testDir: "./tests/dashboard",
-  testMatch: ["**/dashboard.spec.ts"],
+  testMatch: ["**/crm.spec.ts"],
   fullyParallel: false,
   workers: 1,
   retries: 0,
