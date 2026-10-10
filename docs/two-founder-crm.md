@@ -111,17 +111,56 @@ destinations (their addresses redirect), and technical status names on the dashb
 ## 5. Genuine decisions for Omar (not blockers)
 
 1. **Budget ranges.** No pricing decision exists in the repositories. The form ships
-   with a configurable list in `src/lib/form-options.ts`, marked provisional, which needs
-   Omar's approval before release.
+   with placeholder bands in `src/lib/form-options.ts`, marked provisional, which need
+   Omar's approval before release (unchanged until then; see 5.1).
 2. **Default owner** for automatic actions when an inquiry has no owner. Set in Settings;
    until set, such an action is shown as *Needs an owner*.
 3. **Review deadline**: the day before the meeting. One constant; change on request.
+4. **Real inquiries and CodeCraft**: automated preparation stays off for real inquiries
+   until the upstream provider of the chosen model is verified (section 7.3).
+
+### 5.1 Budget and timeline: what exists today (not changed)
+
+| Field | Stored value (English, in `project_inquiries`) | English label | Arabic label |
+| --- | --- | --- | --- |
+| budget | `Under USD 5,000` | Under USD 5,000 | أقل من 5,000 دولار |
+| budget | `USD 5,000 - 15,000` | USD 5,000 – 15,000 | من 5,000 إلى 15,000 دولار |
+| budget | `USD 15,000 - 40,000` | USD 15,000 – 40,000 | من 15,000 إلى 40,000 دولار |
+| budget | `Over USD 40,000` | Over USD 40,000 | أكثر من 40,000 دولار |
+| budget | `Not sure yet` | Not sure yet | لست متأكدًا بعد |
+| timeline | `As soon as possible` | As soon as possible | في أقرب وقت ممكن |
+| timeline | `Within 3 months` | Within 3 months | خلال 3 أشهر |
+| timeline | `In 3 to 6 months` | In 3 to 6 months | خلال 3 إلى 6 أشهر |
+| timeline | `Later than 6 months` | Later than 6 months | بعد أكثر من 6 أشهر |
+| timeline | `Not sure yet` | Not sure yet | لست متأكدًا بعد |
+
+- Storage: `project_inquiries.budget_range` and `.timeline`, free text, at most 100
+  characters (constraint from `20260822000000`). The form stores the English `value`.
+- Constraint: **neither `20261015000000` nor `20261016000000` mentions budget or timeline.**
+  Only the application's request schema (`src/lib/inquiry-schema.ts`) accepts exactly the
+  values above for new submissions. Older or unknown stored values are shown as stored.
+- Use: the budget and timeline are copied into the brief as "client-stated", so a
+  generator may repeat those figures; it may not invent others.
+
+Recommended structure (for Omar's approval; not implemented):
+
+- **One currency, USD**, for Egypt, MENA and international clients alike: the placeholders
+  are already in USD, local currencies move too much to fix bands in them, and one scale
+  keeps leads comparable. Labels may say "about" in Arabic if that reads better.
+- **Stable codes stored, labels shown**: store a code (`budget_lt_5k`, `budget_5_15k`, …,
+  `not_sure`; `timeline_asap`, `timeline_3m`, `timeline_3_6m`, `timeline_6m_plus`,
+  `not_sure`) and show the English or Arabic label. Changing a label or a band later then
+  never splits the data; today's English values stay readable through a small alias map,
+  with no migration.
+- **Four or five contiguous, non-overlapping bands plus "Not sure yet"**, the lowest open
+  below and the highest open above, so every answer has exactly one band. The boundaries
+  are a pricing decision; the current placeholders (5,000 / 15,000 / 40,000) are a starting
+  point only.
+- **"Not sure yet" stays first-class** for both questions and is never treated as missing.
 
 ## 6. The Pre-meeting Pack
 
-One generation (or one manual paste) returns one strict JSON object
-(`src/lib/pack/schema.ts`), validated before anything is saved, then split into three
-artifacts stored as versions in `preparation_drafts`:
+The pack is three artifacts stored as versions in `preparation_drafts`:
 
 | Artifact | Content |
 | --- | --- |
@@ -129,56 +168,176 @@ artifacts stored as versions in `preparation_drafts`:
 | Draft proposal (`proposal`) | understanding, recommended solution, first-release scope, phases, deliverables, assumptions, exclusions, what affects cost or schedule, next step. Always shown under *Initial draft for discussion — not a final quote or commitment.* |
 | Discovery pack (`discovery`) | client facts (each quoting the brief), assumptions, missing information, questions with their purpose, risks, decisions the client must take, meeting agenda, what to confirm before scope and pricing |
 
-Rejected before saving: unknown keys, a fact whose evidence is not in the brief, any
-figure the client did not state, a promise or guarantee (English or Arabic), a pattern
-or template outside the library, a pattern that contradicts the client's project type,
-fewer than two screens, a flow through screens that do not exist. A brief no pattern
-fits gets `pattern: null` and a reason: the design is then made by hand and the pack
+**Automated preparation makes four bounded requests** (`src/lib/pack/steps.ts`), not one:
+
+| Step | Returns | Output ceiling | Becomes |
+| --- | --- | --- | --- |
+| 1. Analysis | facts (each quoting the brief), assumptions, missing information | 4,000 | part of the discovery pack, and the input of steps 2-4 |
+| 2. Design | pattern, blueprint, 2-4 screens, user flow | 6,000 | Initial design |
+| 3. Proposal | the draft proposal | 4,000 | Draft proposal |
+| 4. Discovery | questions, risks, decisions, agenda, what to confirm | 4,000 | Discovery pack (with step 1) |
+
+Each request carries the sanitised brief (and, after step 1, its checked analysis),
+returns one strict JSON object with its own schema, and is validated on its own: unknown
+keys, a fact whose evidence is not in the brief, a figure the client did not state, a
+promise or guarantee (English or Arabic), a pattern or template outside the library, a
+pattern that contradicts the client's project type, fewer than two screens, or a flow
+through screens that do not exist are all refused. Each artifact is saved as soon as its
+step passes (`pack_save_generated`), so one step failing never discards another.
+
+- **Order and dependence**: the analysis must pass first; design, proposal and discovery
+  are independent of each other.
+- **Progress** (`inquiry_preparations.pack_progress`): which steps are done or failed, the
+  checked analysis and the tokens this run has used. A later attempt repeats only what did
+  not finish; the pack finishes (`pack_finish`) when all three artifacts exist.
+- **Retries**: only transient failures (timeout, rate limit, provider error, unusable HTTP
+  response) are retried automatically, within the job's attempt limit. A cut-off,
+  non-JSON or rule-breaking answer is left for a person; a founder's retry keeps the
+  finished steps and tries the failed ones again with a fresh per-pack allowance.
+- **Caps**: before each request, its worst case (prompt estimate plus its ceiling) is
+  checked against the monthly budget and the per-pack cap (`PREPARATION_PACK_TOKEN_CAP`,
+  default 30,000). A step that does not fit is not sent.
+- **Fallback to a person, never to another model**: if a step fails, that artifact is
+  prepared by hand; the other artifacts stay.
+
+The manual Claude path (a founder's own Claude chat) still returns the whole pack as one
+object (`src/lib/pack/prompt.ts`) and passes the same checks before it is saved. A brief no
+pattern fits gets `pattern: null` and a reason: the design is then made by hand and the pack
 shows *Needs manual action*. Each artifact is reviewed and approved separately by the
 founder who did not write it; approving a new version supersedes only that artifact's
 earlier approval.
 
 ## 7. CodeCraft (OpenAI-compatible gateway)
 
-- Adapter: `src/lib/preparation/codecraft-generator.ts` behind the `PreparationGenerator`
-  interface; JSON mode; the key is read only on the server and never logged or returned.
+### 7.1 Configuration
+
+- Adapter: `src/lib/preparation/codecraft-generator.ts`; one bounded JSON-mode request per
+  step; the key is read only on the server and never logged or returned.
+- **The intended generator is Claude through CodeCraft: `claude-sonnet-5`** (set as
+  `CODECRAFT_MODEL`). There is exactly one model and no fallback to any other. A reply
+  that names a different model is refused and pauses automation (`model_mismatch`).
+  `gemini-3.7-flash` was evaluated only as a comparison and is not configured anywhere.
 - **Off by default.** Real inquiries also need `CODECRAFT_CLIENT_DATA_APPROVED=true`,
-  which is not set anywhere.
+  which is not set anywhere, and must not be until 7.3 is resolved.
+- Reasoning budget: `CODECRAFT_REASONING_MAX_TOKENS`, default 1,024, sent as
+  `reasoning.max_tokens` (listed in the model's `supported_parameters`, not described in
+  CodeCraft's documentation).
 - Failure handling: 402, "insufficient / quota / balance / credit / allowance" wording,
-  401/403 and unknown model pause automation (no retry) and the pack shows *Needs manual
-  action*; timeouts, 429 (with Retry-After), 5xx and malformed output are retried with
-  increasing delays, at most 3 attempts; a cut-off answer is not retried. The inquiry
-  and the booking never wait for any of it.
-- Budget: the app's monthly limit (default 600,000 tokens, never above 1,000,000) is
-  checked before every request against the worst case (prompt estimate plus the output
-  limit). Usage is recorded as counts with the model id.
-- Output limit: `PREPARATION_MAX_OUTPUT_TOKENS`, default 10,000. Reasoning models count
-  hidden reasoning as completion tokens; see the evaluation below.
-- Audit: the exact sanitised input sent (brief, prompt version, model, language, project
-  type) is stored in `inquiry_preparations.last_payload` and shown on the pack tab.
+  401/403, an unknown model and a different model pause automation (no retry), and the
+  pack shows *Needs manual action*; timeouts, 429 (with Retry-After), 5xx and unusable
+  HTTP responses are retried; a cut-off or unusable answer is not. The inquiry and the
+  booking never wait for any of it.
+- **Paid credit**: CodeCraft's terms say that once the monthly allowance is used, requests
+  draw on prepaid credit; 402 comes only when both are empty. The app cannot tell
+  allowance from credit through the API. Two protections: the app's own monthly limit
+  (default 600,000, never above 1,000,000), checked before every request; and the account
+  should hold **no prepaid balance**, so an exhausted allowance answers 402 and pauses.
+- Audit: the exact sanitised input (brief, prompt version, steps, model, language, project
+  type) is stored in `inquiry_preparations.last_payload` and shown on the pack tab. Every
+  call's metadata (finish reason, reported usage fields, content and reasoning lengths,
+  the model the gateway named, JSON key names reached) is available to the evaluation;
+  never content or the key.
 
-### Model discovery and synthetic evaluation (10 Oct 2026)
+### 7.2 Why the single request was cut off (investigation, 10 Oct 2026)
 
-`GET /v1/models` returned 33 models, every one advertising `json_mode` (most also
-reasoning, tools, vision), with per-1k pricing metadata. Evaluated on synthetic briefs
-only (`src/lib/preparation/eval.live.test.ts`), hard cap 60,000 tokens:
+| Question | Finding |
+| --- | --- |
+| Exact model id from `/v1/models` | `claude-sonnet-5` ("Claude Sonnet 5", "Anthropic balanced model…") |
+| Advertised capabilities | reasoning, vision, tools, streaming, json_mode; `supported_parameters` include `reasoning`, `include_reasoning`, `max_tokens`, `response_format` |
+| Context window | 1,000,000 (`top_provider.max_completion_tokens`: null) |
+| Requested `max_tokens` | 6,000 and 8,192 (first round); 8,192 again in the reproduction |
+| Prompt tokens | 1,684 for the single-pack request |
+| Completion tokens | 7,182 of 8,192 in the reproduction (it finished this time, `finish_reason: stop`); earlier runs were cut off at 6,000 and 8,192 |
+| Finish reason | `length` when cut off; `stop` in the reproduction |
+| Did reasoning use the allowance? | Yes, by inference: usage has no reasoning field and no reasoning text is returned, yet a 12-character JSON answer was billed 223-352 completion tokens, and in the staged run two requests used their whole ceiling (4,000 and 6,000) and returned **no content at all**. CodeCraft documents that reasoning tokens count toward `completion_tokens`. |
+| Which artifact or schema? | None in particular: the cut-offs happened before any visible output (0 characters), so the size of one section was not the cause. The single pack's visible JSON was about 10,600 characters, roughly a third to half of its completion tokens; the rest was hidden reasoning. |
+| Upstream provider identified? | **No.** Every model lists `owned_by: "CodeCraft API"`; responses carry only `id, object, created, model, choices, usage`; no header or field names a provider; the documentation, terms and privacy policy do not name one. The terms say CodeCraft "does not build or host the underlying models". |
 
-| Call | Model | Result | Tokens |
-| --- | --- | --- | --- |
-| English clinic brief, 6,000 output limit | `claude-sonnet-5` | provider 5xx after 34 s | 9,111 counted (worst case; not reported) |
-| Diagnostic, same brief | `claude-sonnet-5` | cut off at 6,000 completion tokens | 7,652 |
-| Five one-line pings (JSON mode, reasoning overhead) | four models | all valid | 3,196 |
-| English clinic brief, 8,192 output limit | `claude-sonnet-5` | cut off again | 9,844 |
-| English clinic brief | **`gemini-3.7-flash`** | valid pack, all checks pass, 4/4 expected facts, `scheduling_app` | 6,139 |
-| Arabic school brief | **`gemini-3.7-flash`** | valid pack, all checks pass, 4/4 expected facts, `academy_site` | 9,410 |
-| **Total** | | | **45,352 (at most)** |
+### 7.3 Is it Claude?
 
-Selected exact model id: **`gemini-3.7-flash`** (context 1,048,576; reasoning, vision,
-tools, JSON mode). The Arabic output is fluent Modern Standard Arabic, with facts quoting
-the brief and no invented figures; its completion used 7,701 tokens, close to the old
-8,192 limit, hence the 10,000 default. Pricing metadata is returned per 1k tokens; the
-free allowance and the gateway's data retention are not documented by the API and are
-not assumed.
+**Not proven.** The gateway labels the model `claude-sonnet-5` and returns that name, but
+nothing shows that the request is served by Anthropic or an authorised Anthropic
+reseller. This document therefore says "the model CodeCraft labels `claude-sonnet-5`",
+not "Claude". A request costing 300 prompt tokens for a 70-character message (a hidden
+system prompt of about 290 tokens) and reasoning that cannot be switched off with
+`reasoning.enabled: false` are consistent with a gateway layer but prove nothing either way.
+Before `CODECRAFT_CLIENT_DATA_APPROVED` is ever set, CodeCraft should confirm in writing
+which provider serves this model and under which data terms.
+
+### 7.4 Evaluation, round 2 (synthetic briefs only, 10 Oct 2026)
+
+All usage below is the provider's reported count. Commands:
+`PREPARATION_LIVE_EVAL=1 PREPARATION_GENERATOR=codecraft CODECRAFT_MODEL=claude-sonnet-5 PREPARATION_EVAL_MODE=staged|single … node --env-file=.env.local node_modules/vitest/vitest.mjs run src/lib/preparation/eval.live.test.ts`
+(see the file header). Reports: `review-evidence/claude-*.json` (not committed).
+
+| Run | Request | max_tokens | Prompt | Completion | Total | Finish | Valid | Time |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| A. Reproduction, single pack (EN) | whole pack | 8,192 | 1,684 | 7,182 | 8,866 | stop | yes, no rule broken | 56.2 s |
+| B. Reasoning probes (tiny JSON) | default / effort low / enabled false | 2,048 | 304 each | 297 / 223 / 352 | 601 / 527 / 656 | stop | yes | 10.9 / 4.3 / 3.5 s |
+| C. Staged, no reasoning budget (EN) | analysis | 4,000 | 675 | 4,000 | 4,675 | **length, 0 chars** | no | 29.0 s |
+| C. Staged, no reasoning budget (AR) | analysis | 4,000 | 706 | 2,582 | 3,288 | stop | yes | 17.1 s |
+| | design | 6,000 | 1,597 | 6,000 | 7,597 | **length, 0 chars** | no | 34.2 s |
+| | proposal | 4,000 | 973 | 3,422 | 4,395 | stop | yes | 26.0 s |
+| | discovery | 4,000 | 976 | 2,917 | 3,893 | stop | yes | 21.2 s |
+| D. Probe, reasoning budget 1,024 (EN) | analysis | 4,000 | 675 | 2,792 | 3,467 | stop | yes, 4/4 facts | 17.4 s |
+| E. Staged, reasoning budget 1,024 (EN) | analysis | 4,000 | 675 | 3,738 | 4,413 | stop | yes | 24.2 s |
+| | design | 6,000 | 1,499 | 3,119 | 4,618 | stop | yes | 24.9 s |
+| | proposal | 4,000 | 875 | 3,569 | 4,444 | stop | yes | 33.3 s |
+| | discovery | 4,000 | 878 | 2,117 | 2,995 | stop | yes | 19.4 s |
+| E. Staged, reasoning budget 1,024 (AR) | analysis | 4,000 | 706 | 2,764 | 3,470 | stop | yes | 19.3 s |
+| | design | 6,000 | 1,621 | 4,290 | 5,911 | stop | yes | 35.9 s |
+| | proposal | 4,000 | 997 | 3,036 | 4,033 | stop | yes | 28.3 s |
+| | discovery | 4,000 | 1,000 | 3,492 | 4,492 | stop | **no: `client_decisions` failed the schema** | 26.6 s |
+
+Totals: A 8,866; B 1,784; C 23,848; D 3,467; E 34,376 (EN pack 16,470, AR pack 17,906).
+**Round 2 total: 72,341 tokens**, exact. Round 1 (section 7.5) used 45,352 at most (one
+5xx counted at its worst case of 9,111 because no usage was returned); together at most
+117,693 on this key, below the app's 600,000 monthly limit.
+
+Final configuration (E): 7 of 8 requests valid; both packs recalled 4 of 4 expected facts;
+every fact quoted the brief; no invented price, duration, metric or promise; English design
+`scheduling_app` with 4 screens, Arabic design `academy_site` with 4 screens; whole packs
+took about 102 s (EN) and 110 s (AR) of sequential requests. The Arabic discovery request
+returned a `client_decisions` list that failed the schema (the prompt gave no limit for
+that list; it now says "at most 5, each one short sentence"; not re-run). Under the new
+rules that artifact would be prepared by hand and the other two kept.
+
+Quality notes: facts are the brief's own sentences, lightly normalised; assumptions are
+plausible and labelled with their reasons (for example "the primary users are patients and
+receptionists", "the content will need digitising from the printed booklet"); missing
+information and questions are specific and useful for a first meeting. The Arabic is
+fluent Modern Standard Arabic suited to a private-school context; one small grammatical
+slip ("لم يذكر العميل شعار" for "شعارًا"). A native reader should still review Arabic output
+before it is shown to a client.
+
+### 7.5 Comparison: `gemini-3.7-flash` (round 1, single request; not configured)
+
+| Brief | Result | Prompt | Completion | Total | Time |
+| --- | --- | --- | --- | --- | --- |
+| English clinic | valid, 4/4 facts, `scheduling_app` | 1,678 | 4,461 | 6,139 | 28.3 s |
+| Arabic school | valid, 4/4 facts, `academy_site` | 1,709 | 7,701 | 9,410 | 34.8 s |
+
+Gemini produced a whole valid pack in one request with less hidden reasoning; it was not
+re-run in the staged form. It is kept only as a comparison: it is not the intended
+generator and never receives anything after a Claude-labelled request fails. Its upstream
+provider is equally unidentified.
+
+### 7.6 Live evaluation and the normal test suite
+
+The normal suite (`npm test`) reports 2 skipped tests, both intentional:
+
+1. `src/lib/preparation/eval.live.test.ts`: the live evaluation above. It runs only with
+   `PREPARATION_LIVE_EVAL=1` and a configured CodeCraft model and key; it refuses to start
+   if `CODECRAFT_CLIENT_DATA_APPROVED=true`; it sends only `SYNTHETIC_BRIEFS`; it stops
+   before any request whose worst case would pass `PREPARATION_EVAL_MAX_TOKENS`. Normal
+   runs and CI never set these variables and have no key, so they cannot spend tokens.
+2. `src/content/work-screens.test.ts`: a public-site test (on `main` since 4 Oct) that
+   waits until case-study screenshots exist; unrelated to the CRM.
+
+Real inquiries remain blocked from CodeCraft: `selectGenerator` returns
+`client_data_not_approved` unless `CODECRAFT_CLIENT_DATA_APPROVED=true` (unit-tested), and
+automated preparation is off unless `PREPARATION_GENERATOR` is set. The local `.env.local`
+holds only the key; the Vercel environment variables were not inspected or changed.
 
 ## 8. The interface
 
@@ -203,11 +362,11 @@ Positions map onto the stored stages without migrating them: New `new`; Reviewin
 (`src/lib/crm/simple-stages.ts`). Choosing the step a lead is already in writes
 nothing, so a detailed value is never overwritten.
 
-## 9. The renderer
+## 9. The renderer and the pattern library
 
-- `src/lib/pack/patterns.ts`: 11 patterns (5 websites, 5 web apps, 1 mobile app with 7
-  screen templates) built from 23 templates; each pattern lists its templates and each
-  template its maximum number of items.
+- `src/lib/pack/patterns.ts`: 11 patterns (5 websites, 5 web apps, 1 mobile app) built
+  from 23 templates; each pattern lists its templates and each template its maximum
+  number of items.
 - `src/lib/pack/foundations.ts`: type, spacing, grid, colour, radius, shadow; motion is
   none, so reduced motion needs nothing special.
 - `src/components/pack/templates.tsx`: one trusted React component per template id. A
@@ -219,6 +378,73 @@ nothing, so a detailed value is never overwritten.
 - Before drawing, a stored design is checked again (`renderableDesign`): anything that is
   not a library pattern with its own templates is not drawn. A design no pattern fits is
   shown as notes, and the pack asks for a hand-made design.
+- **Design library** (`/settings/design-library`, internal, noindex): the inventory below
+  and six synthetic examples drawn by the same templates (`src/lib/pack/examples.ts`):
+  service website (`studio_site`), marketplace (`marketplace_site`), operations dashboard
+  (`operations_app`), booking application (`scheduling_app`), mobile application
+  (`mobile_app`) and an Arabic right-to-left website (`academy_site`). They need no
+  database and no AI call, so any admin Preview shows them.
+
+### 9.1 Patterns
+
+Every pattern has an English and an Arabic name, and every template draws text in either
+language (direction follows the design's language). Website and web-application patterns
+are drawn in a desktop frame and a phone frame; the mobile pattern in phone frames only.
+
+| Pattern | Category | Intended use | Screens / sections it may render (2-4 chosen) |
+| --- | --- | --- | --- |
+| `studio_site` | Website | a company presenting its services and taking inquiries | hero, value_points, services, how_it_works, proof, faq, contact_cta |
+| `saas_marketing` | Website | a software product explaining its value and converting sign-ups | hero, value_points, how_it_works, proof, faq, contact_cta |
+| `marketplace_site` | Website | listings from many providers that visitors browse and request | hero, catalogue, how_it_works, proof, faq, contact_cta |
+| `academy_site` | Website | courses or programmes that learners browse and apply to | hero, course_list, how_it_works, proof, faq, contact_cta |
+| `booking_site` | Website | a local service business where visitors choose a service and book a time | hero, services, booking_form, how_it_works, faq, contact_cta |
+| `dashboard_app` | Web app | people who monitor activity and act on what needs attention | overview_dashboard, record_table, record_detail, data_form |
+| `operations_app` | Web app | a team moving requests or jobs through stages | workflow_board, record_table, record_detail, data_form, overview_dashboard |
+| `marketplace_admin` | Web app | operators who manage providers, listings and orders | overview_dashboard, record_table, record_detail, catalogue, data_form |
+| `crm_app` | Web app | a team tracking customers or cases and the next action on each | record_table, record_detail, workflow_board, data_form, overview_dashboard |
+| `scheduling_app` | Web app | staff and customers booking and managing appointments | schedule_calendar, booking_form, record_table, record_detail, how_it_works |
+| `mobile_app` | Mobile app | onboarding, a home, finding things, booking or ordering, tracking and a profile | onboarding, home, list_search, detail, booking_order, tracking, profile |
+
+### 9.2 Templates
+
+| Template | Renders | Items at most | Used by |
+| --- | --- | --- | --- |
+| `hero` | headline, supporting text, actions, image placeholder, optional cards | 3 | websites |
+| `value_points` | heading and 3-4 cards | 4 | websites |
+| `services` | heading and service cards | 6 | websites |
+| `how_it_works` | heading and numbered steps | 5 | websites, web apps |
+| `catalogue` | heading and listing cards with image placeholders | 6 | websites, web apps |
+| `course_list` | the catalogue layout for courses or programmes | 6 | websites |
+| `booking_form` | heading and a form of labelled fields with actions | 6 | websites, web apps |
+| `proof` | heading and two-column cards for proof points (figures only if the client stated them) | 3 | websites |
+| `faq` | heading and question rows | 5 | websites |
+| `contact_cta` | a closing call to action | 2 | websites |
+| `overview_dashboard` | app frame, heading and tiles whose values are drawn as placeholders | 6 | web apps |
+| `record_table` | app frame, heading and record rows | 6 | web apps |
+| `record_detail` | app frame, fields and an image placeholder | 6 | web apps |
+| `workflow_board` | app frame and stage columns | 5 | web apps |
+| `schedule_calendar` | app frame, a calendar grid and the day's rows | 6 | web apps |
+| `data_form` | app frame and a form | 6 | web apps |
+| `onboarding` | image placeholder, headline, points, action | 3 | mobile |
+| `home` | headline, image placeholder, cards, action | 4 | mobile |
+| `list_search` | headline, search field, rows | 6 | mobile |
+| `detail` | image placeholder, headline, rows, action | 5 | mobile |
+| `booking_order` | the booking form in a phone | 5 | mobile |
+| `tracking` | a vertical progress timeline | 5 | mobile |
+| `profile` | avatar placeholder, headline, rows | 5 | mobile |
+
+### 9.3 When the design is prepared by hand
+
+- The brief fits no pattern (for example a game, a social feed, live chat, maps, video,
+  hardware or an integration-only project): the design step returns `pattern: null` with a
+  reason.
+- The chosen pattern does not match the client's project type, or a screen uses a template
+  outside its pattern: the step is refused.
+- The design request is cut off, unusable or breaks a rule: nothing is saved for the
+  design; the proposal and discovery pack are kept.
+- A project that needs more than one product (a website and an app): one pattern is drawn;
+  the rest is written by hand.
+- A stored design that fails the library check again is not drawn.
 
 ## 10. Privacy: what can reach an AI service
 
@@ -229,8 +455,12 @@ nothing, so a detailed value is never overwritten.
 | Name, email, phone, company, existing link, referral and tracking fields | never |
 | Notes, owners, CRM data | never |
 
-The manual prompt is built from the same scrubbed brief. Proof: the unit tests in
-`src/lib/preparation/scrub.test.ts` and `preparation.test.ts`; the browser tests assert
+Automated preparation sends four requests per pack; each carries the same scrubbed brief,
+and steps 2-4 also carry the analysis checked against it. The manual prompt is built from
+the same scrubbed brief. Proof: `src/lib/preparation/scrub.test.ts` runs a whole pack through
+the real CodeCraft adapter with a network double and checks all four request bodies and
+the audit payload for the client's name, company, email, phone and link;
+`preparation.test.ts` checks the brief; the browser tests assert
 the copied prompt contains the brief and none of the client's contact details
 (`tests/dashboard/dashboard.spec.ts`, `leads.spec.ts`, `tests/review/crm-live.spec.ts`).
 The exact payload of the last automated run is stored (`last_payload`, at most 40,000
@@ -243,9 +473,11 @@ the existing link is never fetched by any code.
 | What happens | What the founders see | What to do |
 | --- | --- | --- |
 | Automation off (default) | *Needs manual action*: automated preparation is turned off | Prepare by hand with the Claude prompt |
-| CodeCraft 402, quota or allowance wording, bad key, unknown model | Automation paused for every lead; *Needs manual action*; a dashboard alert | Prepare by hand; resume in Settings once fixed. Nothing is charged; no paid fallback |
-| Timeout, 429, 5xx, malformed reply | *Preparing* while retries run (at most 3); then *Needs manual action* | Prepare by hand, or Prepare now later |
-| A reply that fails the checks (invented figure, ungrounded fact, wrong language, promise, wrong pattern) | Not saved; *Needs manual action* | Prepare by hand; a pasted reply that fails shows which checks failed |
+| CodeCraft 402, quota or allowance wording, bad key, unknown model | Automation paused for every lead; *Needs manual action*; a dashboard alert | Prepare by hand; resume in Settings once fixed. No paid fallback (keep no prepaid balance on the account: section 7.1) |
+| Timeout, 429, 5xx, unusable HTTP response | That step is retried later (the job's attempt limit, at most 3); finished steps are kept | Nothing, or prepare by hand |
+| One step cut off, non-JSON or breaking a rule (invented figure, ungrounded fact, wrong language, promise, wrong pattern) | That artifact is not saved; the other two are; *Needs manual action* | Write that artifact by hand, or retry (finished steps are kept) |
+| The reply names a different model | Not saved; automation paused; dashboard alert | Check the gateway; resume in Settings |
+| A step would pass the per-pack cap or the monthly budget | Not sent; that artifact by hand (pack cap) or automation paused (monthly) | Prepare by hand; raise a cap only deliberately |
 | No pattern fits the project | The design is notes only; *Needs manual action* | Write the design by hand on the pack tab |
 | Booking rescheduled | Review deadline moves | Nothing |
 | Booking cancelled | Meeting *Cancelled*; the review action closes; every version stays | Nothing; a new booking creates a new action |
@@ -274,6 +506,9 @@ has; the two do not touch the same objects. The
 production-upgrade test (`tests/db/production-upgrade.test.mjs`) applies them on a copy
 of the production schema with data and checks nothing is lost.
 
+They also add `inquiry_preparations.pack_progress` and the step functions
+(`pack_save_generated`, `pack_progress_get`, `pack_progress_set`, `pack_finish`).
+
 What they change in existing data: queued jobs for inquiries without a booking become
 `waiting_booking`; existing drafts get `artifact = 'note'`; every booked future meeting
 gets its review action. Nothing is deleted.
@@ -287,16 +522,21 @@ not part of this branch.
 
 ## 13. Tests
 
-| Suite | Command | Result (10 Oct 2026) |
+| Suite | Command | Result (10 Oct 2026, after the staged-generation change) |
 | --- | --- | --- |
-| Types, lint | `npx tsc --noEmit`, `npx eslint src tests scripts` | clean |
-| Unit | `npm test` | 653 passed, 2 skipped (the live CodeCraft evaluation) |
-| Database | `npm run test:db` | 151 passed |
-| Public browser | `npx playwright test` | 342 passed (5 reflow tests timed out once while 8 workers cold-compiled every page; 22/22 on a re-run of that file) |
-| Admin browser | `npm run test:dashboard` | 58 passed: dashboard 13, CRM 21, two-founder workflow 14, sign-in 10 |
+| Types, lint, whitespace | `npx tsc --noEmit`, `npx eslint src tests scripts`, `git diff --check` | clean |
+| Unit | `npm test` | 668 passed, 2 skipped (both intentional: section 7.6) |
+| Database | `npm run test:db` | 152 passed |
+| Public browser | `npx playwright test --workers=2` | 341 passed, 1 failed: `semantic-navigation.spec.ts` "ar … in-page hash navigation still scrolls to the section" is intermittent and fails the same way on the base `feat/crm-release-1` (2 of 3 repeats on both); not caused by this branch |
+| Admin browser | `npm run test:dashboard` | 59 passed: dashboard 13, CRM 21, two-founder workflow 15, sign-in 10 (on a busy machine one run hit `spawn UNKNOWN` from the local demo database; the re-run passed) |
 | Builds | `npm run test:build` | public and admin builds, 7 passed |
 | Audit | `npm audit --omit=dev` | 0 vulnerabilities |
+| Live CodeCraft evaluation | see section 7.4 | run on synthetic briefs only; results above |
 | Live review | `npm run test:review-live` | not run: needs the two migrations on the review project |
+
+Running the database tests and the browser suites at the same time exhausts this
+machine's processes (`spawn UNKNOWN`) and, with 8 browser workers, its memory; run them
+one at a time.
 
 ## 14. Deferred
 
