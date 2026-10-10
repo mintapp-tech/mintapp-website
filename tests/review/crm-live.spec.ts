@@ -93,7 +93,10 @@ test("English, desktop: the command centre shows the booked meeting, the waiting
   const page = await signIn(browser, OMAR);
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Dashboard");
-  await expect(page.locator('[data-section="meetings"]')).toContainText(CLIENT);
+  // A lead with a company is named by its company in routine lists, never by the contact's name;
+  // a lead without one falls back to the contact's name (the Arabic inquiry has no company).
+  await expect(page.locator('[data-section="meetings"]')).toContainText(COMPANY);
+  await expect(page.locator('[data-section="meetings"]')).not.toContainText(CLIENT);
   await expect(page.locator('[data-section="awaiting"]')).toContainText(CLIENT_AR);
   await expect(page.locator('[data-section="actions"]')).toContainText("Review and approve the pre-meeting pack");
   expect(await axe(page)).toEqual([]);
@@ -150,12 +153,13 @@ test("Pre-meeting Pack: automation is off, so the manual path is offered, versio
   await expect(omar.locator('[data-artifact="discovery"] [data-waiting-for-teammate]')).toBeVisible();
   const adam = await signIn(browser, ADAM);
   await adam.goto("/dashboard");
-  await expect(adam.locator('[data-section="packs"]')).toContainText(CLIENT);
+  await expect(adam.locator('[data-section="packs"]')).toContainText(COMPANY);
   await adam.goto(`/leads/${inquiry}/pack`);
   await adam.locator('[data-artifact="discovery"]').getByRole("button", { name: "Approve for the meeting" }).click();
   await expect(adam.locator('[data-artifact="discovery"] [data-review]')).toHaveText("Approved for meeting");
   await adam.goto("/dashboard");
-  await expect(adam.locator('[data-section="packs"]')).not.toContainText(CLIENT);
+  // Nothing is waiting for review any more, so the section may be gone entirely; it must not list this lead.
+  await expect(adam.locator('[data-section="packs"]').filter({ hasText: COMPANY })).toHaveCount(0);
   await omar.context().close();
   await adam.context().close();
 });
