@@ -42,7 +42,7 @@ the interface shows less of them.
 
 | Need | Existing storage |
 | --- | --- |
-| Estimated budget, expected timeline | `project_inquiries.budget_range`, `.timeline` (text, max 100; present since 2026-08). New submissions store stable codes (section 5.1) |
+| Estimated budget, expected timeline | `project_inquiries.budget_range`, `.timeline` (text, max 100; present since 2026-08). New submissions store stable codes (section 5.1); the budget currency goes in the new `budget_currency` |
 | Existing website/app link | `project_inquiries.company_url` (text, max 500; never filled by the form) |
 | Meeting date, client time zone | `project_inquiries.meeting_start_at`, `.meeting_timezone` (from the Cal.com webhook) |
 | Meeting / manage link | derived from `cal_booking_id` as `https://cal.com/booking/<uid>` (the rule `booking-recovery.ts` already uses). The webhook still never stores video-call URLs |
@@ -119,12 +119,15 @@ destinations (their addresses redirect), and technical status names on the dashb
 
 ### 5.1 Budget and timeline
 
-The public form asks for the **estimated budget**, "in US dollars, or the equivalent in
-your currency" (Arabic: «بالدولار الأمريكي، أو ما يعادله بعملتك»), and the expected
-timeline. New submissions store a stable code; people only see the label
-(`src/lib/form-options.ts`).
+The public form asks for the **estimated budget** in one of two currencies, and the
+expected timeline. The budget's help text says what the ranges are for: "This helps us
+understand the suitable scope. It is not a final quote." (Arabic: «يساعدنا ذلك على فهم
+النطاق المناسب، ولا يُعدّ عرض سعر نهائيًا.»). New submissions store a stable code; people
+only see labels (`src/lib/form-options.ts`).
 
-| Budget code | English | Arabic |
+**Two separate scales, never a conversion** (no exchange rates are used):
+
+| USD code | English | Arabic |
 | --- | --- | --- |
 | `under_2500` | Under USD 2,500 | أقل من 2,500 دولار أمريكي |
 | `2500_5000` | USD 2,500–5,000 | من 2,500 إلى 5,000 دولار أمريكي |
@@ -132,6 +135,18 @@ timeline. New submissions store a stable code; people only see the label
 | `10000_20000` | USD 10,000–20,000 | من 10,000 إلى 20,000 دولار أمريكي |
 | `over_20000` | Over USD 20,000 | أكثر من 20,000 دولار أمريكي |
 | `not_sure` | Not sure yet | لست متأكدًا بعد |
+
+| EGP code | English | Arabic |
+| --- | --- | --- |
+| `under_50000` | Under EGP 50,000 | أقل من 50,000 جنيه مصري |
+| `50000_100000` | EGP 50,000–100,000 | من 50,000 إلى 100,000 جنيه مصري |
+| `100000_250000` | EGP 100,000–250,000 | من 100,000 إلى 250,000 جنيه مصري |
+| `250000_500000` | EGP 250,000–500,000 | من 250,000 إلى 500,000 جنيه مصري |
+| `over_500000` | Over EGP 500,000 | أكثر من 500,000 جنيه مصري |
+| `not_sure` | Not sure yet | لست متأكدًا بعد |
+
+The two scales share only `not_sure`, so a stored range code always says which scale it
+belongs to.
 
 | Timeline code | English | Arabic |
 | --- | --- | --- |
@@ -141,27 +156,66 @@ timeline. New submissions store a stable code; people only see the label
 | `over_6_months` | Later than 6 months | بعد أكثر من 6 أشهر |
 | `not_sure` | Not sure yet | لست متأكدًا بعد |
 
-**Older cached forms** sent English labels. They are still accepted by the request schema
-(`src/lib/inquiry-schema.ts`):
+**Which currency the question starts in** (`src/lib/budget-currency.ts`):
 
-- every older timeline label, and the budget "Not sure yet", has an exact counterpart and
-  is stored as that code;
+1. a currency the visitor chose before (first-party cookie `mintapp_budget_currency`,
+   one year) wins;
+2. otherwise Egypt (`EG`) starts in EGP;
+3. every other country, including the Gulf and the rest of MENA, and a missing or
+   malformed country, starts in USD.
+
+The country is only the two-letter code Vercel adds to the request
+(`x-vercel-ip-country`); no IP address is read, stored or logged by this feature, and the
+country itself is neither stored nor sent with the inquiry. The visitor always sees an
+EGP/USD choice (a labelled radio pair, one tab stop, arrow keys switch). Switching clears
+the chosen range, announces "Currency changed. Choose your budget range again." and
+remembers the choice; one answer is never translated into the other. Language and
+currency are independent.
+
+**Rendering and caching**: the Start page used to be prerendered once per language. It
+now renders for each request (`export const dynamic = "force-dynamic"`, like `/book`):
+the server reads the cookie and the country header and renders the right scale in the
+first HTML, so nothing changes after the page loads. Next.js sends a dynamic page as
+`private, no-cache, no-store`, so no shared cache can hand one visitor's page to another
+(checked in `tests/e2e/budget-currency.spec.ts`). The cost is a server render per visit of `/start`.
+
+**Stored**: `project_inquiries.budget_range` (the code) and the new
+`project_inquiries.budget_currency` (`USD` or `EGP`). The column is nullable, so rows
+from before are untouched, and a check constraint (`project_inquiries_budget_currency_range`)
+allows a currency only with a range from its own scale; USD also allows the earlier
+form's labels below. The server validates the same rule first (`src/lib/inquiry-schema.ts`):
+a range from the other scale, a currency without a range, or any other currency is
+refused with a field error on the budget.
+
+**Older cached forms** sent no currency. Their budget is US dollars:
+
+- today's USD codes are stored as they are, with `USD`;
+- the budget "Not sure yet" and every older timeline label have an exact counterpart and
+  are stored as that code;
 - the four earlier placeholder budget bands ("Under USD 5,000", "USD 5,000 - 15,000",
-  "USD 15,000 - 40,000", "Over USD 40,000") straddle the new bands, so they are stored as
-  sent rather than guessed into a different band;
-- anything else is refused (`invalid_value`), as before.
+  "USD 15,000 - 40,000", "Over USD 40,000") straddle today's bands, so they are stored as
+  sent (with `USD`) rather than guessed into another band;
+- anything else is refused, as before.
 
-**Existing rows are never rewritten**; no migration touches these columns. Every stored
-form is displayed with a label: a code or an older label shows its English or Arabic
-label; any other stored text (for example free text written before the form asked) is
-shown as stored.
+**Existing rows are never rewritten.** Every stored form is displayed with a label: the
+stored currency picks the scale; a row without one is read by its code (unambiguous) or
+as an older US-dollar label; "Not sure yet" names the currency when it is known
+("Not sure yet (Egyptian pounds)"); anything else (for example free text written before
+the form asked) is shown as stored.
 
-**Where the label appears**: the lead's Overview (interface language), the team's
-notification email (English: "Budget", "Timeline" rows), and the preparation brief sent to
-the generator and copied into the manual Claude prompt (the brief's own language, for
-example "Estimated budget (client-stated): USD 5,000–10,000" or «الميزانية التقديرية (كما
-ذكرها العميل): من 5,000 إلى 10,000 دولار أمريكي»). Codes never appear in any text a person
-or a model reads; the client's acknowledgment email does not repeat the answers.
+**Where the label appears**, never the code:
+
+| Surface | What it shows |
+| --- | --- |
+| Lead Overview | the label in the interface language (`lead_detail` now returns the currency) |
+| Founder notification email | "Budget" and "Timeline" rows in English |
+| CodeCraft brief and the manual Claude prompt | the label in the brief's language, for example «الميزانية التقديرية (كما ذكرها العميل): من 100,000 إلى 250,000 جنيه مصري» (`preparation_input` now returns the currency) |
+| Pre-meeting Pack tab | the copied prompt and the check of a pasted reply use the same brief |
+| CSV export of inquiries | new `budget` (English label), `budget_currency` and `timeline` (English label) columns |
+| Proposal and deal views | none display the submitted budget |
+
+The client's acknowledgment email does not repeat the answers. Other export columns
+(project type, stage, meeting, preparation) keep their stored values, as before.
 
 ## 6. The Pre-meeting Pack
 
@@ -551,7 +605,7 @@ has; the two do not touch the same objects. The
 production-upgrade test (`tests/db/production-upgrade.test.mjs`) applies them on a copy
 of the production schema with data and checks nothing is lost.
 
-They also add `inquiry_preparations.pack_progress` and the step functions
+They also add `project_inquiries.budget_currency` (nullable, with its check constraint), return it from `preparation_input`, `lead_detail` and the inquiries export, add `inquiry_preparations.pack_progress` and the step functions
 (`pack_save_generated`, `pack_progress_get`, `pack_progress_set`, `pack_finish`).
 
 What they change in existing data: queued jobs for inquiries without a booking become
