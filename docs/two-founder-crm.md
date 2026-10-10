@@ -42,7 +42,7 @@ the interface shows less of them.
 
 | Need | Existing storage |
 | --- | --- |
-| Budget range, expected timeline | `project_inquiries.budget_range`, `.timeline` (text, max 100; present since 2026-08, never filled by the form) |
+| Estimated budget, expected timeline | `project_inquiries.budget_range`, `.timeline` (text, max 100; present since 2026-08). New submissions store stable codes (section 5.1) |
 | Existing website/app link | `project_inquiries.company_url` (text, max 500; never filled by the form) |
 | Meeting date, client time zone | `project_inquiries.meeting_start_at`, `.meeting_timezone` (from the Cal.com webhook) |
 | Meeting / manage link | derived from `cal_booking_id` as `https://cal.com/booking/<uid>` (the rule `booking-recovery.ts` already uses). The webhook still never stores video-call URLs |
@@ -110,53 +110,58 @@ destinations (their addresses redirect), and technical status names on the dashb
 
 ## 5. Genuine decisions for Omar (not blockers)
 
-1. **Budget ranges.** No pricing decision exists in the repositories. The form ships
-   with placeholder bands in `src/lib/form-options.ts`, marked provisional, which need
-   Omar's approval before release (unchanged until then; see 5.1).
+1. **Budget bands**: approved and implemented (section 5.1).
 2. **Default owner** for automatic actions when an inquiry has no owner. Set in Settings;
    until set, such an action is shown as *Needs an owner*.
 3. **Review deadline**: the day before the meeting. One constant; change on request.
-4. **Real inquiries and CodeCraft**: automated preparation stays off for real inquiries
-   until the upstream provider of the chosen model is verified (section 7.3).
+4. **Real inquiries and CodeCraft**: blocked until written provider and data-processing
+   confirmation is received (section 7.7).
 
-### 5.1 Budget and timeline: what exists today (not changed)
+### 5.1 Budget and timeline
 
-| Field | Stored value (English, in `project_inquiries`) | English label | Arabic label |
-| --- | --- | --- | --- |
-| budget | `Under USD 5,000` | Under USD 5,000 | أقل من 5,000 دولار |
-| budget | `USD 5,000 - 15,000` | USD 5,000 – 15,000 | من 5,000 إلى 15,000 دولار |
-| budget | `USD 15,000 - 40,000` | USD 15,000 – 40,000 | من 15,000 إلى 40,000 دولار |
-| budget | `Over USD 40,000` | Over USD 40,000 | أكثر من 40,000 دولار |
-| budget | `Not sure yet` | Not sure yet | لست متأكدًا بعد |
-| timeline | `As soon as possible` | As soon as possible | في أقرب وقت ممكن |
-| timeline | `Within 3 months` | Within 3 months | خلال 3 أشهر |
-| timeline | `In 3 to 6 months` | In 3 to 6 months | خلال 3 إلى 6 أشهر |
-| timeline | `Later than 6 months` | Later than 6 months | بعد أكثر من 6 أشهر |
-| timeline | `Not sure yet` | Not sure yet | لست متأكدًا بعد |
+The public form asks for the **estimated budget**, "in US dollars, or the equivalent in
+your currency" (Arabic: «بالدولار الأمريكي، أو ما يعادله بعملتك»), and the expected
+timeline. New submissions store a stable code; people only see the label
+(`src/lib/form-options.ts`).
 
-- Storage: `project_inquiries.budget_range` and `.timeline`, free text, at most 100
-  characters (constraint from `20260822000000`). The form stores the English `value`.
-- Constraint: **neither `20261015000000` nor `20261016000000` mentions budget or timeline.**
-  Only the application's request schema (`src/lib/inquiry-schema.ts`) accepts exactly the
-  values above for new submissions. Older or unknown stored values are shown as stored.
-- Use: the budget and timeline are copied into the brief as "client-stated", so a
-  generator may repeat those figures; it may not invent others.
+| Budget code | English | Arabic |
+| --- | --- | --- |
+| `under_2500` | Under USD 2,500 | أقل من 2,500 دولار أمريكي |
+| `2500_5000` | USD 2,500–5,000 | من 2,500 إلى 5,000 دولار أمريكي |
+| `5000_10000` | USD 5,000–10,000 | من 5,000 إلى 10,000 دولار أمريكي |
+| `10000_20000` | USD 10,000–20,000 | من 10,000 إلى 20,000 دولار أمريكي |
+| `over_20000` | Over USD 20,000 | أكثر من 20,000 دولار أمريكي |
+| `not_sure` | Not sure yet | لست متأكدًا بعد |
 
-Recommended structure (for Omar's approval; not implemented):
+| Timeline code | English | Arabic |
+| --- | --- | --- |
+| `asap` | As soon as possible | في أقرب وقت ممكن |
+| `within_3_months` | Within 3 months | خلال 3 أشهر |
+| `3_to_6_months` | In 3 to 6 months | خلال 3 إلى 6 أشهر |
+| `over_6_months` | Later than 6 months | بعد أكثر من 6 أشهر |
+| `not_sure` | Not sure yet | لست متأكدًا بعد |
 
-- **One currency, USD**, for Egypt, MENA and international clients alike: the placeholders
-  are already in USD, local currencies move too much to fix bands in them, and one scale
-  keeps leads comparable. Labels may say "about" in Arabic if that reads better.
-- **Stable codes stored, labels shown**: store a code (`budget_lt_5k`, `budget_5_15k`, …,
-  `not_sure`; `timeline_asap`, `timeline_3m`, `timeline_3_6m`, `timeline_6m_plus`,
-  `not_sure`) and show the English or Arabic label. Changing a label or a band later then
-  never splits the data; today's English values stay readable through a small alias map,
-  with no migration.
-- **Four or five contiguous, non-overlapping bands plus "Not sure yet"**, the lowest open
-  below and the highest open above, so every answer has exactly one band. The boundaries
-  are a pricing decision; the current placeholders (5,000 / 15,000 / 40,000) are a starting
-  point only.
-- **"Not sure yet" stays first-class** for both questions and is never treated as missing.
+**Older cached forms** sent English labels. They are still accepted by the request schema
+(`src/lib/inquiry-schema.ts`):
+
+- every older timeline label, and the budget "Not sure yet", has an exact counterpart and
+  is stored as that code;
+- the four earlier placeholder budget bands ("Under USD 5,000", "USD 5,000 - 15,000",
+  "USD 15,000 - 40,000", "Over USD 40,000") straddle the new bands, so they are stored as
+  sent rather than guessed into a different band;
+- anything else is refused (`invalid_value`), as before.
+
+**Existing rows are never rewritten**; no migration touches these columns. Every stored
+form is displayed with a label: a code or an older label shows its English or Arabic
+label; any other stored text (for example free text written before the form asked) is
+shown as stored.
+
+**Where the label appears**: the lead's Overview (interface language), the team's
+notification email (English: "Budget", "Timeline" rows), and the preparation brief sent to
+the generator and copied into the manual Claude prompt (the brief's own language, for
+example "Estimated budget (client-stated): USD 5,000–10,000" or «الميزانية التقديرية (كما
+ذكرها العميل): من 5,000 إلى 10,000 دولار أمريكي»). Codes never appear in any text a person
+or a model reads; the client's acknowledgment email does not repeat the answers.
 
 ## 6. The Pre-meeting Pack
 
@@ -299,7 +304,7 @@ every fact quoted the brief; no invented price, duration, metric or promise; Eng
 `scheduling_app` with 4 screens, Arabic design `academy_site` with 4 screens; whole packs
 took about 102 s (EN) and 110 s (AR) of sequential requests. The Arabic discovery request
 returned a `client_decisions` list that failed the schema (the prompt gave no limit for
-that list; it now says "at most 5, each one short sentence"; not re-run). Under the new
+that list; it now says "at most 5, each one short sentence"; re-checked and valid in 7.4.1). Under the new
 rules that artifact would be prepared by hand and the other two kept.
 
 Quality notes: facts are the brief's own sentences, lightly normalised; assumptions are
@@ -309,6 +314,31 @@ information and questions are specific and useful for a first meeting. The Arabi
 fluent Modern Standard Arabic suited to a private-school context; one small grammatical
 slip ("لم يذكر العميل شعار" for "شعارًا"). A native reader should still review Arabic output
 before it is shown to a client.
+
+### 7.4.1 Round 3: the Arabic discovery request re-checked (10 Oct 2026)
+
+After the discovery prompt gained its list limits, only the Arabic discovery request was
+re-checked: synthetic Arabic school brief, the model CodeCraft labels `claude-sonnet-5`,
+client-data approval off, a run cap of 12,000 tokens and at most two attempts. Reusing the
+earlier analysis was tried first and refused before any request (its budget fact quoted
+the old label, renamed in this change), so the analysis was asked again. One attempt was
+enough.
+
+| Request | max_tokens | Prompt | Completion | Total | Finish | Valid | Time |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| analysis | 4,000 | 709 | 2,650 | 3,359 | stop | yes, 4/4 expected facts, every fact quotes the brief | 18.4 s |
+| discovery | 4,000 | 999 | 2,354 | 3,353 | stop | **yes** | 17.4 s |
+
+**Round 3 total: 6,712 tokens**, exact. The decisions list that failed before now has 5
+items of 28-41 characters (schema: at most 6, each at most 200). The Arabic has no
+grammatical errors; two words omit the optional tanween alif ("قديما", "مبكرا") and one
+phrase is less formal than it could be ("نحتاج لتوفيرها" for "نحتاج إلى توفيرها"). With this,
+all eight artifacts of the final evaluation are valid: the four English requests and the
+Arabic analysis, design and proposal of round 2 (run E), and this Arabic discovery request.
+
+**CodeCraft consumption on this key**: round 1 at most 45,352; round 2 exactly 72,341;
+round 3 exactly 6,712; **at most 124,405 in total** (79,053 of it exact), below the app's
+600,000 monthly limit.
 
 ### 7.5 Comparison: `gemini-3.7-flash` (round 1, single request; not configured)
 
@@ -334,10 +364,25 @@ The normal suite (`npm test`) reports 2 skipped tests, both intentional:
 2. `src/content/work-screens.test.ts`: a public-site test (on `main` since 4 Oct) that
    waits until case-study screenshots exist; unrelated to the CRM.
 
-Real inquiries remain blocked from CodeCraft: `selectGenerator` returns
-`client_data_not_approved` unless `CODECRAFT_CLIENT_DATA_APPROVED=true` (unit-tested), and
-automated preparation is off unless `PREPARATION_GENERATOR` is set. The local `.env.local`
-holds only the key; the Vercel environment variables were not inspected or changed.
+### 7.7 Real-client restriction
+
+- **CodeCraft has not identified the upstream provider** of any model: not in `/v1/models`
+  (`owned_by: "CodeCraft API"`), not in responses, not in its documentation, terms or
+  privacy policy.
+- The model is therefore described everywhere as **"the model CodeCraft labels
+  `claude-sonnet-5`"**, not as Claude.
+- **No production client brief may be sent** until Mintapp has acceptable written
+  confirmation from CodeCraft of the provider serving that model and of the
+  data-processing terms. Enforced in code: `selectGenerator` refuses real inquiries unless
+  `CODECRAFT_CLIENT_DATA_APPROVED=true` (unit-tested), which is set nowhere, and automated
+  preparation is off unless `PREPARATION_GENERATOR` is set. The local `.env.local` holds
+  only the key; the Vercel environment variables were not inspected or changed.
+- **The manual Claude Pro path remains the real-client fallback**: a founder copies the
+  scrubbed prompt into their own Claude chat and pastes the reply back, where it passes
+  the same checks. No Claude Pro account is connected to the application.
+- **`gemini-3.7-flash` remains unconfigured** and cannot be selected automatically: there
+  is exactly one configured model, no fallback setting, and a reply naming any other model
+  is refused and pauses automation.
 
 ## 8. The interface
 
