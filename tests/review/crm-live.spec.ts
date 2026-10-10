@@ -6,7 +6,8 @@ import { REVIEW_PORT } from "../../playwright.review-live.config";
 import { signInAs } from "../dashboard/helpers";
 import { adminClient, assertReviewProject, reviewProjectFromEnv } from "../../scripts/lib/review-auth.mjs";
 
-// CRM Release 1 end to end against REAL Supabase Auth and the REAL database of the isolated
+// The two-founder CRM (CRM Release 1 as Leads & Clients, the Pre-meeting Pack, the command
+// centre and Growth) end to end against REAL Supabase Auth and the REAL database of the isolated
 // synthetic review project (mintapp-review), through the same code the admin Preview runs
 // (production data paths, VERCEL_ENV=preview so the review guard is active). It makes its own
 // synthetic inquiries, so it does not depend on what reviewers have done. No email is sent,
@@ -28,6 +29,10 @@ const overflow = (page: Page) => page.evaluate(() => document.documentElement.sc
 const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => v.id);
 const notice = (page: Page) => page.locator("[data-notice]");
 const panel = (page: Page, id: string) => page.locator(`section[aria-labelledby="${id}"]`);
+const openAdvanced = async (page: Page) => {
+  const advanced = page.locator("[data-advanced]");
+  if (!(await advanced.evaluate((d) => (d as HTMLDetailsElement).open))) await advanced.locator("summary").first().click();
+};
 const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${name}.png`, fullPage: true });
 
 let inquiry = "";
@@ -75,7 +80,7 @@ test.beforeAll(async () => {
 });
 
 test("the deployment answers only for the synthetic review project, and refuses a stranger", async ({ page, request }) => {
-  for (const path of ["/dashboard", "/inquiries", "/companies", "/outreach", "/metrics", `/inquiries/${inquiry}`]) {
+  for (const path of ["/dashboard", "/leads", "/growth", "/settings", "/companies", "/outreach", "/metrics", `/leads/${inquiry}`, `/leads/${inquiry}/pack`]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator("body")).not.toContainText(CLIENT);
@@ -84,22 +89,21 @@ test("the deployment answers only for the synthetic review project, and refuses 
   expect((await request.post("/export/contacts", { headers: { origin: ORIGIN }, maxRedirects: 0 })).status()).toBe(401);
 });
 
-test("English, desktop: dashboard shows the new inquiry, the booked meeting and the missing owner", async ({ browser }) => {
+test("English, desktop: the command centre shows the booked meeting, the waiting lead and the review with no owner", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.goto("/dashboard");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Dashboard");
-  await expect(panel(page, "new")).toContainText(CLIENT);
-  await expect(panel(page, "prepare")).toContainText(CLIENT);
-  await expect(panel(page, "upcoming")).toContainText(CLIENT);
-  await expect(panel(page, "attention")).toContainText("No owner");
+  await expect(page.locator('[data-section="meetings"]')).toContainText(CLIENT);
+  await expect(page.locator('[data-section="awaiting"]')).toContainText(CLIENT_AR);
+  await expect(page.locator('[data-section="actions"]')).toContainText("Review and approve the pre-meeting pack");
   expect(await axe(page)).toEqual([]);
   await shot(page, "en-desktop-dashboard");
   await page.context().close();
 });
 
-test("English: ownership, a dated follow-up, the stage, and a booking that never moves it", async ({ browser }) => {
+test("English: ownership, a dated next action, the position, and a booking that never moves it", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${inquiry}`);
+  await page.goto(`/leads/${inquiry}`);
   await page.locator("#owner-select").selectOption("adam,omar");
   await page.getByRole("button", { name: "Save owner" }).click();
   await page.waitForURL(/n=saved/);
@@ -109,57 +113,63 @@ test("English: ownership, a dated follow-up, the stage, and a booking that never
   await page.locator("#follow-up-due").fill("2030-02-01");
   await page.getByRole("button", { name: "Add follow-up" }).click();
   await expect(page.locator("[data-follow-ups]")).toContainText("Adam");
-  await page.locator("#stage-select").selectOption("qualified");
-  await page.getByRole("button", { name: "Update stage" }).click();
+  await page.locator("#position-select").selectOption("qualified");
+  await page.getByRole("button", { name: "Save position" }).click();
   await page.waitForURL(/n=stageChanged/);
-  // The booking is rescheduled and cancelled by the (simulated) webhook: the stage stays.
+  // The booking is rescheduled and cancelled by the (simulated) webhook: the position stays, the pack stays.
   const later = new Date(Date.now() + 5 * 86_400_000).toISOString();
   await db.rpc("apply_booking_rescheduled", { p_inquiry_id: inquiry, p_reschedule_uid: `review-${tag}`, p_new_uid: `review-${tag}-b`, p_start_time: later, p_timezone: "Africa/Cairo", p_event_at: new Date().toISOString() });
   await db.rpc("apply_booking_cancelled", { p_inquiry_id: inquiry, p_uid: `review-${tag}-b`, p_start_time: later, p_timezone: "Africa/Cairo", p_event_at: new Date(Date.now() + 1000).toISOString() });
-  await page.reload();
-  await expect(page.locator("#stage-select")).toHaveValue("qualified");
-  await expect(page.locator("[data-status=meeting]")).toHaveText("Cancelled");
+  await page.goto(`/leads/${inquiry}`);
+  await expect(page.locator("#position-select")).toHaveValue("qualified");
+  await expect(page.locator("[data-meeting]")).toHaveAttribute("data-meeting", "cancelled");
+  await page.goto(`/leads/${inquiry}/activity`);
   await expect(page.locator("[data-activity]")).toContainText("The meeting was rescheduled");
   await expect(page.locator("[data-activity]")).toContainText("The meeting was cancelled");
-  // The preparation is still there after the cancellation.
-  await expect(page.locator("[data-status=preparation]")).toBeVisible();
-  await shot(page, "en-desktop-inquiry");
+  await page.goto(`/leads/${inquiry}/pack`);
+  await expect(page.locator("#pack-state [data-pack-state]")).toBeVisible();
+  await shot(page, "en-desktop-lead");
   await page.context().close();
 });
 
-test("preparation: automation is off, so the manual path is offered, versioned and approved by the other person", async ({ browser }) => {
+test("Pre-meeting Pack: automation is off, so the manual path is offered, versioned and approved by the other founder", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
-  await omar.goto(`/inquiries/${inquiry}`);
-  await expect(omar.getByText("Waiting for manual preparation")).toBeVisible();
-  // The copied prompt carries the brief, never a way to reach the client.
-  await omar.getByRole("button", { name: "Copy brief for Claude" }).click();
-  const prompt = await omar.evaluate(() => navigator.clipboard.readText());
+  await omar.goto(`/leads/${inquiry}/pack`);
+  await expect(omar.locator("#pack-state [data-pack-state]")).toHaveText("Needs manual action");
+  // The prompt carries the brief, never a way to reach the client.
+  const prompt = (await omar.locator("[data-manual-prompt]").textContent()) ?? "";
   expect(prompt).toContain("physiotherapy clinics");
   expect(prompt).not.toMatch(new RegExp(`${EMAIL}|personal@review-check|555 0199|${COMPANY}|${CLIENT}|review-check\\.invalid`));
-  await omar.locator("#paste-draft").fill("## Summary\nThree clinics want online booking.\n## Questions\n- Who books today?");
-  await omar.getByRole("button", { name: "Save as new draft" }).click();
-  await omar.getByRole("button", { name: "Mark ready for review" }).click();
-  await expect(omar.locator("[data-review]")).toHaveText("Ready for review");
-  await expect(omar.locator("[data-waiting-for-teammate]")).toBeVisible();
-  await expect(omar.getByRole("button", { name: "Approve for the meeting" })).toHaveCount(0);
+  const discovery = omar.locator('[data-artifact="discovery"]');
+  await discovery.locator("summary").first().click();
+  await discovery.locator("textarea").first().fill("Questions to ask\n- Who books today?\n- What happens when a patient cancels?");
+  await discovery.getByRole("button", { name: "Save as a new version" }).click();
+  await expect(notice(omar)).toContainText("saved as a new version");
+  await omar.locator('[data-artifact="discovery"]').getByRole("button", { name: "Ready for review" }).click();
+  await expect(omar.locator('[data-artifact="discovery"] [data-review]')).toHaveText("Ready for review");
+  await expect(omar.locator('[data-artifact="discovery"] [data-waiting-for-teammate]')).toBeVisible();
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/inquiries/${inquiry}`);
-  await adam.getByRole("button", { name: "Approve for the meeting" }).click();
-  await expect(adam.locator("[data-review]")).toHaveText("Approved for the meeting");
   await adam.goto("/dashboard");
-  await expect(panel(adam, "prepare")).not.toContainText(CLIENT);
+  await expect(adam.locator('[data-section="packs"]')).toContainText(CLIENT);
+  await adam.goto(`/leads/${inquiry}/pack`);
+  await adam.locator('[data-artifact="discovery"]').getByRole("button", { name: "Approve for the meeting" }).click();
+  await expect(adam.locator('[data-artifact="discovery"] [data-review]')).toHaveText("Approved for meeting");
+  await adam.goto("/dashboard");
+  await expect(adam.locator('[data-section="packs"]')).not.toContainText(CLIENT);
   await omar.context().close();
   await adam.context().close();
 });
 
 test("company and contact are created from the inquiry; contact details stay on detail pages", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${inquiry}`);
+  await page.goto(`/leads/${inquiry}`);
+  await openAdvanced(page);
   await page.locator("#create-mode").selectOption("new");
   await page.getByRole("button", { name: "Create from this inquiry" }).click();
   await expect(notice(page)).toContainText("Created.");
+  await openAdvanced(page);
   await expect(page.locator("[data-linked-company]")).toContainText(COMPANY);
-  for (const path of ["/inquiries", "/companies", `/search?q=${tag}`, "/dashboard", "/pipeline"]) {
+  for (const path of ["/leads", "/companies", `/search?q=${tag}`, "/dashboard", "/growth"]) {
     await page.goto(path);
     await expect(page.locator("body"), path).not.toContainText(EMAIL);
   }
@@ -176,7 +186,7 @@ test("company and contact are created from the inquiry; contact details stay on 
 
 test("proposal and scope: written by Omar, approved by Adam, sent by hand, won, then a project", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
-  await omar.goto(`/inquiries/${inquiry}`);
+  await omar.goto(`/leads/${inquiry}/deal`);
   await omar.getByText("Start a proposal").click();
   await omar.locator("#new-proposal-summary").fill("Online booking for three clinics");
   await omar.locator("#new-proposal-scope").fill("Patient booking and a receptionist schedule");
@@ -189,18 +199,20 @@ test("proposal and scope: written by Omar, approved by Adam, sent by hand, won, 
   await expect(omar.locator("[data-proposal-status]")).toHaveText("Internal review");
   await expect(omar.getByRole("button", { name: "Approve internally" })).toHaveCount(0);
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/inquiries/${inquiry}`);
+  await adam.goto(`/leads/${inquiry}/deal`);
   await adam.getByRole("button", { name: "Approve internally" }).click();
   await expect(adam.locator("[data-proposal-status]")).toHaveText("Approved internally");
   await adam.getByRole("button", { name: "Record as sent" }).click();
   await expect(adam.locator("[data-proposal-status]")).toHaveText("Sent");
   await adam.getByRole("button", { name: "Record as accepted" }).click();
   await expect(adam.locator("[data-proposal-status]")).toHaveText("Accepted");
-  await expect(adam.locator("#stage-select")).toHaveValue("qualified");
-  await shot(adam, "en-desktop-proposal");
-  await adam.locator("#stage-select").selectOption("won");
-  await adam.getByRole("button", { name: "Update stage" }).click();
+  await expect(adam.locator("header [data-position]")).toHaveAttribute("data-position", "qualified");
+  await shot(adam, "en-desktop-deal");
+  await adam.goto(`/leads/${inquiry}`);
+  await adam.locator("#position-select").selectOption("won");
+  await adam.getByRole("button", { name: "Save position" }).click();
   await adam.waitForURL(/n=stageChanged/);
+  await adam.goto(`/leads/${inquiry}/deal`);
   await adam.locator("#project-name").fill(`Project ${tag}`);
   await adam.getByRole("button", { name: "Create the project" }).click();
   await expect(notice(adam)).toContainText("The project was created.");
@@ -247,19 +259,18 @@ test("outreach: a prospect with a dated next action, a touch, and the hand-over 
   await page.context().close();
 });
 
-test("pipeline, filters, search, metrics and the CSV export", async ({ browser }) => {
+test("Leads & Clients filters, search, metrics and the CSV export", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto("/pipeline");
-  await expect(page.locator('[data-stage-column="won"]')).toContainText(CLIENT);
-  await expect(page.locator('[data-stage-column="new"]')).toContainText(CLIENT_AR);
-  await page.goto("/pipeline?owner=adam");
-  await expect(page.locator("[data-pipeline-card]").filter({ hasText: CLIENT })).toHaveCount(1);
-  await page.goto(`/inquiries?q=${encodeURIComponent(tag)}&stage=won`);
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await page.goto(`/inquiries?q=${encodeURIComponent(tag)}&origin=outbound`);
-  await expect(page.locator("tbody tr")).toHaveCount(1); // the Arabic inquiry, linked to the prospect
-  await page.goto(`/inquiries?q=${encodeURIComponent(tag)}`);
-  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await page.goto(`/leads?q=${encodeURIComponent(tag)}&stage=closed`);
+  await expect(page.locator("[data-lead]")).toHaveCount(1);
+  await expect(page.locator("[data-lead]")).toContainText(CLIENT);
+  await page.goto(`/leads?q=${encodeURIComponent(tag)}&stage=new`);
+  await expect(page.locator("[data-lead]")).toContainText(CLIENT_AR);
+  await page.goto(`/leads?q=${encodeURIComponent(tag)}&owner=adam`);
+  await expect(page.locator("[data-lead]").filter({ hasText: CLIENT })).toHaveCount(1);
+  await page.goto(`/leads?q=${encodeURIComponent(tag)}`);
+  await expect(page.locator("[data-lead]")).toHaveCount(2);
+  await expect(page.locator("[data-leads]")).not.toContainText(EMAIL);
   await page.goto("/metrics");
   await expect(page.locator("[data-sources]")).toContainText("linkedin");
   await shot(page, "en-desktop-metrics");
@@ -282,7 +293,7 @@ test("pipeline, filters, search, metrics and the CSV export", async ({ browser }
 
 test("Arabic and RTL on desktop, then English and Arabic on a phone: nothing overflows, no accessibility violations", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  const paths = ["/dashboard", "/inquiries", `/inquiries/${inquiryAr}`, `/inquiries/${inquiry}`, "/pipeline", "/outreach", "/companies", "/proposals", "/projects", "/metrics", `/search?q=${encodeURIComponent(tag)}`];
+  const paths = ["/dashboard", "/leads", `/leads/${inquiryAr}`, `/leads/${inquiry}`, `/leads/${inquiry}/pack`, `/leads/${inquiry}/deal`, "/growth", "/outreach", "/companies", "/projects", "/metrics", "/settings", `/search?q=${encodeURIComponent(tag)}`];
   await page.goto("/dashboard");
   await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
@@ -294,13 +305,13 @@ test("Arabic and RTL on desktop, then English and Arabic on a phone: nothing ove
   }
   await page.goto("/dashboard");
   await shot(page, "ar-desktop-dashboard");
-  await page.goto(`/inquiries/${inquiryAr}`);
+  await page.goto(`/leads/${inquiryAr}`);
   await expect(page.locator("[data-brief=description]")).toContainText("مدرسة خاصة");
-  await shot(page, "ar-desktop-inquiry");
-  await page.goto("/pipeline");
-  await shot(page, "ar-desktop-pipeline");
-  await page.goto("/outreach");
-  await shot(page, "ar-desktop-outreach");
+  await shot(page, "ar-desktop-lead");
+  await page.goto(`/leads/${inquiry}/pack`);
+  await shot(page, "ar-desktop-pack");
+  await page.goto("/growth");
+  await shot(page, "ar-desktop-growth");
   await page.setViewportSize({ width: 390, height: 844 });
   for (const path of paths) {
     await page.goto(path);
@@ -308,8 +319,8 @@ test("Arabic and RTL on desktop, then English and Arabic on a phone: nothing ove
   }
   await page.goto("/dashboard");
   await shot(page, "ar-phone-dashboard");
-  await page.goto(`/inquiries/${inquiryAr}`);
-  await shot(page, "ar-phone-inquiry");
+  await page.goto(`/leads/${inquiryAr}`);
+  await shot(page, "ar-phone-lead");
   await page.getByRole("button", { name: "التبديل إلى الواجهة الإنجليزية" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   for (const path of paths) {
@@ -319,8 +330,8 @@ test("Arabic and RTL on desktop, then English and Arabic on a phone: nothing ove
   }
   await page.goto("/dashboard");
   await shot(page, "en-phone-dashboard");
-  await page.goto(`/inquiries/${inquiry}`);
-  await shot(page, "en-phone-inquiry");
+  await page.goto(`/leads/${inquiry}`);
+  await shot(page, "en-phone-lead");
   await page.context().close();
 });
 

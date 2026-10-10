@@ -43,7 +43,7 @@ async function signIn(browser: Browser, email: string): Promise<Page> {
 
 const authCookies = async (context: BrowserContext) => (await context.cookies()).filter((c) => c.name.startsWith("__Host-mintapp-admin"));
 
-async function replay(browser: Browser, cookies: Awaited<ReturnType<typeof authCookies>>, path = "/inquiries") {
+async function replay(browser: Browser, cookies: Awaited<ReturnType<typeof authCookies>>, path = "/leads") {
   const context = await browser.newContext();
   await context.addCookies(cookies);
   const page = await context.newPage();
@@ -54,7 +54,7 @@ async function replay(browser: Browser, cookies: Awaited<ReturnType<typeof authC
 }
 
 test("nothing private is served without signing in, and only on the admin host", async ({ page, request }) => {
-  for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+  for (const path of ["/leads", `/leads/${CLINIC}`]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     const raw = await request.get(path, { maxRedirects: 0 });
@@ -94,7 +94,7 @@ test("forged session cookies open nothing, on any private page", async ({ browse
     [{ name: "__Host-mintapp-admin-activity", value: `${b64({ sid: "x", iat: now, last: now })}.AAAA` }],
   ];
   for (const cookies of variants) {
-    for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+    for (const path of ["/leads", `/leads/${CLINIC}`]) {
       const context = await browser.newContext();
       await context.addCookies(cookies.map((c) => ({ ...base, ...c })));
       const page = await context.newPage();
@@ -113,7 +113,7 @@ test("a wrong password, or the right password for an account outside the allowli
   ]) {
     const page = await passwordStep(browser, email, password);
     await expect(page.locator('p[role="alert"]')).toHaveText("That email and password do not match a Mintapp team account.");
-    await page.goto("/inquiries");
+    await page.goto("/leads");
     await expect(page).toHaveURL(/\/login$/);
     // The outsider's session was ended on the auth server, not just hidden.
     expect(await authCookies(page.context())).toEqual([]);
@@ -125,7 +125,7 @@ test("first sign-in requires setting up an authenticator; the password alone ope
   await page.waitForURL("**/login/mfa");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Set up your authenticator");
   // With only the password, every private page sends you back to the code step.
-  for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+  for (const path of ["/leads", `/leads/${CLINIC}`]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login\/mfa$/);
   }
@@ -140,10 +140,11 @@ test("first sign-in requires setting up an authenticator; the password alone ope
   await enterCode(page, secret);
   secrets.set(OMAR, secret);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Dashboard");
-  await page.goto("/inquiries");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Inquiries");
+  await page.goto("/leads");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Leads & Clients");
   // The synthetic review project may hold more inquiries than the four fixtures.
-  expect(await page.locator("tbody tr").count()).toBeGreaterThanOrEqual(4);
+  await expect(page.locator("[data-lead]").first()).toBeVisible();
+  expect(await page.locator("[data-lead]").count()).toBeGreaterThanOrEqual(4);
 
   // Session cookies: host-only, HttpOnly, Secure, SameSite=Strict, at most 12 hours.
   const cookies = await authCookies(page.context());
@@ -159,20 +160,20 @@ test("every later sign-in asks for the current code", async ({ browser }) => {
   const page = await passwordStep(browser, OMAR);
   await page.waitForURL("**/login/mfa");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Enter your authentication code");
-  await page.goto("/inquiries");
+  await page.goto("/leads");
   await expect(page).toHaveURL(/\/login\/mfa$/);
   await page.getByLabel("6-digit code").fill("123456");
   await page.getByRole("button", { name: "Verify" }).click();
   await expect(page.locator('p[role="alert"]')).toContainText("That code did not work");
   await enterCode(page, secrets.get(OMAR)!);
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}`);
   await expect(page.locator('[data-brief="description"]')).toContainText("physiotherapy");
 });
 
 test("sign-out ends the session on the auth server: a copied cookie stops working", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   const copied = await authCookies(page.context());
-  expect(await replay(browser, copied)).toBe("/inquiries");
+  expect(await replay(browser, copied)).toBe("/leads");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
   expect(await authCookies(page.context())).toEqual([]);
@@ -184,7 +185,7 @@ test("an idle or expired activity record ends the session, with a notice", async
   const copied = await authCookies(page.context());
   // Without its activity record (as after 2 idle hours), the next request revokes the session.
   await page.context().clearCookies({ name: "__Host-mintapp-admin-activity" });
-  await page.goto("/inquiries");
+  await page.goto("/leads");
   await expect(page).toHaveURL(/\/login\?expired=1$/);
   await expect(page.getByRole("status")).toHaveText("Your session ended. Sign in again.");
   expect(await replay(browser, copied)).toMatch(/^\/login/);
@@ -196,24 +197,24 @@ test("sign out everywhere ends that person's other sessions only", async ({ brow
   const omar = await signIn(browser, OMAR);
   await phone.getByRole("button", { name: "Sign out everywhere" }).click();
   await expect(phone).toHaveURL(/\/login$/);
-  await laptop.goto("/inquiries");
+  await laptop.goto("/leads");
   await expect(laptop).toHaveURL(/\/login/);
-  await omar.goto("/inquiries");
-  await expect(omar).toHaveURL(/\/inquiries$/);
+  await omar.goto("/leads");
+  await expect(omar).toHaveURL(/\/leads$/);
 });
 
 test("the interface works in Arabic, right to left", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto("/inquiries");
+  await page.goto("/leads");
   await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("الطلبات");
-  await expect(page.locator("tbody")).toContainText("منصة حرفيين تجريبية");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("العملاء والفرص");
+  await expect(page.locator("[data-leads]")).toContainText("منصة حرفيين تجريبية");
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
   expect(results.violations.map((v) => v.id)).toEqual([]);
-  await page.goto(`/inquiries/${CLINIC}`);
-  await expect(page.getByRole("heading", { name: "الملخص" })).toBeVisible();
+  await page.goto(`/leads/${CLINIC}`);
+  await expect(page.getByRole("heading", { name: "العميل والفكرة" })).toBeVisible();
   // Switch back for the rest of the team's tests.
   await page.getByRole("button", { name: "التبديل إلى الواجهة الإنجليزية" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");

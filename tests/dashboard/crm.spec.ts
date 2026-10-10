@@ -3,7 +3,8 @@ import AxeBuilder from "@axe-core/playwright";
 import { DEMO_PORT } from "../../playwright.crm.config";
 import { signInAs } from "./helpers";
 
-// CRM Release 1 end to end, on the synthetic fixture (tests/fixtures/synthetic-inquiries.sql),
+// CRM Release 1 end to end, as it now lives in Leads & Clients, the lead tabs and
+// Growth, on the synthetic fixture (tests/fixtures/synthetic-inquiries.sql),
 // signed in as the two team members through the real sign-in path.
 const CLINIC = "11111111-0000-4000-8000-000000000001";
 const SCHOOL = "11111111-0000-4000-8000-000000000002";
@@ -20,9 +21,15 @@ const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wca
 const notice = (page: Page) => page.locator("[data-notice]");
 // A panel is a section labelled by its heading; the heading carries the id used for in-page links.
 const panel = (page: Page, id: string) => page.locator(`section[aria-labelledby="${id}"]`);
+// Source, score and the company link live in the lead's collapsed Advanced area.
+const openAdvanced = async (page: Page) => {
+  const advanced = page.locator("[data-advanced]");
+  if (!(await advanced.evaluate((d) => (d as HTMLDetailsElement).open))) await advanced.locator("summary").first().click();
+};
+const leads = (page: Page) => page.locator("[data-lead]");
 
 test("every new page and route refuses without a signed-in session, and says nothing", async ({ page, request }) => {
-  const paths = ["/dashboard", "/pipeline", "/outreach", "/companies", "/proposals", "/projects", "/metrics", "/search?q=clinic", `/companies/${CLINIC}`, `/contacts/${CLINIC}`, `/outreach/${CLINIC}`, `/projects/${CLINIC}`];
+  const paths = ["/dashboard", "/leads", "/growth", "/settings", "/pipeline", "/outreach", "/companies", "/proposals", "/projects", "/metrics", "/search?q=clinic", `/companies/${CLINIC}`, `/contacts/${CLINIC}`, `/outreach/${CLINIC}`, `/projects/${CLINIC}`];
   for (const path of paths) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
@@ -41,53 +48,60 @@ test("signing in lands on the dashboard: what needs a person today", async ({ br
   const omar = await signIn(browser, OMAR);
   await omar.goto("/dashboard");
   await expect(omar.getByRole("heading", { level: 1 })).toHaveText("Dashboard");
-  const summary = omar.locator("[data-summary]");
-  await expect(summary.locator(":scope > *", { hasText: "New inquiries" }).locator("dd")).toHaveText("4");
-  // The school's meeting is booked and has no approved preparation yet.
-  await expect(omar.getByRole("region", { name: "Meetings to prepare" })).toContainText("مدرسة تجريبية");
-  // No lead has an owner yet.
-  await expect(omar.getByRole("region", { name: "Needs attention" })).toContainText("No owner");
+  // The school's meeting is booked; the other three wait for a response.
+  await expect(omar.locator('[data-section="meetings"]')).toContainText("مدرسة تجريبية");
+  await expect(omar.locator('[data-section="awaiting"]')).toContainText("Synthetic Restaurant");
+  // Its automatic review action has no owner yet.
+  await expect(omar.locator('[data-alert="unowned"]')).toContainText("مدرسة تجريبية");
   const nav = omar.getByRole("navigation", { name: "Admin" });
-  for (const name of ["Dashboard", "Inquiries", "Pipeline", "Outreach", "Companies", "Proposals", "Projects", "Metrics"]) await expect(nav.getByRole("link", { name })).toBeVisible();
+  for (const name of ["Dashboard", "Leads & Clients", "Projects", "Growth"]) await expect(nav.getByRole("link", { name })).toBeVisible();
   await expect(nav.getByRole("link", { name: "Dashboard" })).toHaveAttribute("aria-current", "page");
   expect(await axe(omar)).toEqual([]);
 });
 
-test("sales stage: thirteen stages, a loss needs its reason, history is kept, and bookings never move it", async ({ browser }) => {
+test("position: seven steps, a loss needs its reason, the change is on the trail, and bookings never move it", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CLINIC}`);
-  const stage = page.locator("#stage-select");
-  await expect(stage.locator("option")).toHaveCount(13);
-  await stage.selectOption("qualified");
-  await page.getByRole("button", { name: "Update stage" }).click();
+  await page.goto(`/leads/${CLINIC}`);
+  const position = page.locator("#position-select");
+  await expect(position.locator("option")).toHaveCount(8);
+  await position.selectOption("qualified");
+  await page.getByRole("button", { name: "Save position" }).click();
   await expect(notice(page)).toContainText("The stage was updated.");
-  await expect(page.locator("[data-stage]").first()).toHaveAttribute("data-stage", "qualified");
+  await expect(page.locator("header [data-position]")).toHaveAttribute("data-position", "qualified");
 
   // Lost without a reason is refused, and nothing changes.
-  await page.locator("#stage-select").selectOption("lost");
-  await page.getByRole("button", { name: "Update stage" }).click();
+  await page.locator("#position-select").selectOption("lost");
+  await page.getByRole("button", { name: "Save position" }).click();
   await expect(notice(page)).toContainText("Choose why the deal was lost.");
-  await expect(page.locator("#stage-select")).toHaveValue("qualified");
+  await expect(page.locator("#position-select")).toHaveValue("qualified");
 
-  // The meeting side is separate: booking, rescheduling and cancelling leave the stage alone.
-  for (const [name, meeting] of [["Simulate booking", "Booked"], ["Simulate reschedule", "Booked"], ["Simulate cancellation", "Cancelled"], ["Simulate booking", "Booked"]]) {
-    await page.getByRole("button", { name }).click();
-    await expect(page.locator("[data-status=meeting]")).toHaveText(meeting);
-    await expect(page.locator("#stage-select")).toHaveValue("qualified");
+  // The meeting side is separate: booking, rescheduling and cancelling leave the position alone.
+  await page.goto(`/leads/${CLINIC}/pack`);
+  for (const name of ["Simulate booking", "Simulate reschedule", "Simulate cancellation", "Simulate booking"]) {
+    const [response] = await Promise.all([
+      page.waitForResponse((r) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined),
+      page.getByRole("button", { name }).click(),
+    ]);
+    await response.finished();
+    await expect(page.locator("header [data-position]")).toHaveAttribute("data-position", "qualified");
   }
+  await page.goto(`/leads/${CLINIC}`);
+  await expect(page.locator("[data-meeting]")).toHaveAttribute("data-meeting", "booked");
 
-  // The booking history is on the activity trail, with the stage change.
+  // The booking history is on the activity trail, with the stage change and who made it.
+  await page.goto(`/leads/${CLINIC}/activity`);
   await expect(page.locator("[data-activity]")).toContainText("A meeting was booked");
   await expect(page.locator("[data-activity]")).toContainText("The meeting was cancelled");
-  await page.getByText("Stage history").click();
-  await expect(page.locator("[data-stage-history]")).toContainText("New → Qualified");
-  await expect(page.locator("[data-stage-history]")).toContainText("Omar");
+  await expect(page.locator("[data-activity]")).toContainText("New → Qualified");
+  await expect(page.locator("[data-activity]")).toContainText("Omar");
   await page.context().close();
 });
 
-test("source and qualification: tracked-link values, origin, partner, fit tier and a seven-part score", async ({ browser }) => {
+test("source and qualification: tracked-link values, origin, partner, fit tier and a seven-part score, in Advanced", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}`);
+  await expect(panel(page, "source")).toBeHidden();
+  await openAdvanced(page);
   await expect(panel(page, "source")).toContainText("Direct or not tracked");
   await page.locator("#src-origin").selectOption("referral");
   await page.locator("#src-partner").fill("Studio Nine");
@@ -97,32 +111,28 @@ test("source and qualification: tracked-link values, origin, partner, fit tier a
   await page.locator("#src-score-access").selectOption("0");
   await page.getByRole("button", { name: "Save source and qualification" }).click();
   await expect(notice(page)).toContainText("Saved.");
+  await openAdvanced(page);
   await expect(panel(page, "source")).toContainText("12 of 14");
   // A partial score is refused.
   await page.locator("#src-score-trigger").selectOption("");
   await page.getByRole("button", { name: "Save source and qualification" }).click();
   await expect(notice(page)).toContainText("Score all seven categories, or none.");
-  // The list shows where it came from, and can be filtered by it.
-  await page.goto("/inquiries?origin=referral");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.locator("tbody")).toContainText("Referral");
-  await expect(page.locator("tbody")).toContainText("12 of 14");
-  await page.goto("/inquiries?origin=inbound");
-  await expect(page.locator("tbody tr")).toHaveCount(3);
   await page.context().close();
 });
 
 test("company and contact: created from an inquiry, contact details only on detail pages, duplicates never merged", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}`);
+  await openAdvanced(page);
   await expect(panel(page, "company")).toContainText("Not linked");
   await page.locator("#create-mode").selectOption("new");
   await page.getByRole("button", { name: "Create from this inquiry" }).click();
   await expect(notice(page)).toContainText("Created.");
+  await openAdvanced(page);
   await expect(page.locator("[data-linked-company]")).toContainText("Nile Physio Group");
   await expect(page.locator("[data-linked-contact]")).toContainText("Consent: Consented on the form");
   // Not on the list, the search results, the company list or the dashboard.
-  for (const path of ["/inquiries", "/companies", "/search?q=clinic", "/dashboard", "/pipeline"]) {
+  for (const path of ["/leads", "/companies", "/search?q=clinic", "/dashboard", "/growth"]) {
     await page.goto(path);
     await expect(page.locator("body"), path).not.toContainText("clinic@example.com");
   }
@@ -160,14 +170,15 @@ test("withdrawing consent means do not contact, and is kept", async ({ browser }
   await page.getByRole("button", { name: "Save contact" }).click();
   await expect(notice(page)).toContainText("Saved.");
   await expect(page.locator("#contact-dnc")).toBeChecked();
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}`);
+  await openAdvanced(page);
   await expect(page.locator("[data-linked-contact]")).toContainText("Do not contact");
   await page.context().close();
 });
 
 test("proposal and scope: a teammate approves, it is recorded as sent by hand, and the stage never moves by itself", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
-  await omar.goto(`/inquiries/${CLINIC}`);
+  await omar.goto(`/leads/${CLINIC}/deal`);
   await expect(panel(omar, "proposal")).toContainText("No proposal yet.");
   await omar.getByText("Start a proposal").click();
   await omar.locator("#new-proposal-summary").fill("Online booking for three clinics");
@@ -196,7 +207,7 @@ test("proposal and scope: a teammate approves, it is recorded as sent by hand, a
   await expect(omar.getByRole("button", { name: "Record as sent" })).toHaveCount(0);
 
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/inquiries/${CLINIC}`);
+  await adam.goto(`/leads/${CLINIC}/deal`);
   await adam.getByRole("button", { name: "Approve internally" }).click();
   await expect(adam.locator("[data-proposal-status]")).toHaveText("Approved internally");
   await expect(panel(adam, "proposal")).toContainText("Approved by Adam");
@@ -204,20 +215,19 @@ test("proposal and scope: a teammate approves, it is recorded as sent by hand, a
   await expect(adam.locator("[data-proposal-status]")).toHaveText("Sent");
   await adam.getByRole("button", { name: "Record as accepted" }).click();
   await expect(adam.locator("[data-proposal-status]")).toHaveText("Accepted");
-  // The proposal never changed the sales stage.
-  await expect(adam.locator("#stage-select")).toHaveValue("qualified");
-  // The dashboard no longer lists it as waiting.
+  // The proposal never changed the position.
+  await expect(adam.locator("header [data-position]")).toHaveAttribute("data-position", "qualified");
+  // The old proposals list now lands on Leads & Clients at the Proposal step (none there).
   await adam.goto("/proposals");
-  await expect(adam.locator("body")).toContainText("No proposals are waiting.");
-  await adam.goto("/proposals?all=1");
-  await expect(adam.locator("[data-proposal]")).toHaveCount(1);
+  await expect(adam).toHaveURL(/\/leads\?stage=proposal$/);
+  await expect(leads(adam)).toHaveCount(0);
   await omar.context().close();
   await adam.context().close();
 });
 
 test("a revision is a new version and the earlier one is kept", async ({ browser }) => {
   const page = await signIn(browser, ADAM);
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}/deal`);
   await page.getByText("Revise as a new version").first().click();
   await page.locator("#revise-proposal-summary").fill("Online booking for three clinics, phase one");
   await page.getByRole("button", { name: "Revise as a new version" }).last().click();
@@ -232,12 +242,14 @@ test("a revision is a new version and the earlier one is kept", async ({ browser
 
 test("won becomes a minimal project that keeps the scope and where the inquiry's history lives", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}/deal`);
   await expect(panel(page, "conversion")).toContainText("Mark the inquiry as won to create a project.");
-  await page.locator("#stage-select").selectOption("won");
-  await page.getByRole("button", { name: "Update stage" }).click();
+  await page.goto(`/leads/${CLINIC}`);
+  await page.locator("#position-select").selectOption("won");
+  await page.getByRole("button", { name: "Save position" }).click();
   await page.waitForURL(/n=stageChanged/);
-  await expect(page.locator("#stage-select")).toHaveValue("won");
+  await expect(page.locator("#position-select")).toHaveValue("won");
+  await page.goto(`/leads/${CLINIC}/deal`);
   await page.locator("#project-name").fill("Clinic booking system");
   await page.getByRole("button", { name: "Create the project" }).click();
   await expect(notice(page)).toContainText("The project was created.");
@@ -248,7 +260,7 @@ test("won becomes a minimal project that keeps the scope and where the inquiry's
   await expect(panel(page, "decisions")).toContainText("stage: qualified to won");
   await expect(panel(page, "decisions")).toContainText("proposal v1 accepted");
   await page.getByRole("link", { name: /Open the inquiry/ }).click();
-  await expect(page).toHaveURL(new RegExp(`/inquiries/${CLINIC}$`));
+  await expect(page).toHaveURL(new RegExp(`/leads/${CLINIC}$`));
   await page.goto("/projects");
   await expect(page.locator("tbody")).toContainText("Clinic booking system");
   expect(await axe(page)).toEqual([]);
@@ -333,48 +345,51 @@ test("a prospect marked do-not-contact takes no outbound touch", async ({ browse
   await page.context().close();
 });
 
-test("pipeline: every inquiry in its stage, by owner; overdue and unplanned work stands out", async ({ browser }) => {
+test("Leads & Clients by position and owner: the old pipeline's view, as filters", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${SCHOOL}`);
+  await page.goto(`/leads/${SCHOOL}`);
   await page.locator("#owner-select").selectOption("adam");
   await page.getByRole("button", { name: "Save owner" }).click();
   await page.waitForURL(/n=saved/);
-  await page.locator("#stage-select").selectOption("meeting_booked");
-  await page.getByRole("button", { name: "Update stage" }).click();
+  await page.locator("#position-select").selectOption("meeting");
+  await page.getByRole("button", { name: "Save position" }).click();
   await page.waitForURL(/n=stageChanged/);
-  await page.goto("/pipeline");
-  await expect(page.locator('[data-stage-column="meeting_booked"]')).toContainText("مدرسة تجريبية");
-  await expect(page.locator('[data-stage-column="won"]')).toContainText("Synthetic Clinic Group");
-  await expect(page.locator('[data-stage-column="new"] [data-pipeline-card]')).toHaveCount(2);
-  await expect(page.locator('[data-stage-column="new"]')).toContainText("No next action");
-  await page.goto("/pipeline?owner=adam");
-  await expect(page.locator("[data-pipeline-card]")).toHaveCount(1);
-  await page.goto("/pipeline?owner=unassigned");
-  await expect(page.locator("[data-pipeline-card]")).toHaveCount(3);
-  await page.goto("/pipeline?owner=%3Cscript%3E");
-  await expect(page.locator("[data-pipeline-card]")).toHaveCount(4);
+  await page.goto("/leads?stage=meeting");
+  await expect(leads(page)).toHaveCount(1);
+  await expect(leads(page)).toContainText("مدرسة تجريبية");
+  await page.goto("/leads?stage=closed");
+  await expect(leads(page)).toContainText("Nile Physio Group");
+  await page.goto("/leads?stage=new");
+  await expect(leads(page)).toHaveCount(2);
+  await expect(page.locator("[data-leads]")).toContainText("No next action");
+  await page.goto("/leads?owner=adam");
+  await expect(leads(page)).toHaveCount(1);
+  await page.goto("/leads?owner=unassigned");
+  await expect(leads(page)).toHaveCount(3);
+  await page.goto("/leads?owner=%3Cscript%3E");
+  await expect(leads(page)).toHaveCount(4);
   expect(await axe(page)).toEqual([]);
   await page.context().close();
 });
 
-test("filters: owner, stage, attention and text narrow the inquiry list; the address bar is not trusted", async ({ browser }) => {
+test("filters: owner, position and text narrow the list; the address bar is not trusted", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto("/inquiries?owner=unassigned&stage=new");
-  await expect(page.locator("tbody tr")).toHaveCount(2);
-  await page.goto("/inquiries?q=physiotherapy");
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await page.goto("/inquiries?q=%27%3B+drop+table+public.project_inquiries%3B+--");
-  await expect(page.getByText("No inquiries match these filters.")).toBeVisible();
-  await page.goto("/inquiries?stage=bogus&origin=bogus&owner=%3Cb%3E");
-  await expect(page.locator("tbody tr")).toHaveCount(4);
-  await page.goto("/inquiries");
-  await page.locator("#f-q").fill("مدرسة");
+  await page.goto("/leads?owner=unassigned&stage=new");
+  await expect(leads(page)).toHaveCount(2);
+  await page.goto("/leads?q=physiotherapy");
+  await expect(leads(page)).toHaveCount(1);
+  await page.goto("/leads?q=%27%3B+drop+table+public.project_inquiries%3B+--");
+  await expect(page.getByText("No leads match these filters.")).toBeVisible();
+  await page.goto("/leads?stage=bogus&priority=bogus&owner=%3Cb%3E");
+  await expect(leads(page)).toHaveCount(4);
+  await page.goto("/leads");
+  await page.locator("#lead-q").fill("مدرسة");
   await page.getByRole("button", { name: "Apply" }).click();
   await expect(page).toHaveURL(/q=/);
-  await expect(page.locator("tbody tr")).toHaveCount(1);
-  await expect(page.getByRole("status").filter({ hasText: "Showing 1 of 4" })).toBeVisible();
-  await page.getByRole("link", { name: "Clear filters" }).click();
-  await expect(page.locator("tbody tr")).toHaveCount(4);
+  await expect(leads(page)).toHaveCount(1);
+  await expect(page.getByText("1 lead", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Clear" }).click();
+  await expect(leads(page)).toHaveCount(4);
   await page.context().close();
 });
 
@@ -414,7 +429,7 @@ test("search: companies, contacts, inquiries and prospects, by name or company, 
   await page.goto("/search?q=zzzz-nothing");
   await expect(page.getByText("Nothing matches.")).toBeVisible();
   // The header search works from any page.
-  await page.goto("/pipeline");
+  await page.goto("/leads");
   await page.getByRole("searchbox", { name: "Search companies, contacts and inquiries" }).fill("robotics");
   await page.keyboard.press("Enter");
   await expect(page).toHaveURL(/\/search\?q=robotics/);
@@ -456,9 +471,7 @@ test("CSV export: signed-in, same-origin POST only; contacts leave with details 
   expect((await page.request.get("/export/contacts", { maxRedirects: 0 })).status()).toBe(405);
   expect((await post("everything")).status()).toBe(404);
 
-  // Every export is on the trail, without its rows.
-  await page.goto("/dashboard");
-  await expect(page.getByRole("region", { name: "Recent activity" })).toContainText("exported data");
+  // Every export is on the trail, without its rows: tests/db/crm.test.mjs checks the record.
   await page.context().close();
 });
 
@@ -469,7 +482,7 @@ test("Arabic: right-to-left throughout, nothing wider than the screen on a phone
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("اللوحة");
-  const paths = ["/dashboard", "/inquiries", `/inquiries/${CLINIC}`, `/inquiries/${CRAFTS}`, "/pipeline", "/outreach", "/companies", "/proposals", "/projects", "/metrics", "/search?q=مدرسة"];
+  const paths = ["/dashboard", "/leads", `/leads/${CLINIC}`, `/leads/${CRAFTS}`, `/leads/${CRAFTS}/deal`, "/growth", "/outreach", "/companies", "/projects", "/metrics", "/settings", "/search?q=مدرسة"];
   for (const path of paths) {
     await page.goto(path);
     await expect(page.locator("html"), path).toHaveAttribute("dir", "rtl");
@@ -477,11 +490,12 @@ test("Arabic: right-to-left throughout, nothing wider than the screen on a phone
     expect(await axe(page), path).toEqual([]);
   }
   // Arabic labels for the new concepts.
-  await page.goto(`/inquiries/${CRAFTS}`);
-  await expect(panel(page, "stage")).toContainText("مرحلة المبيعات");
+  await page.goto(`/leads/${CRAFTS}`);
+  await expect(panel(page, "position")).toContainText("الموقف التجاري");
+  await page.goto(`/leads/${CRAFTS}/deal`);
   await expect(panel(page, "proposal")).toContainText("العرض والنطاق");
-  await page.goto("/pipeline");
-  await expect(page.locator('[data-stage-column="won"]')).toContainText("تم الفوز");
+  await page.goto("/leads?stage=closed");
+  await expect(page.locator("[data-position]")).toContainText(["فوز"]);
   // Phone width.
   await page.setViewportSize({ width: 360, height: 780 });
   for (const path of paths) {
@@ -496,7 +510,7 @@ test("Arabic: right-to-left throughout, nothing wider than the screen on a phone
 test("English on a phone: no page is wider than the screen", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.setViewportSize({ width: 360, height: 780 });
-  for (const path of ["/dashboard", "/inquiries", `/inquiries/${CLINIC}`, "/pipeline", "/outreach", "/companies", "/proposals", "/projects", "/metrics", "/search?q=clinic"]) {
+  for (const path of ["/dashboard", "/leads", `/leads/${CLINIC}`, `/leads/${CLINIC}/deal`, "/growth", "/outreach", "/companies", "/projects", "/metrics", "/settings", "/search?q=clinic"]) {
     await page.goto(path);
     expect(await overflow(page), path).toBe(0);
   }
@@ -531,23 +545,23 @@ test("unknown records show a not-found page inside the workspace", async ({ brow
 
 test("a forged cross-site form post changes nothing", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CRAFTS}`);
-  const field = await panel(page, "stage").locator("form input[type=hidden]").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).name).find((n) => n.startsWith("$ACTION_ID_")) ?? "");
+  await page.goto(`/leads/${CRAFTS}`);
+  const field = await panel(page, "position").locator("form input[type=hidden]").evaluateAll((els) => els.map((e) => (e as HTMLInputElement).name).find((n) => n.startsWith("$ACTION_ID_")) ?? "");
   expect(field).not.toBe("");
   const forged = (origin: string) =>
-    page.request.post(page.url(), { multipart: { [field]: "", inquiryId: CRAFTS, stage: "won", reason: "", note: "", pausedUntil: "" }, headers: { origin }, maxRedirects: 0 });
+    page.request.post(page.url(), { multipart: { [field]: "", inquiryId: CRAFTS, position: "won", reason: "", note: "" }, headers: { origin }, maxRedirects: 0 });
   const refused = await forged("https://evil.invalid");
   expect(refused.status()).not.toBe(303);
   await page.reload();
-  await expect(page.locator("#stage-select")).toHaveValue("new");
+  await expect(page.locator("#position-select")).toHaveValue("new");
   // The same post from the site itself is what the page's own form sends, and it works.
   const accepted = await forged(ORIGIN);
   expect([200, 303]).toContain(accepted.status());
-  await page.reload();
-  await expect(page.locator("#stage-select")).toHaveValue("won");
-  await page.locator("#stage-select").selectOption("new");
-  await page.getByRole("button", { name: "Update stage" }).click();
+  await page.goto(`/leads/${CRAFTS}`);
+  await expect(page.locator("#position-select")).toHaveValue("won");
+  await page.locator("#position-select").selectOption("new");
+  await page.getByRole("button", { name: "Save position" }).click();
   await page.waitForURL(/n=stageChanged/);
-  await expect(page.locator("#stage-select")).toHaveValue("new");
+  await expect(page.locator("#position-select")).toHaveValue("new");
   await page.context().close();
 });

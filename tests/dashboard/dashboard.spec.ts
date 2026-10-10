@@ -3,8 +3,11 @@ import AxeBuilder from "@axe-core/playwright";
 import { DEMO_PORT } from "../../playwright.dashboard.config";
 import { signInAs } from "./helpers";
 
-// Synthetic fixture data (tests/fixtures/synthetic-inquiries.sql), loaded by scripts/admin-local.mjs.
+// The lead workflow with automated preparation OFF (the default): every pack is
+// prepared by hand or with the simulated generator. Synthetic fixture data
+// (tests/fixtures/synthetic-inquiries.sql), loaded by scripts/admin-local.mjs.
 const CLINIC = "11111111-0000-4000-8000-000000000001";
+const SCHOOL = "11111111-0000-4000-8000-000000000002";
 const RESTAURANT = "11111111-0000-4000-8000-000000000003";
 const CRAFTS = "11111111-0000-4000-8000-000000000004";
 const OMAR = "omar.demo@mintapp.local";
@@ -12,18 +15,27 @@ const ADAM = "adam.demo@mintapp.local";
 
 test.describe.configure({ mode: "serial" });
 
-const signIn = (browser: Browser, email: string): Promise<Page> => signInAs(browser, email, `http://localhost:${DEMO_PORT}`);
+const signIn = async (browser: Browser, email: string): Promise<Page> => {
+  const page = await signInAs(browser, email, `http://localhost:${DEMO_PORT}`);
+  await page.goto("/leads");
+  return page;
+};
+const axe = async (page: Page) => (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze()).violations.map((v) => v.id);
+const overflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+const row = (page: Page, id: string) => page.locator(`[data-lead="${id}"]`);
+const artifact = (page: Page, name: string) => page.locator(`[data-artifact="${name}"]`);
 
-// The paste panel starts open when there is no draft yet; open it only if closed.
-async function openPastePanel(page: Page) {
-  const panel = page.locator("details", { has: page.locator("#paste-draft") });
-  if (!(await panel.evaluate((d) => (d as HTMLDetailsElement).open))) await panel.locator("summary").click();
+// Clicks a form button and waits until the refreshed page has finished streaming.
+async function submit(page: Page, name: string, scope?: ReturnType<Page["locator"]>) {
+  const [response] = await Promise.all([
+    page.waitForResponse((r) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined),
+    (scope ?? page).getByRole("button", { name, exact: true }).click(),
+  ]);
+  await response.finished();
 }
 
-const status = (page: Page) => page.getByRole("status").filter({ has: page.locator("p") }).first();
-
-test("inquiry data is never served without a valid team session", async ({ page, request }) => {
-  for (const path of ["/inquiries", `/inquiries/${CLINIC}`]) {
+test("lead data is never served without a valid team session", async ({ page, request }) => {
+  for (const path of ["/leads", `/leads/${CLINIC}`, `/leads/${CLINIC}/pack`, "/inquiries", `/inquiries/${CLINIC}`]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator("body")).not.toContainText("physiotherapy");
@@ -39,345 +51,267 @@ test("a wrong password is refused with a generic message", async ({ page }) => {
   await page.getByLabel("Password").fill("not-the-password");
   await page.getByRole("button", { name: "Sign in" }).click();
   await expect(page.locator('p[role="alert"]')).toHaveText("That email and password do not match a Mintapp team account.");
-  await page.goto("/inquiries");
+  await page.goto("/leads");
   await expect(page).toHaveURL(/\/login$/);
 });
 
-test("list: all synthetic inquiries, Arabic intact, and stalled preparation flagged", async ({ browser }) => {
+test("list: all synthetic leads, Arabic intact, and with automation off a booked meeting needs a person", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await expect(page.locator("tbody tr")).toHaveCount(4);
-  await expect(page.locator("tbody")).toContainText("منصة حرفيين تجريبية");
-  await expect(page.locator("tbody")).toContainText("Booked");
-  // Automation is off in the demo, so every waiting inquiry needs attention.
-  await expect(page.locator('tbody tr[data-attention="true"]')).toHaveCount(4);
-  await expect(page.getByText("Automated preparation: off")).toBeVisible();
-  // Meeting, preparation, review and sales stage are separate states, and the list counts what needs a person.
-  await expect(page.locator('tbody [data-status="sales"]')).toHaveText(["New", "New", "New", "New"]);
-  const summary = page.locator("[data-summary]");
-  await expect(summary).toContainText("Overdue follow-ups");
-  await expect(summary.locator("div", { hasText: "Overdue follow-ups" }).locator("dd")).toHaveText("0");
-  // The school's meeting is booked and has no approved preparation note yet.
-  await expect(row(page, SCHOOL)).toContainText("Approval needed before the meeting");
-  await expect(page.locator('tbody [data-flag="needs-approval"]')).toHaveCount(1);
-  await expect(summary.locator("div", { hasText: "Meetings without approved prep" }).locator("dd")).toHaveText("1");
+  await expect(page.locator("[data-lead]")).toHaveCount(4);
+  await expect(page.locator("[data-leads]")).toContainText("منصة حرفيين تجريبية");
+  await expect(page.locator("[data-position]")).toHaveText(["New", "New", "New", "New"]);
+  // Not booked: waiting for the booking. Booked, with automation off: a person has to prepare it.
+  await expect(row(page, CLINIC).locator("[data-pack-state]")).toHaveText("Waiting for booking");
+  await expect(row(page, SCHOOL).locator("[data-pack-state]")).toHaveText("Needs manual action");
+  await expect(row(page, SCHOOL).locator("[data-meeting]")).toHaveAttribute("data-meeting", "booked");
   // No client email anywhere in the routine list.
   expect(await page.locator("body").innerText()).not.toMatch(/@example\.com|@mintapp\.local/);
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(results.violations.map((v) => v.id)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
 });
 
-const SCHOOL = "11111111-0000-4000-8000-000000000002";
-const row = (page: Page, id: string) => page.locator("tbody tr", { has: page.locator(`a[href="/inquiries/${id}"]`) });
-
-test("project type: only what the client chose is shown as provided, everything else is Not provided (English)", async ({ browser }) => {
+test("project type: only what the client chose is shown, everything else is Not provided (English)", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  // Seeded as: clinic web_app, school website, crafts not_sure (all explicit), restaurant no value (like every inquiry sent before the form asked).
-  await expect(row(page, CLINIC)).toContainText("Type: Web application");
-  await expect(row(page, SCHOOL)).toContainText("Type: Website");
-  await expect(row(page, CRAFTS)).toContainText("Type: Not sure yet");
-  await expect(row(page, RESTAURANT)).toContainText("Type: Not provided");
-  await expect(page.locator("tbody")).not.toContainText(/Other/);
+  await expect(row(page, CLINIC)).toContainText("Web application");
+  await expect(row(page, SCHOOL)).toContainText("Website");
+  await expect(row(page, CRAFTS)).toContainText("Not sure yet");
+  await expect(row(page, RESTAURANT)).toContainText("Not provided");
+  await expect(page.locator("[data-leads]")).not.toContainText(/Other/);
 
-  await page.goto(`/inquiries/${RESTAURANT}`);
-  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await expect(page.locator("main")).toContainText("Project type: Not provided");
-  await expect(page.locator('[data-brief="provided"]')).not.toContainText("Project type");
-  await expect(page.locator('[data-brief="missing"]')).toContainText("Project type");
-  await expect(page.locator("main")).not.toContainText(/Other/);
-
-  await page.goto(`/inquiries/${CRAFTS}`);
+  await page.goto(`/leads/${RESTAURANT}`);
+  await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeNot provided");
+  await expect(page.locator('[data-brief="provided"]')).toContainText("BudgetNot provided");
+  await expect(page.locator('[data-brief="provided"]')).not.toContainText(/Other/);
+  await page.goto(`/leads/${CRAFTS}`);
   await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeNot sure yet");
-  await expect(page.locator('[data-brief="missing"]')).not.toContainText("Project type");
 });
 
 test("project type in Arabic: the form's own words, and Not provided for no choice", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "ar");
-  await expect(row(page, CLINIC)).toContainText("النوع: تطبيق ويب");
-  await expect(row(page, SCHOOL)).toContainText("النوع: موقع إلكتروني");
-  await expect(row(page, CRAFTS)).toContainText("النوع: لست متأكدًا بعد");
-  await expect(row(page, RESTAURANT)).toContainText("النوع: غير مُقدَّم");
-  await expect(page.locator("tbody")).not.toContainText("أخرى");
-
-  await page.goto(`/inquiries/${RESTAURANT}`);
-  await expect(page.locator("main")).toContainText("نوع المشروع: غير مُقدَّم");
-  await expect(page.locator('[data-brief="provided"]')).not.toContainText("نوع المشروع");
-  await expect(page.locator('[data-brief="missing"]')).toContainText("نوع المشروع");
-  await page.goto(`/inquiries/${CRAFTS}`);
+  await expect(row(page, CLINIC)).toContainText("تطبيق ويب");
+  await expect(row(page, SCHOOL)).toContainText("موقع إلكتروني");
+  await expect(row(page, CRAFTS)).toContainText("لست متأكدًا بعد");
+  await expect(row(page, RESTAURANT)).toContainText("غير مذكور");
+  await expect(page.locator("[data-leads]")).not.toContainText("أخرى");
+  await page.goto(`/leads/${CRAFTS}`);
   await expect(page.locator('[data-brief="provided"]')).toContainText("نوع المشروعلست متأكدًا بعد");
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(results.violations.map((v) => v.id)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
+  await page.getByRole("button", { name: "التبديل إلى الواجهة الإنجليزية" }).click();
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
 });
 
-test("phones get cards instead of the table, with nothing wider than the screen", async ({ browser }) => {
+test("every width from a small phone to a wide screen fits, in both languages", async ({ browser }) => {
+  test.setTimeout(240_000);
   const page = await signIn(browser, OMAR);
-  await page.setViewportSize({ width: 360, height: 780 });
-  await page.reload();
-  await expect(page.locator("table")).toBeHidden();
-  const cards = page.getByRole("list", { name: "Inquiries, newest first" }).getByRole("listitem");
-  await expect(cards).toHaveCount(4);
-  await expect(cards.first()).toContainText("Needs attention");
-  const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-  expect(await overflow()).toBe(0);
-  for (const id of [CLINIC, CRAFTS]) {
-    await page.goto(`/inquiries/${id}`);
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    expect(await overflow()).toBe(0);
-  }
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(results.violations.map((v) => v.id)).toEqual([]);
-});
-
-test("the table never hides a column: from 1024 px every column sits inside the card, and tablets get cards", async ({ browser }) => {
-  const page = await signIn(browser, OMAR);
-  // The card clips its overflow, so a wide table would hide columns without any scrollbar or page overflow: measure the columns themselves.
-  const outsideCard = () =>
-    page.evaluate(() => {
-      const table = document.querySelector("table");
-      const card = table?.parentElement;
-      if (!table || !card) return -1;
-      const box = card.getBoundingClientRect();
-      const cells = [...table.querySelectorAll("th, tbody tr:last-child td")];
-      return cells.filter((cell) => {
-        const r = cell.getBoundingClientRect();
-        return r.left < box.left - 1 || r.right > box.right + 1;
-      }).length;
-    });
   for (const language of ["en", "ar"] as const) {
     if (language === "ar") await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
-    for (const width of [1024, 1280, 1440]) {
+    for (const width of [360, 768, 1024, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto("/inquiries");
-      await expect(page.locator("table")).toBeVisible();
-      expect(await outsideCard(), `${language} table at ${width}px`).toBe(0);
-      await expect(page.locator("thead th")).toHaveCount(7); // client, received, meeting, preparation, review, sales stage, owner
-    }
-    for (const width of [768, 900, 1023]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto("/inquiries");
-      await expect(page.locator("table")).toBeHidden();
-      const cards = page.locator("ul[aria-label] > li");
-      await expect(cards, `${language} cards at ${width}px`).toHaveCount(4);
-      // The owner, sales stage and meeting are all on every card.
-      await expect(cards.first().locator('[data-status="sales"]')).toBeVisible();
+      for (const path of ["/leads", `/leads/${CLINIC}`, `/leads/${CRAFTS}/pack`]) {
+        await page.goto(path);
+        await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+        expect(await overflow(page), `${language} ${path} at ${width}px`).toBeLessThanOrEqual(0);
+      }
     }
   }
+  await page.context().close();
 });
 
-test("an unknown inquiry shows a not-found page inside the dashboard", async ({ browser }) => {
+test("an unknown lead shows a not-found page inside the workspace", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  // The page streams behind a loading state, so the status is already sent
-  // (200) when the inquiry turns out not to exist; it stays noindex.
-  await page.goto("/inquiries/99999999-0000-4000-8000-000000000000");
-  await expect(page.getByRole("heading", { name: "Inquiry not found" })).toBeVisible();
+  await page.goto("/leads/99999999-0000-4000-8000-000000000000");
+  await expect(page.getByRole("heading", { name: "Lead not found" })).toBeVisible();
   await expect(page.locator('meta[name="robots"]').first()).toHaveAttribute("content", /noindex/);
-  await page.getByRole("link", { name: "Back to all inquiries" }).click();
-  await expect(page).toHaveURL(/\/inquiries$/);
+  await page.getByRole("link", { name: "Back to Leads & Clients" }).click();
+  await expect(page).toHaveURL(/\/leads$/);
 });
 
-test("an inquiry with no booking is prepared, marked ready by one teammate and approved by the other", async ({ browser }) => {
+test("a lead with no booking is prepared by the simulated generator, made ready by one founder and approved by the other", async ({ browser }) => {
   const omar = await signIn(browser, OMAR);
-  await omar.goto(`/inquiries/${RESTAURANT}`);
-  await expect(omar.locator('[data-status="meeting"]')).toHaveText("Not booked");
+  await omar.goto(`/leads/${RESTAURANT}/pack`);
   await omar.getByRole("button", { name: "Run mock generator" }).click();
-  await expect(omar.locator('[data-draft-version="1"]')).toContainText("Mock generator (placeholder, not real analysis)");
-  await expect(omar.locator('[data-draft-version="1"]')).toContainText("[MOCK]");
-  await omar.getByRole("button", { name: "Mark ready for review" }).click();
-  await expect(omar.locator('[data-review="in_review"]')).toBeVisible();
-
+  for (const name of ["design", "proposal", "discovery"]) {
+    await expect(artifact(omar, name).locator("[data-source]")).toHaveText("Automated (test generator)");
+    await expect(artifact(omar, name)).toContainText("[MOCK]");
+    await submit(omar, "Ready for review", artifact(omar, name));
+  }
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/inquiries/${RESTAURANT}`);
-  await adam.getByRole("button", { name: "Approve for the meeting" }).click();
-  await expect(adam.locator('[data-review="approved"]')).toHaveText("Approved for the meeting");
-  await expect(adam.getByText("Last review change by Adam")).toBeVisible();
+  await adam.goto(`/leads/${RESTAURANT}/pack`);
+  for (const name of ["design", "proposal", "discovery"]) await submit(adam, "Approve for the meeting", artifact(adam, name));
+  await expect(artifact(adam, "design").getByText("Last review change by Adam")).toBeVisible();
+  // No project type, so no library pattern fits: the design falls back to a person.
+  await expect(adam.locator("#pack-state [data-pack-state]")).toHaveText("Needs manual action");
+  await expect(adam.locator("[data-pack-explanation]")).toContainText("No pattern in the design library fits");
+  const design = artifact(adam, "design");
+  await design.getByText("Edit as text").click();
+  await design.locator("textarea").first().fill("User flow\n- Screen 1: the menu\n- Screen 2: the order\n\nScreen 1: Menu\nDishes with photos (placeholders) and prices from the restaurant.");
+  await submit(adam, "Save as a new version", design);
+  await submit(adam, "Ready for review", artifact(adam, "design"));
+  await omar.goto(`/leads/${RESTAURANT}/pack`);
+  await submit(omar, "Approve for the meeting", artifact(omar, "design"));
+  await expect(omar.locator("#pack-state [data-pack-state]")).toHaveText("Approved for meeting");
 });
 
-test("manual path: copy a brief without contact details, paste the result, review", async ({ browser }) => {
+test("manual path: copy a prompt without contact details, write by hand, and figures the client never stated are flagged", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CLINIC}`);
-  await expect(page.locator('[data-brief="provided"]')).toContainText("Budget range (client-stated)Not sure yet");
+  await page.goto(`/leads/${CLINIC}`);
+  await expect(page.locator('[data-brief="provided"]')).toContainText("BudgetNot sure yet");
   await expect(page.locator('[data-brief="provided"]')).toContainText("Project typeWeb application");
-  await page.getByRole("button", { name: "Copy brief for Claude" }).click();
+  await page.goto(`/leads/${CLINIC}/pack`);
+  await page.getByRole("button", { name: "Copy the prompt" }).click();
   await expect(page.getByRole("button", { name: "Copied" })).toBeVisible();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
   expect(copied).toContain("three physiotherapy clinics");
-  expect(copied).toContain("do not invent prices");
-  expect(copied).not.toMatch(/clinic@example\.com|Synthetic Clinic Group/);
+  expect(copied).not.toMatch(/clinic@example\.com|Synthetic Clinic Group|Nile Physio|nile-physio/);
 
-  await openPastePanel(page);
-  await page.getByLabel(/Paste the result/).fill("## Summary\nThree clinics want online booking.\n\n## Suggested next step\nPropose a $4,000 first phase.");
-  await page.getByRole("button", { name: "Save as new draft" }).click();
-  const draft = page.locator('[data-draft-version="1"]');
-  await expect(draft).toContainText("Pasted by the team");
-  await expect(draft).toContainText("figures not stated by the client (4000)");
-  await expect(page.locator('[data-status="preparation"]')).toHaveText("Manual");
+  const proposal = artifact(page, "proposal");
+  await proposal.getByText("Edit", { exact: true }).click();
+  await proposal.locator("textarea").fill("Our understanding\nThree clinics want online booking.\n\nNext step\nPropose a $4,000 first phase.");
+  await submit(page, "Save as a new version", proposal);
+  await expect(artifact(page, "proposal").locator("[data-source]")).toHaveText("Written by hand");
+  await expect(artifact(page, "proposal")).toContainText("the client did not state them: 4000");
+  // Only part of the pack exists: it says so in plain words.
+  await expect(page.locator("#pack-state [data-pack-state]")).toHaveText("Needs manual action");
+  await expect(page.locator("[data-pack-explanation]")).toContainText("Only part of the pack exists.");
 });
 
-test("teammate approval: the author cannot approve their own version, even with a forged request; the other teammate can", async ({ browser }) => {
-  // Continues from the manual-path test: Omar pasted version 1 of the clinic's note.
+test("founder approval: the writer cannot approve their own version, even with a forged request; the other founder can", async ({ browser }) => {
+  // Continues from the manual path: Omar wrote the clinic's draft proposal.
   const omar = await signIn(browser, OMAR);
-  await omar.goto(`/inquiries/${CLINIC}`);
-  await omar.getByRole("button", { name: "Mark ready for review" }).click();
-  await expect(omar.locator('[data-review="in_review"]')).toBeVisible();
-  await expect(omar.locator("[data-waiting-for-teammate]")).toContainText("a teammate needs to approve it");
-  await expect(omar.getByRole("button", { name: "Approve for the meeting" })).toHaveCount(0);
+  await omar.goto(`/leads/${CLINIC}/pack`);
+  const proposal = artifact(omar, "proposal");
+  await submit(omar, "Ready for review", proposal);
+  await expect(proposal.locator('[data-review="in_review"]')).toBeVisible();
+  await expect(proposal.locator("[data-waiting-for-teammate]")).toContainText("Waiting for the other founder");
+  await expect(proposal.getByRole("button", { name: "Approve for the meeting" })).toHaveCount(0);
 
-  // A forged request: reuse the real "Send back to draft" form (same server action and token) but ask for "approved".
-  const forged = omar.getByRole("button", { name: "Send back to draft" }).locator("xpath=ancestor::form");
+  // A forged request: reuse the real "Send back to draft" form (same server action) but ask for "approved".
+  const forged = proposal.getByRole("button", { name: "Send back to draft" }).locator("xpath=ancestor::form");
   await forged.evaluate((form) => {
     (form.querySelector('input[name="to"]') as HTMLInputElement).value = "approved";
   });
   const [answer] = await Promise.all([omar.waitForResponse((r) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined), forged.evaluate((form) => (form as HTMLFormElement).requestSubmit())]);
   await answer.finished();
-  await omar.reload();
-  await expect(omar.locator('[data-review="in_review"]')).toBeVisible();
-  await expect(omar.locator('[data-review="approved"]')).toHaveCount(0);
+  await omar.goto(`/leads/${CLINIC}/pack`);
+  await expect(artifact(omar, "proposal").locator('[data-review="in_review"]')).toBeVisible();
 
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/inquiries/${CLINIC}`);
-  await expect(adam.locator("[data-waiting-for-teammate]")).toHaveCount(0);
-  await adam.getByRole("button", { name: "Approve for the meeting" }).click();
-  await expect(adam.locator('[data-review="approved"]')).toHaveText("Approved for the meeting");
-  await expect(adam.getByText("Last review change by Adam")).toBeVisible();
+  await adam.goto(`/leads/${CLINIC}/pack`);
+  await expect(artifact(adam, "proposal").locator("[data-waiting-for-teammate]")).toHaveCount(0);
+  await submit(adam, "Approve for the meeting", artifact(adam, "proposal"));
+  await expect(artifact(adam, "proposal").locator('[data-review="approved"]')).toHaveText("Approved for meeting");
 });
 
 test("booking, reschedule, generator failure, quota pause, manual recovery and cancellation keep everything", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CRAFTS}`);
+  await page.goto(`/leads/${CRAFTS}`);
   await expect(page.locator('[data-brief="description"]')).toContainText("الحرفيين");
-
-  await page.getByRole("button", { name: "Simulate booking" }).click();
-  await expect(page.locator('[data-status="meeting"]')).toContainText("Booked");
-  await page.getByRole("button", { name: "Simulate reschedule" }).click();
-  await expect(page.locator('[data-status="meeting"]')).toContainText("Booked");
-  await page.getByLabel("New note").fill("ملاحظة: العميل يفضّل الموبايل");
-  await page.getByRole("button", { name: "Add note" }).click();
+  await page.locator("#note").fill("ملاحظة: العميل يفضّل الموبايل");
+  await submit(page, "Add note");
   await expect(page.locator("[data-notes]")).toContainText("ملاحظة: العميل يفضّل الموبايل");
 
-  await page.getByRole("button", { name: "Simulate generator failure" }).click();
-  await expect(status(page)).toContainText("Automated preparation failed");
-  await expect(status(page)).toContainText("the reply was not valid JSON");
-  await page.getByRole("button", { name: "Retry automated preparation" }).click();
-  await expect(status(page)).toContainText("Waiting for manual preparation");
+  await page.goto(`/leads/${CRAFTS}/pack`);
+  await submit(page, "Simulate booking");
+  await expect(page.locator("[data-review-action]")).toBeVisible();
+  await submit(page, "Simulate reschedule");
+  await submit(page, "Simulate generator failure");
+  await expect(page.locator("#pack-state [data-pack-state]")).toHaveText("Needs manual action");
+  await expect(page.locator("[data-pack-explanation]")).toContainText("did not produce a usable pack");
 
-  await page.getByRole("button", { name: "Simulate quota exhausted" }).click();
-  await expect(status(page)).toContainText("Automation is paused");
-  await expect(status(page)).toContainText("free allowance is used up");
-  await page.getByRole("button", { name: "Resume automation (mock)" }).click();
+  await submit(page, "Simulate quota exhausted");
+  await expect(page.locator("[data-pack-explanation]")).toContainText("Nothing is charged");
+  await submit(page, "Resume automation (mock)");
   await expect(page.getByRole("button", { name: /Resume automation/ })).toHaveCount(0);
 
-  await page.getByRole("button", { name: "Prepare manually instead" }).click();
-  await expect(page.locator('[data-status="preparation"]')).toHaveText("Manual");
-  await openPastePanel(page);
-  await page.getByLabel(/Paste the result/).fill("## الملخص\nمنصة تربط الحرفيين بالعملاء.");
-  await page.getByRole("button", { name: "Save as new draft" }).click();
-  await page.getByRole("button", { name: "Mark ready for review" }).click();
-  // The author cannot approve their own note: a teammate must.
-  await expect(page.locator("[data-waiting-for-teammate]")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Approve for the meeting" })).toHaveCount(0);
+  await submit(page, "Prepare by hand instead");
+  for (const name of ["design", "proposal", "discovery"]) {
+    const part = artifact(page, name);
+    await part.locator("summary").first().click();
+    await part.locator("textarea").first().fill(`ملاحظات ${name}: منصة تربط الحرفيين بالعملاء.`);
+    await submit(page, "Save as a new version", part);
+    await submit(page, "Ready for review", artifact(page, name));
+  }
+  await expect(page.locator("[data-waiting-for-teammate]")).toHaveCount(3);
   const adam = await signIn(browser, ADAM);
-  await adam.goto(`/inquiries/${CRAFTS}`);
-  await adam.getByRole("button", { name: "Approve for the meeting" }).click();
-  await expect(adam.locator('[data-review="approved"]')).toBeVisible();
+  await adam.goto(`/leads/${CRAFTS}/pack`);
+  for (const name of ["design", "proposal", "discovery"]) await submit(adam, "Approve for the meeting", artifact(adam, name));
+  await expect(adam.locator("#pack-state [data-pack-state]")).toHaveText("Approved for meeting");
+
   await page.reload();
-  await expect(page.locator('[data-review="approved"]')).toBeVisible();
-
-  await page.getByRole("button", { name: "Simulate cancellation" }).click();
-  await expect(page.locator('[data-status="meeting"]')).toContainText("Cancelled");
-  await expect(page.locator('[data-review="approved"]')).toBeVisible();
-  await expect(page.locator('[data-draft-version="1"]')).toContainText("الحرفيين");
+  await submit(page, "Simulate cancellation");
+  await expect(page.locator("[data-review-action]")).toHaveCount(0);
+  await expect(page.locator("#pack-state [data-pack-state]")).toHaveText("Approved for meeting");
+  await expect(artifact(page, "design")).toContainText("الحرفيين");
+  await page.goto(`/leads/${CRAFTS}`);
+  await expect(page.locator("[data-meeting]")).toHaveAttribute("data-meeting", "cancelled");
   await expect(page.locator("[data-notes]")).toContainText("العميل يفضّل الموبايل");
-
-  const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21aa"]).analyze();
-  expect(results.violations.map((v) => v.id)).toEqual([]);
+  expect(await axe(page)).toEqual([]);
 });
 
-// Clicks a form button and waits until the refreshed page has finished streaming.
-async function submit(page: Page, name: string) {
-  const [response] = await Promise.all([
-    page.waitForResponse((r) => r.request().method() === "POST" && r.request().headers()["next-action"] !== undefined),
-    page.getByRole("button", { name, exact: true }).click(),
-  ]);
-  await response.finished();
-}
-
-test("shared ownership and follow-ups: names only, one responsible person and a due date each", async ({ browser }) => {
+test("shared ownership and next actions: names only, one responsible founder and a date each", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${CLINIC}`);
-  // Selectors offer people by name, never by sign-in email.
-  const choices = await page.getByLabel("Owner", { exact: true }).locator("option").allTextContents();
+  await page.goto(`/leads/${CLINIC}`);
+  const choices = await page.locator("#owner-select option").allTextContents();
   expect(choices).toEqual(["Unassigned", "Omar", "Adam", "Omar & Adam"]);
-  await page.getByLabel("Owner", { exact: true }).selectOption({ label: "Omar & Adam" });
+  await page.locator("#owner-select").selectOption({ label: "Omar & Adam" });
   await submit(page, "Save owner");
   await expect(page.locator("[data-owners]")).toHaveText("Omar & Adam");
 
-  // A follow-up cannot be added without a responsible person and a due date.
-  await page.getByLabel("What needs to happen").fill("Send the meeting questions");
+  // The form will not send without a responsible founder and a date.
+  await page.locator("#follow-up-action").fill("Send the meeting questions");
   await page.getByRole("button", { name: "Add follow-up" }).click();
   await expect(page.locator("[data-follow-up]")).toHaveCount(0);
-  const due = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
-  await page.getByLabel("Responsible").selectOption({ label: "Adam" });
-  await page.getByLabel("Due").fill(due);
+  await page.locator("#follow-up-owner").selectOption({ label: "Adam" });
+  await page.locator("#follow-up-due").fill(new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10));
   await submit(page, "Add follow-up");
   const item = page.locator('[data-follow-up="Send the meeting questions"]');
   await expect(item).toContainText("Adam");
-  await expect(item).toContainText("Due");
 
-  await page.goto("/inquiries");
-  const row = page.locator("tbody tr", { hasText: "Synthetic Clinic Group" });
-  await expect(row).toContainText("Omar & Adam");
-  await expect(row.locator("[data-next-follow-up]")).toContainText("Next: Adam ·");
-  await expect(row.locator("[data-next-follow-up]")).toContainText("Send the meeting questions");
-  // Routine views never show team sign-in emails.
+  await page.goto("/leads");
+  await expect(row(page, CLINIC).locator("[data-owners]")).toHaveText("Omar & Adam");
+  await expect(row(page, CLINIC).locator("[data-next-action]")).toContainText("Send the meeting questions");
+  await expect(row(page, CLINIC).locator("[data-next-action]")).toContainText("Adam");
   expect(await page.locator("body").innerText()).not.toContain("mintapp.local");
 
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}`);
   expect(await page.locator("body").innerText()).not.toContain("mintapp.local");
-  await submit(page, "Mark done");
-  await expect(page.locator("[data-follow-up]")).toHaveCount(0);
+  await submit(page, "Mark done", page.locator('[data-follow-up="Send the meeting questions"]'));
+  await expect(page.locator('[data-follow-up="Send the meeting questions"]')).toHaveCount(0);
   await expect(page.getByText("Completed (1)")).toBeVisible();
 
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/login$/);
-  await page.goto(`/inquiries/${CLINIC}`);
+  await page.goto(`/leads/${CLINIC}`);
   await expect(page).toHaveURL(/\/login$/);
 });
 
-test("overdue follow-ups are visible in the list, the summary and the inquiry, and completing one clears them", async ({ browser }) => {
+test("an overdue action shows on the list, the lead and the dashboard, and completing it clears them", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
-  await page.goto(`/inquiries/${RESTAURANT}`);
-  // Follow-ups become overdue as time passes; here one is created already overdue
-  // (the date picker's minimum is only a hint, the server accepts any valid date).
+  await page.goto(`/leads/${RESTAURANT}`);
   const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
-  await page.getByLabel("What needs to happen").fill("Call the restaurant owner");
-  await page.getByLabel("Responsible").selectOption({ label: "Omar" });
-  await page.getByLabel("Due").evaluate((input) => input.removeAttribute("min"));
-  await page.getByLabel("Due").fill(yesterday);
+  await page.locator("#follow-up-action").fill("Call the restaurant owner");
+  await page.locator("#follow-up-owner").selectOption({ label: "Omar" });
+  await page.locator("#follow-up-due").evaluate((input) => input.removeAttribute("min"));
+  await page.locator("#follow-up-due").fill(yesterday);
   await submit(page, "Add follow-up");
-  const item = page.locator('[data-follow-up="Call the restaurant owner"]');
-  await expect(item).toContainText("Omar");
-  await expect(item).toContainText("Overdue");
+  await expect(page.locator('[data-follow-up="Call the restaurant owner"]')).toContainText("Overdue");
 
-  await page.goto("/inquiries");
-  const line = row(page, RESTAURANT).locator("[data-next-follow-up]");
-  await expect(line).toContainText("Next: Omar ·");
-  await expect(line).toContainText("Overdue");
-  await expect(page.locator("[data-summary]").locator("div", { hasText: "Overdue follow-ups" }).locator("dd")).toHaveText("1");
+  await page.goto("/leads");
+  await expect(row(page, RESTAURANT).locator("[data-next-action]")).toContainText("Overdue");
+  await page.goto("/dashboard");
+  const overdue = page.locator('[data-group="overdue"]');
+  await expect(overdue).toContainText("Call the restaurant owner");
+  await expect(overdue).toContainText("Omar");
 
-  // The same in Arabic, right to left.
   await page.getByRole("button", { name: "Switch the interface to Arabic" }).click();
   await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
-  await expect(row(page, RESTAURANT).locator("[data-next-follow-up]")).toContainText("متأخرة");
-  await expect(page.locator("[data-summary]")).toContainText("متابعات متأخرة");
-  await expect(page.locator("thead")).toContainText("مرحلة المبيعات");
+  await expect(page.locator('[data-group="overdue"]')).toContainText("متأخرة");
   await page.getByRole("button", { name: "التبديل إلى الواجهة الإنجليزية" }).click();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
 
-  await page.goto(`/inquiries/${RESTAURANT}`);
-  await submit(page, "Mark done");
-  await expect(page.locator("[data-follow-up]")).toHaveCount(0);
-  await page.goto("/inquiries");
-  await expect(row(page, RESTAURANT).locator("[data-next-follow-up]")).toHaveCount(0);
-  await expect(page.locator("[data-summary]").locator("div", { hasText: "Overdue follow-ups" }).locator("dd")).toHaveText("0");
+  await page.goto(`/leads/${RESTAURANT}`);
+  await submit(page, "Mark done", page.locator('[data-follow-up="Call the restaurant owner"]'));
+  await page.goto("/dashboard");
+  await expect(page.locator('[data-group="overdue"]')).toHaveCount(0);
 });

@@ -164,14 +164,14 @@ const en = {
   },
   states: {
     loadingList: "Loading inquiries",
-    loadingInquiry: "Loading inquiry",
+    loadingInquiry: "Loading lead",
     errorTitle: "This page could not be loaded",
     errorBody: "The dashboard could not reach its data, or the last action did not finish. If you were saving something, check whether it was saved before trying again.",
     tryAgain: "Try again",
     reference: (digest: string) => `Reference: ${digest}`,
-    notFoundTitle: "Inquiry not found",
-    notFoundBody: "The link may be mistyped, or the inquiry may have been removed.",
-    back: "Back to all inquiries",
+    notFoundTitle: "Lead not found",
+    notFoundBody: "The link may be mistyped, or the lead may have been removed.",
+    back: "Back to Leads & Clients",
   },
 };
 
@@ -331,14 +331,14 @@ const ar: AdminMessages = {
   },
   states: {
     loadingList: "جارٍ تحميل الطلبات",
-    loadingInquiry: "جارٍ تحميل الطلب",
+    loadingInquiry: "جارٍ تحميل الفرصة",
     errorTitle: "تعذّر تحميل هذه الصفحة",
     errorBody: "تعذّر على اللوحة الوصول إلى بياناتها، أو لم يكتمل آخر إجراء. إن كنت تحفظ شيئًا، فتأكّد مما إذا كان قد حُفظ قبل المحاولة مجددًا.",
     tryAgain: "حاول مجددًا",
     reference: (digest) => `المرجع: ${digest}`,
-    notFoundTitle: "الطلب غير موجود",
-    notFoundBody: "قد يكون الرابط غير صحيح، أو ربما حُذف الطلب.",
-    back: "العودة إلى كل الطلبات",
+    notFoundTitle: "الفرصة غير موجودة",
+    notFoundBody: "قد يكون الرابط غير صحيح، أو ربما حُذفت الفرصة.",
+    back: "العودة إلى العملاء والفرص",
   },
 };
 
