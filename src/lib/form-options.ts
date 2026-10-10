@@ -3,16 +3,18 @@
 // shows them (CRM, team email, CSV export, the preparation brief). No Zod here, so
 // importing it into the browser costs only these strings.
 //
-// The budget has two scales, US dollars and Egyptian pounds (budget-currency.ts
-// chooses which one a visitor starts with). They are separate ranges, never a
-// conversion of one another. New submissions store the currency and a stable range
-// code valid for it; the codes of the two scales never overlap except `not_sure`.
-// People only ever see labels.
+// The budget has two scales, US dollars and Egyptian pounds. They are separate
+// ranges for separate markets, never a conversion of one another, and the visitor
+// does not choose between them: the server picks the scale from the request
+// (budget-currency.ts), shows only that one, and accepts only that one. New
+// submissions store the currency and a stable range code valid for it; the codes of
+// the two scales never overlap except `not_sure`. People only ever see labels.
 //
-// Older cached forms sent no currency: their values are US dollars. They sent
-// either today's USD codes or, earlier, English labels: a label with an exact
-// counterpart is stored as that code; the earlier placeholder budget bands, which
-// straddle today's bands, are stored as sent rather than guessed into another band.
+// Older review builds sent English labels: "Not sure yet" is stored as its code in
+// the request's currency; the earlier placeholder bands, which straddle today's US
+// bands, are accepted only where the US-dollar scale applies and are stored as sent
+// rather than guessed into another band. (The production form never asked for a
+// budget, so its cached copies send none, which is accepted.)
 // Existing database rows are never rewritten; every stored form is shown with a
 // label, and anything unknown is shown as stored.
 
@@ -96,21 +98,20 @@ const EGP_CODES = codes(BUDGET_SCALES.EGP);
 // ----- Budget
 
 // Every value a submission may carry for the budget: either scale's codes and
-// older cached forms' labels. Which ones are valid depends on the currency.
+// older review builds' labels. Which ones are valid depends on the request's currency.
 export const BUDGET_ACCEPTED = [...new Set([...USD_CODES.keys(), ...EGP_CODES.keys(), ...Object.keys(LEGACY_BUDGET)])] as [string, ...string[]];
 
-// What to store for a submitted budget, or null when the combination is not valid.
-// A currency must come with a range from its own scale; no currency means an
-// older cached form, whose values are US dollars.
-export function storedBudget(range: string, currency: string | undefined): { range: string; currency: BudgetCurrency } | null {
-  if (currency === undefined) {
-    if (USD_CODES.has(range)) return { range, currency: "USD" };
-    const old = own(LEGACY_BUDGET, range);
-    return old ? { range: old.code ?? range, currency: "USD" } : null;
-  }
-  if (currency === "USD") return USD_CODES.has(range) ? { range, currency } : null;
-  if (currency === "EGP") return EGP_CODES.has(range) ? { range, currency } : null;
-  return null;
+// What to store for a submitted budget, given the currency the SERVER derived for
+// the request, or null when the value does not belong to that currency's scale (a
+// range from the other scale is never accepted, whatever the client claims).
+export function storedBudget(range: string, currency: BudgetCurrency): { range: string; currency: BudgetCurrency } | null {
+  const scale = currency === "EGP" ? EGP_CODES : currency === "USD" ? USD_CODES : null;
+  if (!scale) return null;
+  if (scale.has(range)) return { range, currency };
+  const old = own(LEGACY_BUDGET, range);
+  if (!old) return null;
+  if (old.code) return { range: old.code, currency };
+  return currency === "USD" ? { range, currency } : null;
 }
 
 // The label for a stored budget, in a language. The stored currency picks the

@@ -90,7 +90,9 @@ for (const viewport of [
         await expect.poll(() => requests.length).toBe(1);
         const body = JSON.parse(requests[0]);
         // Stable codes are sent, never the labels shown.
-        expect(body).toMatchObject({ budget: "5000_10000", budgetCurrency: "USD", timeline: "not_sure", existingUrl: "acme.example.com/app" });
+        expect(body).toMatchObject({ budget: "5000_10000", timeline: "not_sure", existingUrl: "acme.example.com/app" });
+        // The currency is the server's decision: the form never sends one.
+        expect(body).not.toHaveProperty("budgetCurrency");
         expect(foreign).toEqual([]);
       });
 

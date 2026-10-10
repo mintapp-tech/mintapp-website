@@ -135,10 +135,6 @@ export interface HomeContent {
     fDescPh: string;
     fBudget: string;
     fBudgetHelp: string;
-    fCurrency: string;
-    currencyUSD: string;
-    currencyEGP: string;
-    currencyChanged: string;
     fTimeline: string;
     chooseOne: string;
     fExistingLink: string;
@@ -166,6 +162,7 @@ export interface HomeContent {
       invalid_format: string;
       invalid_value: string;
       invalid_url: string;
+      budget_reload: string;
       invalid: string;
     };
     turnstileFailed: string;

@@ -1,18 +1,23 @@
-// Which currency the budget question starts in. Pure and browser-safe.
+// Which budget scale a visitor is shown. Pure and browser-safe.
 //
-// Egypt is the only special case: a visitor whose request comes from Egypt starts
-// in Egyptian pounds; everyone else, and anyone whose country is unknown, starts
-// in US dollars. The visitor can always switch, and a currency they chose
-// themselves (remembered in a first-party cookie) wins over the country. The
-// country is only ever the two-letter code a host adds to the request
-// (x-vercel-ip-country); no IP address is read, stored or logged.
+// The Egyptian-pound ranges are bands for the Egyptian market, not a conversion of
+// the US-dollar ones, so the scale is not the visitor's choice: a request from
+// Egypt gets the Egyptian-pound scale; every other country, and any request whose
+// country is missing or malformed, gets the US-dollar scale. The server decides
+// this for every request, for the page and again when the form is submitted, and
+// stores only the currency that results. The country is only ever the two-letter
+// code the host adds to the request (x-vercel-ip-country); no IP address is read,
+// stored or logged, and the country itself is neither stored nor logged.
 
 export const BUDGET_CURRENCIES = ["USD", "EGP"] as const;
 export type BudgetCurrency = (typeof BUDGET_CURRENCIES)[number];
 
-export const BUDGET_CURRENCY_COOKIE = "mintapp_budget_currency";
 // The header Vercel adds with the visitor's country (ISO 3166-1 alpha-2).
 export const COUNTRY_HEADER = "x-vercel-ip-country";
+
+// An earlier review build let visitors pick a currency and remembered it in this
+// cookie. Nothing reads it any more; the public proxy expires it when it is seen.
+export const RETIRED_CURRENCY_COOKIE = "mintapp_budget_currency";
 
 export const isBudgetCurrency = (value: unknown): value is BudgetCurrency => value === "USD" || value === "EGP";
 
@@ -24,16 +29,5 @@ export const normalizeCountry = (value: string | null | undefined): string | nul
 
 export const currencyForCountry = (country: string | null | undefined): BudgetCurrency => (normalizeCountry(country) === "EG" ? "EGP" : "USD");
 
-// A saved choice wins; otherwise the country decides; otherwise USD.
-export function initialBudgetCurrency({ preference, country }: { preference?: string | null; country?: string | null }): BudgetCurrency {
-  return isBudgetCurrency(preference) ? preference : currencyForCountry(country);
-}
-
-// Remembers the visitor's own choice for later visits (first-party, one year).
-export function rememberBudgetCurrency(currency: BudgetCurrency) {
-  try {
-    document.cookie = `${BUDGET_CURRENCY_COOKIE}=${currency}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
-  } catch {
-    // cookies unavailable: the choice still applies to this visit
-  }
-}
+// The scale for one request, from its headers only.
+export const budgetCurrencyFor = (headers: { get(name: string): string | null }): BudgetCurrency => currencyForCountry(headers.get(COUNTRY_HEADER));

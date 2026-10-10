@@ -4,8 +4,16 @@ import { appSurface, isAdminHost, isAdminPage } from "@/lib/admin/surface";
 import { authMode } from "@/lib/admin/auth/config";
 import { syncAdminSession } from "@/lib/admin/auth/proxy-session";
 import { adminHeaders } from "@/lib/admin/headers";
+import { RETIRED_CURRENCY_COOKIE } from "@/lib/budget-currency";
 
 const LOCALE_COOKIE = "mintapp_locale";
+
+// A visitor-chosen budget currency is no longer offered or read; any copy of the
+// cookie an earlier review build set is expired on the visitor's next page request.
+function expireRetiredCookies(request: NextRequest, response: NextResponse) {
+  if (request.cookies.has(RETIRED_CURRENCY_COOKIE)) response.cookies.set(RETIRED_CURRENCY_COOKIE, "", { path: "/", maxAge: 0, sameSite: "lax" });
+  return response;
+}
 
 // Matches a plausible locale-code shape only: "fr", "de", "en-US", "zh-cn".
 // Deliberately narrow (exactly 2 letters, optional 2-letter region subtag) so
@@ -83,7 +91,7 @@ export async function proxy(request: NextRequest) {
       maxAge: 60 * 60 * 24 * 365,
       sameSite: "lax",
     });
-    return response;
+    return expireRetiredCookies(request, response);
   }
 
   const targetLocale = resolveTargetLocale(request);
@@ -95,14 +103,14 @@ export async function proxy(request: NextRequest) {
     // invalid one (which previously produced /ar/fr/about).
     const rest = segments.slice(2).join("/");
     const redirectUrl = new URL(`/${targetLocale}${rest ? `/${rest}` : ""}${search}`, request.url);
-    return NextResponse.redirect(redirectUrl);
+    return expireRetiredCookies(request, NextResponse.redirect(redirectUrl));
   }
 
   // Ordinary bare path (e.g. "/", "/about", or a genuinely nonexistent page):
   // prepend the resolved locale so it renders (or cleanly 404s) under it.
   const suffix = pathname === "/" ? "" : pathname;
   const redirectUrl = new URL(`/${targetLocale}${suffix}${search}`, request.url);
-  return NextResponse.redirect(redirectUrl);
+  return expireRetiredCookies(request, NextResponse.redirect(redirectUrl));
 }
 
 export const config = {

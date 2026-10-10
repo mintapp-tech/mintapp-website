@@ -3,7 +3,7 @@ import { z } from "zod";
 import { INQUIRY_LIMITS } from "./inquiry-limits";
 import { PROJECT_TYPES } from "./project-types";
 import { BUDGET_ACCEPTED, TIMELINE_ACCEPTED, storedBudget, storedTimeline } from "./form-options";
-import { BUDGET_CURRENCIES } from "./budget-currency";
+import type { BudgetCurrency } from "./budget-currency";
 import { EXISTING_LINK_MAX, normalizeExistingLink } from "./existing-link";
 
 // Server-side source of truth. This schema only validates *shape* — the
@@ -44,11 +44,12 @@ const inquiryFields = z.object({
   utmContent: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   // Budget, timeline and the existing link: the current form always sends the
   // first two; all three stay optional so an older cached form still gets through.
-  // Today's codes and the labels older cached forms sent are both accepted, and
+  // Today's codes and the labels older review builds sent are both accepted, and
   // become what is stored (a code whenever the meaning is exact: form-options.ts).
-  // The budget's currency is checked together with its range below.
+  // The budget's currency is never taken from the client: a "budgetCurrency" field
+  // (sent by an earlier review build) is stripped like any unknown field, and the
+  // range is checked below against the currency the server derived.
   budget: z.enum(BUDGET_ACCEPTED).optional(),
-  budgetCurrency: z.enum(BUDGET_CURRENCIES).optional(),
   timeline: z.enum(TIMELINE_ACCEPTED).transform((v) => storedTimeline(v)!).optional(),
   // Stored normalized (https://..., no fragment); unsafe or unusable links are refused.
   existingUrl: z
@@ -67,24 +68,21 @@ const inquiryFields = z.object({
     }),
 });
 
-// A budget range must belong to the currency it was chosen in: a range from the
-// other scale, or a currency without a range, is refused. Without a currency (an
-// older cached form) the range is a US-dollar value. The result carries what is
-// stored: the range code (or an older label kept as sent) and its currency.
-export const inquirySchema = inquiryFields.transform((v, ctx) => {
-  if (v.budget === undefined) {
-    if (v.budgetCurrency !== undefined) {
-      ctx.addIssue({ code: "custom", path: ["budget"], message: "required" });
+// The schema for one request. `currency` is what the server derived for that
+// request (budget-currency.ts): a range from the other scale is refused with
+// "budget_reload" (the visitor's page no longer matches what the server shows; a
+// reload shows the right options). The result carries what is stored: the range
+// code (or an older label kept as sent) and the derived currency.
+export function inquirySchemaFor(currency: BudgetCurrency) {
+  return inquiryFields.transform((v, ctx) => {
+    if (v.budget === undefined) return { ...v, budgetCurrency: undefined };
+    const stored = storedBudget(v.budget, currency);
+    if (!stored) {
+      ctx.addIssue({ code: "custom", path: ["budget"], message: "budget_reload" });
       return z.NEVER;
     }
-    return v;
-  }
-  const stored = storedBudget(v.budget, v.budgetCurrency);
-  if (!stored) {
-    ctx.addIssue({ code: "custom", path: ["budget"], message: "invalid_value" });
-    return z.NEVER;
-  }
-  return { ...v, budget: stored.range, budgetCurrency: stored.currency };
-});
+    return { ...v, budget: stored.range, budgetCurrency: stored.currency };
+  });
+}
 
-export type InquiryInput = z.output<typeof inquirySchema>;
+export type InquiryInput = z.output<ReturnType<typeof inquirySchemaFor>>;

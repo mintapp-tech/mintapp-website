@@ -29,30 +29,26 @@ describe("budget scales", () => {
   });
 });
 
-describe("what is stored for a submitted budget", () => {
-  test("a range from the chosen currency's scale is stored with that currency", () => {
+describe("what is stored for a submitted budget (the currency is the server's)", () => {
+  test("a range from the request's own scale is stored with that currency", () => {
     for (const range of USD_CODES) expect(storedBudget(range, "USD")).toEqual({ range, currency: "USD" });
     for (const range of EGP_CODES) expect(storedBudget(range, "EGP")).toEqual({ range, currency: "EGP" });
   });
 
-  test("a range from the other scale, or an unknown currency, is refused", () => {
+  test("a range from the other scale, or anything unknown, is refused", () => {
     expect(storedBudget("under_50000", "USD")).toBeNull();
     expect(storedBudget("5000_10000", "EGP")).toBeNull();
     expect(storedBudget("Under USD 5,000", "EGP")).toBeNull();
-    expect(storedBudget("Under USD 5,000", "USD")).toBeNull(); // today's form never sends labels with a currency
-    expect(storedBudget("not_sure", "EUR")).toBeNull();
-    expect(storedBudget("not_sure", "usd")).toBeNull();
     expect(storedBudget("a million", "USD")).toBeNull();
+    expect(storedBudget("constructor", "EGP")).toBeNull();
+    expect(storedBudget("not_sure", "EUR" as never)).toBeNull();
   });
 
-  test("an older cached form sends no currency: its values are US dollars", () => {
-    expect(storedBudget("5000_10000", undefined)).toEqual({ range: "5000_10000", currency: "USD" });
-    expect(storedBudget("Not sure yet", undefined)).toEqual({ range: "not_sure", currency: "USD" });
+  test("an older review build's labels: Not sure yet in either scale, the old dollar bands only where dollars apply", () => {
+    expect(storedBudget("Not sure yet", "USD")).toEqual({ range: "not_sure", currency: "USD" });
+    expect(storedBudget("Not sure yet", "EGP")).toEqual({ range: "not_sure", currency: "EGP" });
     // The earlier placeholder bands straddle today's: stored as sent, never moved into another band.
-    expect(storedBudget("USD 5,000 - 15,000", undefined)).toEqual({ range: "USD 5,000 - 15,000", currency: "USD" });
-    // An Egyptian range never arrived without a currency.
-    expect(storedBudget("under_50000", undefined)).toBeNull();
-    expect(storedBudget("constructor", undefined)).toBeNull();
+    expect(storedBudget("USD 5,000 - 15,000", "USD")).toEqual({ range: "USD 5,000 - 15,000", currency: "USD" });
     expect(BUDGET_ACCEPTED).toContain("Over USD 40,000");
   });
 });

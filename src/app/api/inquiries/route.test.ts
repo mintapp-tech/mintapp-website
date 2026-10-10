@@ -59,10 +59,10 @@ const { verifyBookingContext } = await import("@/lib/cal-booking-context");
 
 const { POST } = await import("./route");
 
-function makeRequest(body: unknown) {
+function makeRequest(body: unknown, headers: Record<string, string> = {}) {
   return new Request("http://localhost/api/inquiries", {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...headers },
     body: JSON.stringify(body),
   }) as unknown as Parameters<typeof POST>[0];
 }
@@ -163,18 +163,23 @@ describe("POST /api/inquiries — honeypot and timing run before Turnstile, Supa
 });
 
 describe("POST /api/inquiries — structural/schema validation", () => {
-  test("a budget range from the other currency's scale is refused before any downstream call, with a field code the form can show", async () => {
-    for (const [fields, code] of [
-      [{ budget: "under_50000", budgetCurrency: "USD" }, "invalid_value"],
-      [{ budget: "5000_10000", budgetCurrency: "EGP" }, "invalid_value"],
-      [{ budgetCurrency: "EGP" }, "required"],
-      [{ budget: "not_sure", budgetCurrency: "GBP" }, "invalid_value"],
+  test("the budget scale is the server's, from the request: a manipulated body cannot submit the other scale", async () => {
+    const EG = { "x-vercel-ip-country": "EG" };
+    for (const [headers, fields] of [
+      [EG, { budget: "under_2500" }],
+      [EG, { budget: "under_2500", budgetCurrency: "USD" }],
+      [EG, { budget: "Under USD 5,000" }],
+      [{ "x-vercel-ip-country": "SA" }, { budget: "under_50000", budgetCurrency: "EGP" }],
+      [{ "x-vercel-ip-country": "US" }, { budget: "100000_250000" }],
+      [{}, { budget: "over_500000", budgetCurrency: "EGP" }],
+      [{ "x-vercel-ip-country": "EGY" }, { budget: "under_50000" }],
     ] as const) {
-      const res = await POST(makeRequest({ ...validBody, ...fields }));
+      const res = await POST(makeRequest({ ...validBody, ...fields }, headers));
       expect(res.status).toBe(400);
-      expect((await res.json()).fields).toEqual(code === "invalid_value" && "budgetCurrency" in fields && fields.budgetCurrency === "GBP" ? { budgetCurrency: "invalid_value" } : { budget: code });
+      expect((await res.json()).fields).toEqual({ budget: "budget_reload" });
     }
     expect(verifyTurnstileToken).not.toHaveBeenCalled();
+    expect(insertInquiry).not.toHaveBeenCalled();
   });
 
   test("missing turnstileToken is rejected before any downstream call", async () => {
@@ -214,6 +219,21 @@ describe("POST /api/inquiries — structural/schema validation", () => {
 });
 
 describe("POST /api/inquiries — success path (after() mocked and executed deterministically)", () => {
+  test("stores the range with the currency the server derived, ignoring the one the client sent; the country itself is not kept", async () => {
+    verifyTurnstileToken.mockResolvedValue({ ok: true });
+    getSupabaseServerClient.mockReturnValue({ fake: "client" });
+    findInquiryIdByToken.mockResolvedValue(null);
+    insertInquiry.mockResolvedValue({ status: "inserted", id: "new-id" });
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+    const res = await POST(makeRequest({ ...validBody, budget: "100000_250000", budgetCurrency: "USD" }, { "x-vercel-ip-country": "EG", "x-forwarded-for": "203.0.113.7" }));
+    expect(res.status).toBe(201);
+    const stored = insertInquiry.mock.calls[0][1];
+    expect(stored).toMatchObject({ budget: "100000_250000", budgetCurrency: "EGP" });
+    expect(JSON.stringify(stored)).not.toMatch(/"EG"|203\.0\.113\.7|country/i);
+    expect(log.mock.calls.flat().join(" ")).not.toMatch(/203\.0\.113\.7|"EG"/);
+    log.mockRestore();
+  });
+
   test("valid request + successful Turnstile: one Supabase lookup, exactly one insert, notification scheduled once, response is 201 with a safe shape", async () => {
     vi.stubEnv("RESEND_API_KEY", "fake-key-not-real");
     verifyTurnstileToken.mockResolvedValue({ ok: true });

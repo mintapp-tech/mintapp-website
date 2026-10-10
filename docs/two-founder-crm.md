@@ -156,45 +156,52 @@ belongs to.
 | `over_6_months` | Later than 6 months | بعد أكثر من 6 أشهر |
 | `not_sure` | Not sure yet | لست متأكدًا بعد |
 
-**Which currency the question starts in** (`src/lib/budget-currency.ts`):
+**Which scale a visitor sees** (`src/lib/budget-currency.ts`): the Egyptian-pound
+ranges are bands for the Egyptian market, not exchange-rate equivalents, so the scale is
+the server's decision, not the visitor's:
 
-1. a currency the visitor chose before (first-party cookie `mintapp_budget_currency`,
-   one year) wins;
-2. otherwise Egypt (`EG`) starts in EGP;
-3. every other country, including the Gulf and the rest of MENA, and a missing or
-   malformed country, starts in USD.
+1. a request from Egypt (`EG`) sees only the EGP scale;
+2. every other country, including the Gulf and the rest of MENA, sees only the USD scale;
+3. a missing or malformed country sees the USD scale.
 
-The country is only the two-letter code Vercel adds to the request
-(`x-vercel-ip-country`); no IP address is read, stored or logged by this feature, and the
-country itself is neither stored nor sent with the inquiry. The visitor always sees an
-EGP/USD choice (a labelled radio pair, one tab stop, arrow keys switch). Switching clears
-the chosen range, announces "Currency changed. Choose your budget range again." and
-remembers the choice; one answer is never translated into the other. Language and
-currency are independent.
+There is no currency selector and no remembered preference. The cookie an earlier review
+build used for a chosen currency (`mintapp_budget_currency`) is no longer read; the public
+proxy expires it (`Max-Age=0`) on the visitor's next page request. The country is only
+the two-letter code Vercel adds to the request (`x-vercel-ip-country`); no IP address is
+read, stored or logged by this feature, and the country itself is neither stored, logged
+nor sent with the inquiry. Language and currency are independent.
 
-**Rendering and caching**: the Start page used to be prerendered once per language. It
-now renders for each request (`export const dynamic = "force-dynamic"`, like `/book`):
-the server reads the cookie and the country header and renders the right scale in the
-first HTML, so nothing changes after the page loads. Next.js sends a dynamic page as
-`private, no-cache, no-store`, so no shared cache can hand one visitor's page to another
-(checked in `tests/e2e/budget-currency.spec.ts`). The cost is a server render per visit of `/start`.
+**Rendering and caching**: the Start page renders for each request
+(`export const dynamic = "force-dynamic"`, like `/book`): the server reads the country
+header and renders the right scale in the first HTML, so nothing changes after the page
+loads. Next.js sends a dynamic page as `private, no-cache, no-store`, so no shared cache
+can hand one visitor's page to another (checked in `tests/e2e/budget-currency.spec.ts`).
+The cost is a server render per visit of `/start`.
 
-**Stored**: `project_inquiries.budget_range` (the code) and the new
+**Stored**: `project_inquiries.budget_range` (the code) and
 `project_inquiries.budget_currency` (`USD` or `EGP`). The column is nullable, so rows
 from before are untouched, and a check constraint (`project_inquiries_budget_currency_range`)
 allows a currency only with a range from its own scale; USD also allows the earlier
-form's labels below. The server validates the same rule first (`src/lib/inquiry-schema.ts`):
-a range from the other scale, a currency without a range, or any other currency is
-refused with a field error on the budget.
+form's labels below.
 
-**Older cached forms** sent no currency. Their budget is US dollars:
+**Validated on the server, never trusted from the client**
+(`src/lib/inquiry-schema.ts`, `inquirySchemaFor`): the route derives the currency from
+the request again when the form is submitted. A `budgetCurrency` field in the body (an
+earlier review build sent one) is stripped like any unknown field. A range from the other
+scale (for example a dollar range injected into the Egyptian page, or an Egyptian range
+posted without the Egyptian header) is refused with the field code `budget_reload`
+("The budget options have changed. Please refresh the page and choose again."), before
+Turnstile or the database are called.
 
-- today's USD codes are stored as they are, with `USD`;
-- the budget "Not sure yet" and every older timeline label have an exact counterpart and
-  are stored as that code;
+**Older forms**: the production form never asked for a budget, so its cached copies send
+none, which is accepted. Older review builds sent labels:
+
+- "Not sure yet" and every older timeline label have an exact counterpart and are stored
+  as that code (the budget's "Not sure yet" in the request's currency);
 - the four earlier placeholder budget bands ("Under USD 5,000", "USD 5,000 - 15,000",
   "USD 15,000 - 40,000", "Over USD 40,000") straddle today's bands, so they are stored as
-  sent (with `USD`) rather than guessed into another band;
+  sent (with `USD`) rather than guessed into another band, and only where the USD scale
+  applies;
 - anything else is refused, as before.
 
 **Existing rows are never rewritten.** Every stored form is displayed with a label: the

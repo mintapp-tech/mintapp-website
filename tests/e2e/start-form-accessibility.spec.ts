@@ -58,15 +58,8 @@ test.describe("keyboard-only progression", () => {
     await expect(page.locator('input[name="projectType"][value="web_app"]')).toBeFocused();
     await expect(page.locator('input[name="projectType"][value="web_app"]')).toBeChecked();
 
-    // The budget currency: one tab stop for the pair, arrow keys switch (USD here, with no country).
-    await page.keyboard.press("Tab");
-    await expect(page.locator('input[name="budgetCurrency"][value="USD"]')).toBeFocused();
-    await page.keyboard.press("ArrowRight");
-    await expect(page.locator('input[name="budgetCurrency"][value="EGP"]')).toBeChecked();
-    await page.keyboard.press("ArrowLeft");
-    await expect(page.locator('input[name="budgetCurrency"][value="USD"]')).toBeChecked();
-
-    // Budget and timeline (one Tab leaves the currency pair), then the optional link.
+    // Budget and timeline (one Tab leaves the whole project-type group; there is no
+    // currency choice to stop on), then the optional link.
     await page.keyboard.press("Tab");
     await expect(page.locator('select[name="budget"]')).toBeFocused();
     await page.keyboard.press("Tab");

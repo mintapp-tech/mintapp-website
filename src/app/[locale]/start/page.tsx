@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { cookies, headers } from "next/headers";
+import { headers } from "next/headers";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StartExperience from "@/components/start/StartExperience";
 import { resolveLocale } from "@/lib/locales";
 import { buildPageMetadata } from "@/lib/seo";
-import { BUDGET_CURRENCY_COOKIE, COUNTRY_HEADER, initialBudgetCurrency } from "@/lib/budget-currency";
+import { budgetCurrencyFor } from "@/lib/budget-currency";
 
-// Rendered for each request, never from a shared cache: the budget question starts
-// in the visitor's own saved currency, else the one their country suggests (only
-// the two-letter country the host adds; no IP address is read or kept).
+// Rendered for each request, never from a shared cache: the budget question shows
+// the scale the server derives from the request (Egypt: Egyptian pounds; elsewhere
+// or unknown: US dollars), from the two-letter country the host adds only. No IP
+// address is read or kept, and the visitor is not offered the other scale.
 export const dynamic = "force-dynamic";
 
 const COPY = {
@@ -30,13 +31,12 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
 }
 
 export default async function StartPage() {
-  const [cookieStore, requestHeaders] = await Promise.all([cookies(), headers()]);
-  const currency = initialBudgetCurrency({ preference: cookieStore.get(BUDGET_CURRENCY_COOKIE)?.value, country: requestHeaders.get(COUNTRY_HEADER) });
+  const currency = budgetCurrencyFor(await headers());
   return (
     <>
       <Header />
       <main id="main-content" tabIndex={-1} className="outline-none">
-        <StartExperience initialBudgetCurrency={currency} />
+        <StartExperience budgetCurrency={currency} />
       </main>
       <Footer />
     </>

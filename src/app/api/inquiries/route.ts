@@ -6,7 +6,8 @@ import { insertInquiry } from "@/lib/insert-inquiry";
 import { findInquiryIdByToken } from "@/lib/find-inquiry-by-token";
 import { verifyTurnstileToken } from "@/lib/verify-turnstile";
 import { getTurnstileSecretKey, getAllowedTurnstileHostnames } from "@/lib/turnstile-config";
-import { inquirySchema } from "@/lib/inquiry-schema";
+import { inquirySchemaFor } from "@/lib/inquiry-schema";
+import { budgetCurrencyFor } from "@/lib/budget-currency";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 import { signBookingContext } from "@/lib/cal-booking-context";
 import { kickPreparationAfterSubmission } from "@/lib/preparation/run";
@@ -105,8 +106,8 @@ function issueToCode(issue: z.core.$ZodIssue): string {
       return "invalid_value";
     case "custom":
       if (issue.path[0] === "existingUrl") return "invalid_url";
-      // A budget range outside its currency's scale, or a currency without a range.
-      if (issue.path[0] === "budget" && (issue.message === "required" || issue.message === "invalid_value")) return issue.message;
+      // A budget range from another scale than the server shows this request.
+      if (issue.path[0] === "budget" && issue.message === "budget_reload") return "budget_reload";
       return "invalid";
     default:
       return "invalid";
@@ -153,7 +154,9 @@ export async function POST(request: NextRequest) {
   // including the honeypot, whose "must be empty" rule is a business-logic
   // check applied to the already-typed value below, never a schema failure
   // (see inquiry-schema.ts for why).
-  const parsed = inquirySchema.safeParse(read.data);
+  // The budget's scale is the server's decision for this request (never the client's);
+  // only the resulting currency is kept, never the country it came from.
+  const parsed = inquirySchemaFor(budgetCurrencyFor(request.headers)).safeParse(read.data);
   if (!parsed.success) {
     return jsonResponse({ error: "Invalid submission.", fields: fieldErrors(parsed.error) }, 400);
   }
