@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 import { buildGenerationInput } from "./input";
 import { normalizeForMatch } from "./draft";
@@ -18,9 +18,13 @@ import { PACK_STEPS, STEP_MAX_TOKENS, validateStep, type Analysis, type StepCont
 //   PREPARATION_EVAL_MODE=staged|single PREPARATION_EVAL_BRIEFS=en-complete-clinic,ar-complete-school \
 //   PREPARATION_EVAL_MAX_TOKENS=60000 PREPARATION_EVAL_REPORT=review-evidence/codecraft-eval.json \
 //   [PREPARATION_EVAL_STEPS=analysis,design] [CODECRAFT_REASONING_MAX_TOKENS=1024] \
+//   [PREPARATION_EVAL_ANALYSIS_FROM=review-evidence/<earlier report>.json] \
 //     node --env-file=.env.local node_modules/vitest/vitest.mjs run src/lib/preparation/eval.live.test.ts
 //
 // staged  the four bounded requests the worker makes (analysis, design, proposal, discovery)
+// To re-check one later step without asking for the analysis again, an earlier
+// report's analysis can be reused (PREPARATION_EVAL_ANALYSIS_FROM); it is validated
+// again against the brief before it is used.
 // single  the earlier one-request pack, kept only to diagnose why it was cut off
 //         (PREPARATION_EVAL_SINGLE_MAX_TOKENS, default 8192)
 //
@@ -82,6 +86,12 @@ describe.runIf(enabled)("live preparation evaluation (synthetic briefs only)", (
 
         // Staged, exactly as the worker runs it.
         const context: StepContext = {};
+        if (process.env.PREPARATION_EVAL_ANALYSIS_FROM) {
+          const earlier = JSON.parse(readFileSync(process.env.PREPARATION_EVAL_ANALYSIS_FROM, "utf8")) as { rows: { brief: string; steps?: { analysis?: { value?: unknown } } }[] };
+          const seeded = validateStep("analysis", earlier.rows.find((r) => r.brief === brief.id)?.steps?.analysis?.value, ctx);
+          if (!seeded.ok) throw new Error(`the earlier analysis for ${brief.id} is not valid`);
+          context.analysis = seeded.value as Analysis;
+        }
         const packRow: Record<string, unknown> = { brief: brief.id, steps: {} as Record<string, unknown> };
         let packTokens = 0;
         let stop = false;
@@ -89,6 +99,7 @@ describe.runIf(enabled)("live preparation evaluation (synthetic briefs only)", (
         for (const step of PACK_STEPS) {
           if (step !== "analysis" && !context.analysis) break;
           if (only && !only.includes(step)) continue;
+          if (step === "analysis" && context.analysis) continue;
           const worst = generator.estimateTokens(step, input, context);
           if (!room(worst) || packTokens + worst > selection.packTokenCap) {
             (packRow.steps as Record<string, unknown>)[step] = { skipped: `cap: run ${used}+${worst}/${cap}, pack ${packTokens}+${worst}/${selection.packTokenCap}` };
