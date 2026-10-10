@@ -295,6 +295,7 @@ export default async function LeadPack({ params, searchParams }: { params: Promi
     project_type: i.project_type,
     project_description: i.project_description,
     budget_range: i.budget_range,
+    budget_currency: lead.budget_currency,
     timeline: i.timeline,
     country: i.country,
     redact: knownDetails({ client_name: i.client_name, company_name: i.company_name, email: i.email, phone: i.phone, company_url: i.company_url }),

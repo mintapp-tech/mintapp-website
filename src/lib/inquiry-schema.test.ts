@@ -83,19 +83,33 @@ describe("inquirySchema — budget, timeline and existing link", () => {
     expect(parsed.existingUrl).toBeUndefined();
   });
 
-  test("budget and timeline accept the listed codes, including not_sure, and store them", () => {
-    expect(inquirySchema.parse({ ...validBase, budget: "5000_10000", timeline: "within_3_months" })).toMatchObject({ budget: "5000_10000", timeline: "within_3_months" });
-    expect(inquirySchema.parse({ ...validBase, budget: "not_sure", timeline: "not_sure" })).toMatchObject({ budget: "not_sure", timeline: "not_sure" });
+  test("a budget range is stored with the currency it was chosen in, from either scale", () => {
+    expect(inquirySchema.parse({ ...validBase, budget: "5000_10000", budgetCurrency: "USD", timeline: "within_3_months" })).toMatchObject({ budget: "5000_10000", budgetCurrency: "USD", timeline: "within_3_months" });
+    expect(inquirySchema.parse({ ...validBase, budget: "100000_250000", budgetCurrency: "EGP" })).toMatchObject({ budget: "100000_250000", budgetCurrency: "EGP" });
+    expect(inquirySchema.parse({ ...validBase, budget: "not_sure", budgetCurrency: "EGP", timeline: "not_sure" })).toMatchObject({ budget: "not_sure", budgetCurrency: "EGP", timeline: "not_sure" });
   });
 
-  test("an older cached form's labels are still accepted: exact meanings become codes, old budget bands are kept as sent", () => {
-    expect(inquirySchema.parse({ ...validBase, budget: "Not sure yet", timeline: "Within 3 months" })).toMatchObject({ budget: "not_sure", timeline: "within_3_months" });
+  test.each([
+    ["an Egyptian range in dollars", { budget: "under_50000", budgetCurrency: "USD" }, "invalid_value"],
+    ["a dollar range in pounds", { budget: "5000_10000", budgetCurrency: "EGP" }, "invalid_value"],
+    ["an older dollar label in pounds", { budget: "Under USD 5,000", budgetCurrency: "EGP" }, "invalid_value"],
+    ["an Egyptian range with no currency", { budget: "under_50000" }, "invalid_value"],
+    ["a currency with no range", { budgetCurrency: "EGP" }, "required"],
+  ])("refuses %s on the budget field", (_name, fields, message) => {
+    const r = inquirySchema.safeParse({ ...validBase, ...fields });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0]).toMatchObject({ path: ["budget"], message });
+  });
+
+  test("an older cached form (no currency) still submits: its budget is US dollars; exact meanings become codes", () => {
+    expect(inquirySchema.parse({ ...validBase, budget: "5000_10000" })).toMatchObject({ budget: "5000_10000", budgetCurrency: "USD" });
+    expect(inquirySchema.parse({ ...validBase, budget: "Not sure yet", timeline: "Within 3 months" })).toMatchObject({ budget: "not_sure", budgetCurrency: "USD", timeline: "within_3_months" });
     expect(inquirySchema.parse({ ...validBase, timeline: "Later than 6 months" }).timeline).toBe("over_6_months");
-    expect(inquirySchema.parse({ ...validBase, budget: "USD 5,000 - 15,000" }).budget).toBe("USD 5,000 - 15,000");
+    expect(inquirySchema.parse({ ...validBase, budget: "USD 5,000 - 15,000" })).toMatchObject({ budget: "USD 5,000 - 15,000", budgetCurrency: "USD" });
   });
 
-  test.each([["budget", "a million"], ["budget", "5,000"], ["budget", "NOT_SURE"], ["timeline", "yesterday"], ["timeline", "toString"], ["budget", 5000]])("rejects %s %j", (key, value) => {
-    const r = inquirySchema.safeParse({ ...validBase, [key]: value });
+  test.each([["budget", "a million"], ["budget", "5,000"], ["budget", "NOT_SURE"], ["timeline", "yesterday"], ["timeline", "toString"], ["budget", 5000], ["budgetCurrency", "EUR"], ["budgetCurrency", "egp"]])("rejects %s %j", (key, value) => {
+    const r = inquirySchema.safeParse({ ...validBase, budget: "not_sure", [key]: value });
     expect(r.success).toBe(false);
     if (!r.success) expect(r.error.issues[0].path).toEqual([key]);
   });

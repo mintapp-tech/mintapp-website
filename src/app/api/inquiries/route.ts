@@ -104,7 +104,10 @@ function issueToCode(issue: z.core.$ZodIssue): string {
       if (issue.path[0] === "lang") return "invalid_locale";
       return "invalid_value";
     case "custom":
-      return issue.path[0] === "existingUrl" ? "invalid_url" : "invalid";
+      if (issue.path[0] === "existingUrl") return "invalid_url";
+      // A budget range outside its currency's scale, or a currency without a range.
+      if (issue.path[0] === "budget" && (issue.message === "required" || issue.message === "invalid_value")) return issue.message;
+      return "invalid";
     default:
       return "invalid";
   }
@@ -246,6 +249,7 @@ export async function POST(request: NextRequest) {
         company: body.company,
         projectType: body.projectType,
         budget: body.budget,
+        budgetCurrency: body.budgetCurrency,
         timeline: body.timeline,
         lang: body.lang,
         desc: body.desc,

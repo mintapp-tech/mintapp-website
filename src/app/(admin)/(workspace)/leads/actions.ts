@@ -157,7 +157,8 @@ export async function packPasteAction(form: FormData) {
   }
   if (!json || typeof json !== "object") redirect(`${back}?e=pack_not_json#claude`);
 
-  const detail = await dashboard.getInquiry(inquiryId);
+  // The same brief the copied prompt carried, so the facts are checked against what the founder sent.
+  const [detail, lead] = await Promise.all([dashboard.getInquiry(inquiryId), crm.leadDetail(inquiryId)]);
   if (!detail) redirect(`${back}?e=failed#claude`);
   const i = detail.inquiry;
   const input = buildGenerationInput({
@@ -165,6 +166,7 @@ export async function packPasteAction(form: FormData) {
     project_type: i.project_type,
     project_description: i.project_description,
     budget_range: i.budget_range,
+    budget_currency: lead?.budget_currency ?? null,
     timeline: i.timeline,
     country: i.country,
     redact: knownDetails({ client_name: i.client_name, company_name: i.company_name, email: i.email, phone: i.phone, company_url: i.company_url }),

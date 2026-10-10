@@ -14,8 +14,9 @@ export interface InquiryNotificationEmailInput {
   company?: string;
   /** The client's explicit choice on the form; anything else means "not provided". */
   projectType?: string | null;
-  /** Stored budget and timeline (codes, or an older cached form's label). */
+  /** Stored budget, its currency and timeline (codes, or an older cached form's label). */
   budget?: string | null;
+  budgetCurrency?: string | null;
   timeline?: string | null;
   lang: string;
   desc: string;
@@ -47,7 +48,7 @@ export function buildInquiryNotificationEmail(input: InquiryNotificationEmailInp
   const submitted = formatSubmitted(input.submittedAt);
   const mailto = `mailto:${input.email}`;
   const projectType = projectTypeLabel(input.projectType);
-  const budget = budgetLabel(input.budget, "en") ?? "Not provided";
+  const budget = budgetLabel(input.budget, input.budgetCurrency, "en") ?? "Not provided";
   const timeline = timelineLabel(input.timeline, "en") ?? "Not provided";
 
   const details = [

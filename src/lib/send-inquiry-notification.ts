@@ -14,6 +14,7 @@ export interface InquiryNotificationInput {
   /** The client's explicit choice on the form; absent for older cached forms. */
   projectType?: string;
   budget?: string;
+  budgetCurrency?: string;
   timeline?: string;
   lang: string;
   desc: string;

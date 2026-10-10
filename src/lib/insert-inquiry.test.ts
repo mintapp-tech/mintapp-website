@@ -151,10 +151,24 @@ describe("insertInquiry: project type", () => {
   });
   test("budget, timeline and the existing link go to their columns, and only when answered", async () => {
     const { payloads, client } = recordingSupabase([{ error: null }, { error: null }]);
-    await insertInquiry(client, { ...inquiryBody, budget: "5000_10000", timeline: "within_3_months", existingUrl: "https://acme.example.com/" });
+    await insertInquiry(client, { ...inquiryBody, budget: "100000_250000", budgetCurrency: "EGP", timeline: "within_3_months", existingUrl: "https://acme.example.com/" });
     await insertInquiry(client, inquiryBody);
-    // Codes are stored, never labels.
-    expect(payloads[0]).toMatchObject({ budget_range: "5000_10000", timeline: "within_3_months", company_url: "https://acme.example.com/" });
-    for (const key of ["budget_range", "timeline", "company_url"]) expect(payloads[1]).not.toHaveProperty(key);
+    // Codes are stored, never labels; the currency goes to its own column.
+    expect(payloads[0]).toMatchObject({ budget_range: "100000_250000", budget_currency: "EGP", timeline: "within_3_months", company_url: "https://acme.example.com/" });
+    for (const key of ["budget_range", "budget_currency", "timeline", "company_url"]) expect(payloads[1]).not.toHaveProperty(key);
+    // Nothing about where the visitor is: no country, no address.
+    for (const p of payloads) expect(Object.keys(p).filter((k) => /^(ip|ip_address|remote_ip|country|visitor_country|geo)$/i.test(k))).toEqual([]);
+  });
+
+  test("a database without the currency column still stores the inquiry and its range (the code names its scale)", async () => {
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { payloads, client } = recordingSupabase([{ error: { code: "PGRST204", message: "Could not find the 'budget_currency' column of 'project_inquiries' in the schema cache" } }, { error: null }]);
+    const result = await insertInquiry(client, { ...inquiryBody, budget: "under_50000", budgetCurrency: "EGP" });
+    expect(result.status).toBe("inserted");
+    expect(payloads[0]).toMatchObject({ budget_range: "under_50000", budget_currency: "EGP" });
+    expect(payloads[1]).toMatchObject({ budget_range: "under_50000" });
+    expect(payloads[1]).not.toHaveProperty("budget_currency");
+    expect(log).toHaveBeenCalledWith("budget_currency_rejected_by_database: stored the inquiry without it");
+    log.mockRestore();
   });
 });

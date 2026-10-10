@@ -228,6 +228,11 @@ describe("internal notification", () => {
     expect(later).toContain("Budget: Not sure yet");
     expect(later).toContain("Timeline: Later than 6 months");
     expect(internal({ budget: "USD 5,000 - 15,000" }).text).toContain("Budget: USD 5,000–15,000");
+    // Egyptian pounds, and a currency named where the range does not say it.
+    const egp = internal({ budget: "250000_500000", budgetCurrency: "EGP" });
+    expect(egp.text).toContain("Budget: EGP 250,000–500,000");
+    expect(`${egp.text} ${egp.html}`).not.toMatch(/250000_500000/);
+    expect(internal({ budget: "not_sure", budgetCurrency: "EGP" }).text).toContain("Budget: Not sure yet (Egyptian pounds)");
     expect(internal({ budget: "<b>x</b>" }).html).not.toContain("<b>x</b>");
   });
 

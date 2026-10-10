@@ -163,6 +163,20 @@ describe("POST /api/inquiries — honeypot and timing run before Turnstile, Supa
 });
 
 describe("POST /api/inquiries — structural/schema validation", () => {
+  test("a budget range from the other currency's scale is refused before any downstream call, with a field code the form can show", async () => {
+    for (const [fields, code] of [
+      [{ budget: "under_50000", budgetCurrency: "USD" }, "invalid_value"],
+      [{ budget: "5000_10000", budgetCurrency: "EGP" }, "invalid_value"],
+      [{ budgetCurrency: "EGP" }, "required"],
+      [{ budget: "not_sure", budgetCurrency: "GBP" }, "invalid_value"],
+    ] as const) {
+      const res = await POST(makeRequest({ ...validBody, ...fields }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).fields).toEqual(code === "invalid_value" && "budgetCurrency" in fields && fields.budgetCurrency === "GBP" ? { budgetCurrency: "invalid_value" } : { budget: code });
+    }
+    expect(verifyTurnstileToken).not.toHaveBeenCalled();
+  });
+
   test("missing turnstileToken is rejected before any downstream call", async () => {
     const rest: Record<string, unknown> = { ...validBody };
     delete rest.turnstileToken;

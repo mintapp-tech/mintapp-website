@@ -38,6 +38,11 @@ describe("generation input", () => {
     expect(ar).toContain("الميزانية التقديرية (كما ذكرها العميل): أقل من 2,500 دولار أمريكي");
     expect(ar).toContain("في أقرب وقت ممكن");
     for (const brief of [en, ar]) expect(brief).not.toMatch(/5000_10000|over_6_months|under_2500|\basap\b|not_sure/);
+    // Egyptian pounds reach the brief in the brief's language, without codes.
+    const egp = buildGenerationInput({ ...SYNTHETIC_BRIEFS[4].inquiry, budget_range: "50000_100000", budget_currency: "EGP" }).brief;
+    expect(egp).toContain("من 50,000 إلى 100,000 جنيه مصري");
+    expect(egp).not.toMatch(/50000_100000|\bEGP\b/);
+    expect(buildGenerationInput({ ...clinic.inquiry, budget_range: "not_sure", budget_currency: "EGP" }).brief).toContain("Estimated budget (client-stated): Not sure yet (Egyptian pounds)");
     // An older row keeps working: its label is shown.
     expect(buildGenerationInput({ ...clinic.inquiry, budget_range: "USD 5,000 - 15,000" }).brief).toContain("USD 5,000–15,000");
   });

@@ -34,6 +34,8 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
       ...(body.utmContent ? { utm_content: body.utmContent } : {}),
       // Columns present since 2026-08; only sent when the client answered.
       ...(body.budget ? { budget_range: body.budget } : {}),
+      // Added by the two-founder migration; always alongside its range.
+      ...(body.budget && body.budgetCurrency ? { budget_currency: body.budgetCurrency } : {}),
       ...(body.timeline ? { timeline: body.timeline } : {}),
       ...(body.existingUrl ? { company_url: body.existingUrl } : {}),
       // Only an explicit choice on the form is stored; a missing value stays
@@ -63,6 +65,14 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
     if (body.utmContent && /utm_content/.test(insertError.message)) {
       console.error("utm_content_rejected_by_database: stored the inquiry without it");
       return insertInquiry(supabase, { ...body, utmContent: undefined });
+    }
+    // Same safety net for the budget currency: a database that has not yet had
+    // the two-founder migration lacks the column. The range code still says
+    // which scale it belongs to (the two scales' codes never overlap), so keep
+    // the inquiry with its range and without the separate currency.
+    if (body.budgetCurrency && /budget_currency/.test(insertError.message)) {
+      console.error("budget_currency_rejected_by_database: stored the inquiry without it");
+      return insertInquiry(supabase, { ...body, budgetCurrency: undefined });
     }
     if (insertError.code === "23505") {
       // Unique-violation on submission_token: this exact submission was

@@ -2,7 +2,8 @@ import "server-only";
 import { z } from "zod";
 import { INQUIRY_LIMITS } from "./inquiry-limits";
 import { PROJECT_TYPES } from "./project-types";
-import { BUDGET, TIMELINE } from "./form-options";
+import { BUDGET_ACCEPTED, TIMELINE_ACCEPTED, storedBudget, storedTimeline } from "./form-options";
+import { BUDGET_CURRENCIES } from "./budget-currency";
 import { EXISTING_LINK_MAX, normalizeExistingLink } from "./existing-link";
 
 // Server-side source of truth. This schema only validates *shape* — the
@@ -18,7 +19,7 @@ import { EXISTING_LINK_MAX, normalizeExistingLink } from "./existing-link";
 // parsed, typed result below — raw input is never spread into it — so a
 // stray/extra field from a lagging client can never reach the database
 // either way. Stripping just avoids a hard 400 for something harmless.
-export const inquirySchema = z.object({
+const inquiryFields = z.object({
   name: z.string().trim().min(INQUIRY_LIMITS.nameMin).max(INQUIRY_LIMITS.nameMax),
   email: z.string().trim().toLowerCase().max(INQUIRY_LIMITS.emailMax).email(),
   desc: z.string().trim().min(INQUIRY_LIMITS.descMin).max(INQUIRY_LIMITS.descMax),
@@ -45,8 +46,10 @@ export const inquirySchema = z.object({
   // first two; all three stay optional so an older cached form still gets through.
   // Today's codes and the labels older cached forms sent are both accepted, and
   // become what is stored (a code whenever the meaning is exact: form-options.ts).
-  budget: z.enum(BUDGET.accepted).transform((v) => BUDGET.stored(v)!).optional(),
-  timeline: z.enum(TIMELINE.accepted).transform((v) => TIMELINE.stored(v)!).optional(),
+  // The budget's currency is checked together with its range below.
+  budget: z.enum(BUDGET_ACCEPTED).optional(),
+  budgetCurrency: z.enum(BUDGET_CURRENCIES).optional(),
+  timeline: z.enum(TIMELINE_ACCEPTED).transform((v) => storedTimeline(v)!).optional(),
   // Stored normalized (https://..., no fragment); unsafe or unusable links are refused.
   existingUrl: z
     .string()
@@ -64,4 +67,24 @@ export const inquirySchema = z.object({
     }),
 });
 
-export type InquiryInput = z.infer<typeof inquirySchema>;
+// A budget range must belong to the currency it was chosen in: a range from the
+// other scale, or a currency without a range, is refused. Without a currency (an
+// older cached form) the range is a US-dollar value. The result carries what is
+// stored: the range code (or an older label kept as sent) and its currency.
+export const inquirySchema = inquiryFields.transform((v, ctx) => {
+  if (v.budget === undefined) {
+    if (v.budgetCurrency !== undefined) {
+      ctx.addIssue({ code: "custom", path: ["budget"], message: "required" });
+      return z.NEVER;
+    }
+    return v;
+  }
+  const stored = storedBudget(v.budget, v.budgetCurrency);
+  if (!stored) {
+    ctx.addIssue({ code: "custom", path: ["budget"], message: "invalid_value" });
+    return z.NEVER;
+  }
+  return { ...v, budget: stored.range, budgetCurrency: stored.currency };
+});
+
+export type InquiryInput = z.output<typeof inquirySchema>;

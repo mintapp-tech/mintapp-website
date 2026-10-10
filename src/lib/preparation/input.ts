@@ -14,6 +14,8 @@ export interface InquiryForPreparation {
   project_type: string | null;
   project_description: string;
   budget_range: string | null;
+  // USD or EGP; absent on rows from before the currency was asked.
+  budget_currency?: string | null;
   timeline: string | null;
   country: string | null;
   // The inquiry's own contact values (name, company, email, phone, website):
@@ -42,7 +44,7 @@ export function buildGenerationInput(inquiry: InquiryForPreparation): Generation
   const lines = [
     projectType ? `${l.type}: ${PROJECT_TYPE_WORDS[language][projectType]}` : null,
     // Stored as codes (or older labels); the brief carries their meaning in its own language.
-    inquiry.budget_range ? `${l.budget}: ${budgetLabel(inquiry.budget_range, language)}` : null,
+    inquiry.budget_range ? `${l.budget}: ${budgetLabel(inquiry.budget_range, inquiry.budget_currency, language)}` : null,
     inquiry.timeline ? `${l.timeline}: ${timelineLabel(inquiry.timeline, language)}` : null,
     inquiry.country ? `${l.country}: ${inquiry.country}` : null,
     `${l.description}:`,

@@ -28,7 +28,7 @@ export function structuredBrief(inquiry: InquiryForPreparation): StructuredBrief
   const has = (key: keyof InquiryForPreparation) => Boolean(key === "project_type" ? clientProjectType(inquiry.project_type) : inquiry[key]);
   // Budget and timeline are stored as codes: show what they mean, in the brief's language.
   const shown = (key: keyof InquiryForPreparation) =>
-    key === "budget_range" ? budgetLabel(inquiry.budget_range, input.language) : key === "timeline" ? timelineLabel(inquiry.timeline, input.language) : String(inquiry[key]);
+    key === "budget_range" ? budgetLabel(inquiry.budget_range, inquiry.budget_currency, input.language) : key === "timeline" ? timelineLabel(inquiry.timeline, input.language) : String(inquiry[key]);
   const provided = FIELDS.filter(([key]) => has(key)).map(([key, label]) => ({ label, value: shown(key) ?? "" }));
   const missing = FIELDS.filter(([key]) => !has(key)).map(([, label]) => label.replace(/ \(client-stated\)$/, ""));
   return { language: input.language, provided, missing, description: inquiry.project_description.trim(), text: input.brief };

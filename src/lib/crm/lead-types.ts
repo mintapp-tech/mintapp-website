@@ -27,6 +27,8 @@ export interface LeadRow {
 }
 
 export interface LeadDetail {
+  // The submitted budget's currency (USD or EGP); null on rows from before it was asked.
+  budget_currency: string | null;
   priority: Priority | null;
   paused_until: string | null;
   deal: { contract_status: ContractStatus | null; contract_signed_on: string | null; contract_reference: string | null; commercial_notes: string | null };
