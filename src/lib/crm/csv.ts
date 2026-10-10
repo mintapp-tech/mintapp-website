@@ -1,3 +1,5 @@
+import { budgetLabel, timelineLabel } from "@/lib/form-options";
+
 // CSV for exports opened in a spreadsheet. A cell that starts with =, +, -, @,
 // a tab or a carriage return can be run as a formula by Excel, LibreOffice and
 // Google Sheets ("CSV injection"), so such text cells get a leading apostrophe
@@ -34,8 +36,20 @@ export function toCsv(columns: readonly string[], rows: readonly Record<string, 
 }
 
 export const EXPORT_COLUMNS = {
-  inquiries: ["id", "received", "client", "company", "language", "project_type", "stage", "owners", "meeting", "meeting_at", "preparation", "origin", "source", "medium", "campaign", "content", "partner", "fit", "score", "loss_reason", "next_action", "next_action_owner", "next_action_due"],
+  inquiries: ["id", "received", "client", "company", "language", "project_type", "budget", "budget_currency", "timeline", "stage", "owners", "meeting", "meeting_at", "preparation", "origin", "source", "medium", "campaign", "content", "partner", "fit", "score", "loss_reason", "next_action", "next_action_owner", "next_action_due"],
   companies: ["id", "name", "website", "country", "sector", "language", "contacts", "created"],
   contacts: ["id", "name", "role", "company", "email", "phone", "language", "consent", "consent_at", "do_not_contact"],
   prospects: ["id", "company", "country", "pool", "origin", "contact", "role", "channel", "language", "fit", "score", "trigger", "owner", "stage", "next_action", "next_action_owner", "next_action_due", "outbound_touches", "last_touch", "closed_reason"],
 } as const;
+
+// Rows as people read them: the inquiries export shows the budget and timeline
+// as English labels, never the stored codes. Other kinds are unchanged.
+export function presentRows(kind: keyof typeof EXPORT_COLUMNS, rows: readonly Record<string, unknown>[]): Record<string, unknown>[] {
+  if (kind !== "inquiries") return [...rows];
+  const text = (v: unknown) => (typeof v === "string" ? v : null);
+  return rows.map((row) => ({
+    ...row,
+    budget: budgetLabel(text(row.budget), text(row.budget_currency), "en"),
+    timeline: timelineLabel(text(row.timeline), "en"),
+  }));
+}

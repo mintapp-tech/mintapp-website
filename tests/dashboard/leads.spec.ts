@@ -141,10 +141,10 @@ test("Leads & Clients: one row per lead with meeting, pack, position, owner and 
   await page.context().close();
 });
 
-test("budget and timeline: stored codes and an older form's English values both show their label, in English and Arabic", async ({ browser }) => {
+test("budget and timeline: a pounds budget and an older form's English values both show their label, in English and Arabic, and in the export", async ({ browser }) => {
   const page = await signIn(browser, ADAM);
   await page.goto(`/leads/${CRAFTS}`);
-  await expect(page.locator("[data-budget]")).toHaveText("USD 5,000–10,000");
+  await expect(page.locator("[data-budget]")).toHaveText("EGP 100,000–250,000");
   await expect(page.locator("[data-timeline]")).toHaveText("As soon as possible");
   await page.goto(`/leads/${CLINIC}`);
   await expect(page.locator("[data-budget]")).toHaveText("Not sure yet");
@@ -153,14 +153,22 @@ test("budget and timeline: stored codes and an older form's English values both 
   await expect(page.locator("[data-budget]")).toHaveText("لست متأكدًا بعد");
   await expect(page.locator("[data-timeline]")).toHaveText("خلال 3 أشهر");
   await page.goto(`/leads/${CRAFTS}`);
-  await expect(page.locator("[data-budget]")).toHaveText("من 5,000 إلى 10,000 دولار أمريكي");
+  await expect(page.locator("[data-budget]")).toHaveText("من 100,000 إلى 250,000 جنيه مصري");
   await expect(page.locator("[data-timeline]")).toHaveText("في أقرب وقت ممكن");
   // No code ever shows; the copied prompt carries the meaning, not the code.
-  await expect(page.locator("main")).not.toContainText("5000_10000");
+  await expect(page.locator("main")).not.toContainText("100000_250000");
   await page.goto(`/leads/${CRAFTS}/pack`);
   const prompt = (await page.locator("[data-manual-prompt]").textContent()) ?? "";
-  expect(prompt).toContain("من 5,000 إلى 10,000 دولار أمريكي");
-  expect(prompt).not.toMatch(/5000_10000|\basap\b/);
+  expect(prompt).toContain("من 100,000 إلى 250,000 جنيه مصري");
+  expect(prompt).not.toMatch(/100000_250000|EGP|\basap\b/);
+  // The CSV export: labels and the currency, never codes.
+  const csv = await (await page.request.post("/export/inquiries", { headers: { origin: ORIGIN }, maxRedirects: 0 })).text();
+  expect(csv.split("\r\n")[0]).toContain("project_type,budget,budget_currency,timeline");
+  // A label with commas is quoted, as CSV requires.
+  expect(csv).toContain("\"EGP 100,000–250,000\",EGP,As soon as possible");
+  expect(csv).toContain("Not sure yet,,Within 3 months");
+  // Budget and timeline codes never appear (other columns, such as the project type and stage, keep their stored values as before).
+  expect(csv).not.toMatch(/100000_250000|within_3_months|,asap,|Not sure yet \(/);
   await setLanguage(page, "en");
   await page.context().close();
 });

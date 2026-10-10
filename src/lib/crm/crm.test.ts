@@ -1,6 +1,6 @@
 import { describe, expect, test } from "vitest";
 import { attentionReasons } from "./attention";
-import { EXPORT_COLUMNS, safeCell, toCsv } from "./csv";
+import { EXPORT_COLUMNS, presentRows, safeCell, toCsv } from "./csv";
 import { companySchema, contactSchema, dateRange, detailsSchema, inquiryFiltersSchema, nextActionSchema, proposalSchema, prospectSchema, safeHref, stageSchema, touchSchema } from "./schemas";
 import { BOARD_GROUPS, isOpenStage, stageRank } from "./stages";
 import { STAGES, type InquiryListRow } from "./types";
@@ -188,5 +188,27 @@ describe("validation", () => {
     expect(safeHref("data:text/html,x")).toBeNull();
     expect(safeHref("")).toBeNull();
     expect(safeHref(null)).toBeNull();
+  });
+});
+
+describe("the inquiries export shows the budget and timeline as people read them", () => {
+  test("labels and the currency, never the stored codes; older and unknown values stay readable", () => {
+    const rows = presentRows("inquiries", [
+      { id: "1", budget: "100000_250000", budget_currency: "EGP", timeline: "asap" },
+      { id: "2", budget: "not_sure", budget_currency: "USD", timeline: "Within 3 months" },
+      { id: "3", budget: "USD 5,000 - 15,000", budget_currency: null, timeline: null },
+      { id: "4", budget: "غير محدد", budget_currency: null, timeline: "خلال شهرين" },
+    ]);
+    expect(rows.map((r) => [r.budget, r.budget_currency, r.timeline])).toEqual([
+      ["EGP 100,000–250,000", "EGP", "As soon as possible"],
+      ["Not sure yet (US dollars)", "USD", "Within 3 months"],
+      ["USD 5,000–15,000", null, null],
+      ["غير محدد", null, "خلال شهرين"],
+    ]);
+    const csv = toCsv(EXPORT_COLUMNS.inquiries, rows);
+    expect(csv.split("\r\n")[0]).toContain("project_type,budget,budget_currency,timeline,stage");
+    expect(csv).not.toMatch(/100000_250000|not_sure|\basap\b/);
+    // Other exports are untouched.
+    expect(presentRows("companies", [{ id: "x", name: "y" }])).toEqual([{ id: "x", name: "y" }]);
   });
 });

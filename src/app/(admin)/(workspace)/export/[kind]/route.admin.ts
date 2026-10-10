@@ -1,7 +1,7 @@
 import { adminState } from "@/lib/admin/auth/state";
 import { isSameOrigin } from "@/lib/admin/csrf";
 import { exportRows } from "@/lib/crm/data";
-import { EXPORT_COLUMNS, toCsv } from "@/lib/crm/csv";
+import { EXPORT_COLUMNS, presentRows, toCsv } from "@/lib/crm/csv";
 import { exportKind } from "@/lib/crm/schemas";
 import { todayInCairo } from "@/components/dashboard/ui";
 
@@ -23,7 +23,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ kin
   if (!kind.success) return refuse(404);
   try {
     const rows = await exportRows(kind.data, state.member.email);
-    const csv = toCsv(EXPORT_COLUMNS[kind.data], rows);
+    const csv = toCsv(EXPORT_COLUMNS[kind.data], presentRows(kind.data, rows));
     return new Response(csv, {
       headers: {
         "Content-Type": "text/csv; charset=utf-8",
