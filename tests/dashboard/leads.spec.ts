@@ -304,3 +304,97 @@ test("English on a phone: the list, a lead and its pack fit the screen", async (
   await shot(page, "lead-deal-en-phone");
   await page.context().close();
 });
+
+test("the dashboard is a command centre: alerts, actions with one owner each, meetings with their links; no KPI grid, no technical words", async ({ browser }) => {
+  const page = await signIn(browser, OMAR);
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Dashboard");
+  await expect(page.locator("[data-summary]")).toHaveCount(0);
+  // The school's review action was created before a default reviewer existed: it needs an owner.
+  await expect(page.locator('[data-alert="unowned"]')).toContainText("مدرسة تجريبية");
+  // The booked school is an upcoming meeting, with its Cal.com manage link.
+  const meeting = page.locator(`[data-meeting-row="${SCHOOL}"]`);
+  await expect(meeting).toBeVisible();
+  await expect(meeting.locator("[data-manage-link]")).toHaveAttribute("href", "https://cal.com/booking/synthetic-seed-booking");
+  // Meetings, preparation and client work are labelled differently.
+  await expect(page.locator('[data-action-kind="pack_review"]').first()).toContainText("Preparation");
+  // Plain language only.
+  const text = (await page.locator("main").textContent()) ?? "";
+  for (const word of ["waiting_booking", "retry_scheduled", "queued", "codecraft_", "lead_status"]) expect(text).not.toContain(word);
+  expect(await axe(page)).toEqual([]);
+  await shot(page, "dashboard-en-desktop");
+  // Taking the unowned review clears the alert.
+  await page.locator('[data-alert="unowned"] a').first().click();
+  await page.locator("[data-follow-up] select").first().selectOption("omar");
+  await page.locator("[data-follow-up]").first().getByRole("button", { name: "Save" }).click();
+  await expect(notice(page)).toContainText("Saved.");
+  await page.goto("/dashboard");
+  await expect(page.locator('[data-alert="unowned"]')).toHaveCount(0);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await overflow(page)).toBeLessThanOrEqual(0);
+  await shot(page, "dashboard-en-phone");
+  await page.context().close();
+});
+
+test("Growth: six fields add a prospect; research is optional and collapsed; numbers are current and entered by hand", async ({ browser }) => {
+  const page = await signIn(browser, ADAM);
+  await page.goto("/growth");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Growth");
+  await expect(page.locator("[data-growth-numbers]")).toBeVisible();
+  await expect(page.getByText("No social platform is connected.")).toBeVisible();
+  await expect(page.locator("[data-research]")).not.toHaveAttribute("open", "");
+  await page.locator("#qp-company").fill("Synthetic Logistics Co");
+  await page.locator("#qp-contact").fill("https://www.linkedin.com/in/synthetic-ops-lead");
+  await page.locator("#qp-reason").fill("Opened a second warehouse and is hiring dispatchers");
+  await page.locator("#qp-owner").selectOption("adam");
+  await page.locator("#qp-priority").selectOption("high");
+  await page.locator("#qp-action").fill("Send a short note about dispatch scheduling");
+  await page.locator("#qp-due").fill(new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10));
+  await page.getByRole("button", { name: "Add prospect" }).click();
+  await expect(notice(page)).toContainText("Created.");
+  const row = page.locator("[data-prospect]", { hasText: "Synthetic Logistics Co" });
+  await expect(row.locator("[data-priority]")).toHaveText("High");
+  await expect(row.locator("[data-next-action]")).toContainText("Send a short note about dispatch scheduling");
+  await expect(row).toContainText("Opened a second warehouse");
+  // The contact link stays on the prospect's own page, not the list.
+  await expect(page.locator("[data-prospects]")).not.toContainText("linkedin.com");
+  // Missing the next action date is refused and nothing is created.
+  await page.locator("#qp-company").fill("Half-filled Co");
+  await page.locator("#qp-reason").fill("A reason");
+  await page.locator("#qp-owner").selectOption("adam");
+  await page.locator("#qp-action").fill("Something");
+  await page.locator("#qp-due").evaluate((el: HTMLInputElement) => el.removeAttribute("required"));
+  await page.getByRole("button", { name: "Add prospect" }).click();
+  await expect(notice(page)).toContainText("not valid");
+  await expect(page.locator("[data-prospect]", { hasText: "Half-filled Co" })).toHaveCount(0);
+  // Priority can be changed on the prospect's page, which sits under Growth.
+  await row.getByRole("link").first().click();
+  await expect(page.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Growth" })).toHaveAttribute("aria-current", "page");
+  await page.locator("#prospect-priority").selectOption("low");
+  await page.locator("#priority").getByRole("button", { name: "Save" }).click();
+  await expect(page.locator("header [data-priority]")).toHaveText("Low");
+  await page.goto("/growth");
+  expect(await axe(page)).toEqual([]);
+  await shot(page, "growth-en-desktop");
+  await page.context().close();
+});
+
+test("Arabic: the command centre and Growth read right to left on a phone", async ({ browser }) => {
+  const page = await signIn(browser, ADAM);
+  await page.goto("/dashboard");
+  await setLanguage(page, "ar");
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const path of ["/dashboard", "/growth", "/projects"]) {
+    await page.goto(path);
+    await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    expect(await overflow(page), path).toBeLessThanOrEqual(0);
+    expect(await axe(page), path).toEqual([]);
+  }
+  await page.goto("/dashboard");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("اللوحة");
+  await shot(page, "dashboard-ar-phone");
+  await page.goto("/growth");
+  await shot(page, "growth-ar-phone");
+  await setLanguage(page, "en");
+  await page.context().close();
+});

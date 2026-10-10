@@ -15,6 +15,9 @@ import { nextTouchWindow } from "@/lib/crm/cadence";
 import { inquiryList, prospectGet } from "@/lib/crm/data";
 import { CONTACT_CHANNELS, PROSPECT_STAGES, TOUCH_KINDS } from "@/lib/crm/types";
 import { linkProspectAction, logTouchAction, prospectFollowUpAction, prospectStageAction, saveProspectAction } from "../actions";
+import { prospectPriorityAction } from "../../growth/actions";
+import { PriorityChip } from "@/components/crm/LeadParts";
+import { PRIORITIES } from "@/lib/crm/schemas";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Prospect" };
@@ -45,14 +48,15 @@ export default async function ProspectPage({ params, searchParams }: { params: P
 
   return (
     <>
-      <Link href="/outreach" className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-soft hover:text-ink">
-        <span aria-hidden className="rtl:-scale-x-100">←</span> {t.crm.nav.outreach}
+      <Link href="/growth" className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold text-ink-soft hover:text-ink">
+        <span aria-hidden className="rtl:-scale-x-100">←</span> {t.lead.nav.growth}
       </Link>
       <header className="mt-4 mb-6">
         <p className="m-0 flex flex-wrap items-center gap-2">
           <Chip tone={TONES[p.stage]}>{t.crm.prospectStages[p.stage]}</Chip>
           {p.lead_score !== null && <Chip tone={p.lead_score >= 10 ? "ok" : "neutral"}>{t.crm.score.total(p.lead_score)}</Chip>}
           {p.do_not_contact && <Chip tone="attention">{o.doNotContact}</Chip>}
+          <PriorityChip priority={p.priority ?? null} t={t} />
         </p>
         <h1 className="m-0 mt-2 text-[28px] leading-tight font-bold tracking-[-0.02em] sm:text-[32px] rtl:tracking-normal">
           <bdi>{p.company_name}</bdi>
@@ -62,6 +66,13 @@ export default async function ProspectPage({ params, searchParams }: { params: P
         </p>
       </header>
       <Notice n={sp.n} e={sp.e} t={t.crm} />
+      <form action={prospectPriorityAction} id="priority" className="mb-5 flex flex-wrap items-end gap-3">
+        <input type="hidden" name="prospectId" value={p.id} />
+        <div className="min-w-[12rem]">
+          <SelectField id="prospect-priority" name="priority" text={t.lead.growth.fields.priority} blank={t.lead.noPriority} defaultValue={p.priority ?? ""} options={PRIORITIES.map((x) => ({ value: x, label: t.lead.priorities[x] }))} />
+        </div>
+        <SubmitButton className={button}>{t.lead.common.save}</SubmitButton>
+      </form>
 
       <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
         <div className="flex flex-col gap-5">

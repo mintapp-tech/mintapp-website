@@ -45,7 +45,7 @@ export default function Shell({ member, demo, locale, t, children }: { member: T
               { href: "/dashboard", label: t.lead.nav.dashboard },
               { href: "/leads", label: t.lead.nav.leads },
               { href: "/projects", label: t.lead.nav.projects },
-              { href: "/growth", label: t.lead.nav.growth, also: ["/outreach"] },
+              { href: "/growth", label: t.lead.nav.growth, also: ["/outreach", "/metrics"] },
             ]}
           >
             <MoreMenu

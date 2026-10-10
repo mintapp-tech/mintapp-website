@@ -294,6 +294,8 @@ export interface ProspectDetail {
     follow_up_due_on: string | null;
     closed_reason: string | null;
     created_by: string;
+    // Added by the two-founder workflow.
+    priority?: "high" | "medium" | "low" | null;
   };
   touches: { id: string; kind: TouchKind; touch_no: number | null; channel: ContactChannel | null; occurred_on: string; summary: string; by: string; at: string }[];
   inquiry: { id: string; client_name: string; stage: Stage } | null;
