@@ -5,6 +5,7 @@
 
 import { PROJECT_TYPE_WORDS, clientProjectType } from "@/lib/dashboard/project-type";
 import { scrubContactDetails } from "./scrub";
+import { budgetLabel, timelineLabel } from "@/lib/form-options";
 
 export type BriefLanguage = "en" | "ar";
 
@@ -29,8 +30,8 @@ export interface GenerationInput {
 }
 
 const LABELS: Record<BriefLanguage, Record<"type" | "budget" | "timeline" | "country" | "description", string>> = {
-  en: { type: "Project type", budget: "Budget range (client-stated)", timeline: "Timeline (client-stated)", country: "Country", description: "Project description" },
-  ar: { type: "نوع المشروع", budget: "الميزانية (كما ذكرها العميل)", timeline: "الجدول الزمني (كما ذكره العميل)", country: "الدولة", description: "وصف المشروع" },
+  en: { type: "Project type", budget: "Estimated budget (client-stated)", timeline: "Timeline (client-stated)", country: "Country", description: "Project description" },
+  ar: { type: "نوع المشروع", budget: "الميزانية التقديرية (كما ذكرها العميل)", timeline: "الجدول الزمني (كما ذكره العميل)", country: "الدولة", description: "وصف المشروع" },
 };
 
 export function buildGenerationInput(inquiry: InquiryForPreparation): GenerationInput {
@@ -40,8 +41,9 @@ export function buildGenerationInput(inquiry: InquiryForPreparation): Generation
   const projectType = clientProjectType(inquiry.project_type);
   const lines = [
     projectType ? `${l.type}: ${PROJECT_TYPE_WORDS[language][projectType]}` : null,
-    inquiry.budget_range ? `${l.budget}: ${inquiry.budget_range}` : null,
-    inquiry.timeline ? `${l.timeline}: ${inquiry.timeline}` : null,
+    // Stored as codes (or older labels); the brief carries their meaning in its own language.
+    inquiry.budget_range ? `${l.budget}: ${budgetLabel(inquiry.budget_range, language)}` : null,
+    inquiry.timeline ? `${l.timeline}: ${timelineLabel(inquiry.timeline, language)}` : null,
     inquiry.country ? `${l.country}: ${inquiry.country}` : null,
     `${l.description}:`,
     // Contact details the client typed into the description are removed: a generator

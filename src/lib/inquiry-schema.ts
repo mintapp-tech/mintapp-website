@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { INQUIRY_LIMITS } from "./inquiry-limits";
 import { PROJECT_TYPES } from "./project-types";
-import { BUDGET_VALUES, TIMELINE_VALUES } from "./form-options";
+import { BUDGET, TIMELINE } from "./form-options";
 import { EXISTING_LINK_MAX, normalizeExistingLink } from "./existing-link";
 
 // Server-side source of truth. This schema only validates *shape* — the
@@ -43,8 +43,10 @@ export const inquirySchema = z.object({
   utmContent: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   // Budget, timeline and the existing link: the current form always sends the
   // first two; all three stay optional so an older cached form still gets through.
-  budget: z.enum(BUDGET_VALUES).optional(),
-  timeline: z.enum(TIMELINE_VALUES).optional(),
+  // Today's codes and the labels older cached forms sent are both accepted, and
+  // become what is stored (a code whenever the meaning is exact: form-options.ts).
+  budget: z.enum(BUDGET.accepted).transform((v) => BUDGET.stored(v)!).optional(),
+  timeline: z.enum(TIMELINE.accepted).transform((v) => TIMELINE.stored(v)!).optional(),
   // Stored normalized (https://..., no fragment); unsafe or unusable links are refused.
   existingUrl: z
     .string()

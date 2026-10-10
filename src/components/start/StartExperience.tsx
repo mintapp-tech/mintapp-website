@@ -517,7 +517,7 @@ export default function StartExperience() {
                         value={form.budget}
                         onChange={updateField("budget")}
                         aria-invalid={!!fieldErrors.budget}
-                        aria-describedby={fieldErrors.budget ? "budget-error" : undefined}
+                        aria-describedby={fieldErrors.budget ? "budget-help budget-error" : "budget-help"}
                         className={`${inputClass} ${fieldErrors.budget ? "border-red-500" : ""}`}
                       >
                         <option value="" disabled>
@@ -529,6 +529,9 @@ export default function StartExperience() {
                           </option>
                         ))}
                       </select>
+                      <span id="budget-help" className="text-[12.5px] font-normal text-ink-soft">
+                        {t.start.fBudgetHelp}
+                      </span>
                       {fieldErrors.budget && (
                         <span id="budget-error" className="text-[12.5px] font-medium text-red-600">
                           {messageForCode(fieldErrors.budget)}

@@ -191,6 +191,8 @@ describe("internal notification", () => {
         "Phone: +974 1",
         "Company: Acme",
         "Project type: Not provided",
+        "Budget: Not provided",
+        "Timeline: Not provided",
         "Preferred language: English",
         "Submitted: 5 Oct 2026, 13:04 UTC",
         "",
@@ -214,6 +216,19 @@ describe("internal notification", () => {
       expect(e.text, String(value)).toContain("Project type: Not provided");
       expect(e.html, String(value)).not.toContain("<b>x</b>");
     }
+  });
+
+  test("shows the budget and timeline as English labels, never as stored codes, including an older cached form's values", () => {
+    const e = internal({ budget: "5000_10000", timeline: "within_3_months" });
+    expect(e.text).toContain("Budget: USD 5,000–10,000");
+    expect(e.text).toContain("Timeline: Within 3 months");
+    expect(e.html).toContain(">Budget</td>");
+    expect(`${e.text} ${e.html}`).not.toMatch(/5000_10000|within_3_months/);
+    const later = internal({ budget: "not_sure", timeline: "over_6_months" }).text;
+    expect(later).toContain("Budget: Not sure yet");
+    expect(later).toContain("Timeline: Later than 6 months");
+    expect(internal({ budget: "USD 5,000 - 15,000" }).text).toContain("Budget: USD 5,000–15,000");
+    expect(internal({ budget: "<b>x</b>" }).html).not.toContain("<b>x</b>");
   });
 
   test("every client-supplied field is escaped, and the description follows its own direction", () => {

@@ -33,7 +33,7 @@ describe("structured brief", () => {
       { label: "Project type", value: "web_app" },
       { label: "Timeline (client-stated)", value: "Within 3 months" },
     ]);
-    expect(b.missing).toEqual(["Budget range", "Country"]);
+    expect(b.missing).toEqual(["Estimated budget", "Country"]);
     const prompt = claudePrompt(b);
     expect(prompt).toContain("three clinics");
     expect(prompt).toMatch(/do not invent prices/);

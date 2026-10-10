@@ -141,6 +141,30 @@ test("Leads & Clients: one row per lead with meeting, pack, position, owner and 
   await page.context().close();
 });
 
+test("budget and timeline: stored codes and an older form's English values both show their label, in English and Arabic", async ({ browser }) => {
+  const page = await signIn(browser, ADAM);
+  await page.goto(`/leads/${CRAFTS}`);
+  await expect(page.locator("[data-budget]")).toHaveText("USD 5,000–10,000");
+  await expect(page.locator("[data-timeline]")).toHaveText("As soon as possible");
+  await page.goto(`/leads/${CLINIC}`);
+  await expect(page.locator("[data-budget]")).toHaveText("Not sure yet");
+  await expect(page.locator("[data-timeline]")).toHaveText("Within 3 months");
+  await setLanguage(page, "ar");
+  await expect(page.locator("[data-budget]")).toHaveText("لست متأكدًا بعد");
+  await expect(page.locator("[data-timeline]")).toHaveText("خلال 3 أشهر");
+  await page.goto(`/leads/${CRAFTS}`);
+  await expect(page.locator("[data-budget]")).toHaveText("من 5,000 إلى 10,000 دولار أمريكي");
+  await expect(page.locator("[data-timeline]")).toHaveText("في أقرب وقت ممكن");
+  // No code ever shows; the copied prompt carries the meaning, not the code.
+  await expect(page.locator("main")).not.toContainText("5000_10000");
+  await page.goto(`/leads/${CRAFTS}/pack`);
+  const prompt = (await page.locator("[data-manual-prompt]").textContent()) ?? "";
+  expect(prompt).toContain("من 5,000 إلى 10,000 دولار أمريكي");
+  expect(prompt).not.toMatch(/5000_10000|\basap\b/);
+  await setLanguage(page, "en");
+  await page.context().close();
+});
+
 test("overview: client, idea, budget, timeline and link; seven-step position; priority; pause with a date; advanced collapsed", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.goto(`/leads/${CLINIC}`);

@@ -22,12 +22,24 @@ describe("generation input", () => {
     });
     expect(input.language).toBe("en");
     expect(input.brief).toContain("three physiotherapy clinics");
-    expect(input.brief).toContain("Budget range (client-stated): Not sure yet");
+    expect(input.brief).toContain("Estimated budget (client-stated): Not sure yet");
     expect(input.brief).not.toMatch(/Jane|jane@|\+20100000|Acme|acme\.test/);
   });
 
   test("Arabic inquiries are prepared in Arabic", () => {
     expect(buildGenerationInput(SYNTHETIC_BRIEFS[4].inquiry).brief).toMatch(/^نوع المشروع: /);
+  });
+
+  test("stored budget and timeline codes reach the brief as their meaning in the brief's language, never as codes", () => {
+    const en = buildGenerationInput({ ...clinic.inquiry, budget_range: "5000_10000", timeline: "over_6_months" }).brief;
+    expect(en).toContain("Estimated budget (client-stated): USD 5,000–10,000");
+    expect(en).toContain("Timeline (client-stated): Later than 6 months");
+    const ar = buildGenerationInput({ ...SYNTHETIC_BRIEFS[4].inquiry, budget_range: "under_2500", timeline: "asap" }).brief;
+    expect(ar).toContain("الميزانية التقديرية (كما ذكرها العميل): أقل من 2,500 دولار أمريكي");
+    expect(ar).toContain("في أقرب وقت ممكن");
+    for (const brief of [en, ar]) expect(brief).not.toMatch(/5000_10000|over_6_months|under_2500|\basap\b|not_sure/);
+    // An older row keeps working: its label is shown.
+    expect(buildGenerationInput({ ...clinic.inquiry, budget_range: "USD 5,000 - 15,000" }).brief).toContain("USD 5,000–15,000");
   });
 });
 

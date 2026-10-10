@@ -16,8 +16,8 @@ async function fillEverythingExceptProjectType(page: Page) {
   const textInputs = page.locator('form input:not([type="checkbox"]):not([type="radio"]):not([tabindex="-1"])');
   await textInputs.nth(0).fill("Test User");
   await textInputs.nth(2).fill("test@example.com");
-  await page.locator('select[name="budget"]').selectOption("Not sure yet");
-  await page.locator('select[name="timeline"]').selectOption("Not sure yet");
+  await page.locator('select[name="budget"]').selectOption("not_sure");
+  await page.locator('select[name="timeline"]').selectOption("not_sure");
   await page.locator("form textarea").first().fill("A".repeat(40));
   await page.locator('input[type="checkbox"]').check();
 }

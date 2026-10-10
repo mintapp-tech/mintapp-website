@@ -19,7 +19,7 @@ import { leadPath } from "@/lib/crm/lead-path";
 import { safeHref, PRIORITIES } from "@/lib/crm/schemas";
 import { SIMPLE_STAGES, simpleStage } from "@/lib/crm/simple-stages";
 import { LOSS_REASONS } from "@/lib/crm/types";
-import { BUDGET_OPTIONS, TIMELINE_OPTIONS, optionLabel } from "@/lib/form-options";
+import { budgetLabel, timelineLabel } from "@/lib/form-options";
 import { clientProjectType } from "@/lib/dashboard/project-type";
 import { label, labelsFor } from "@/lib/dashboard/status";
 import { packState } from "@/lib/pack/state";
@@ -85,10 +85,10 @@ export default async function LeadOverview({ params, searchParams }: { params: P
             <dl className="m-0 grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-4 gap-y-2 text-[14px]" data-brief="provided">
               <Fact term={o.type}>{label(L.projectType, clientProjectType(i.project_type), t.lead.common.notProvided)}</Fact>
               <Fact term={o.budget}>
-                <span data-budget>{optionLabel(BUDGET_OPTIONS, i.budget_range, locale) ?? t.lead.common.notProvided}</span>
+                <span data-budget>{budgetLabel(i.budget_range, locale) ?? t.lead.common.notProvided}</span>
               </Fact>
               <Fact term={o.timeline}>
-                <span data-timeline>{optionLabel(TIMELINE_OPTIONS, i.timeline, locale) ?? t.lead.common.notProvided}</span>
+                <span data-timeline>{timelineLabel(i.timeline, locale) ?? t.lead.common.notProvided}</span>
               </Fact>
               <Fact term={o.link}>
                 {i.company_url ? (

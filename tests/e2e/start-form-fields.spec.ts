@@ -8,8 +8,8 @@ import { installTurnstileMock, mockInquiriesRoute } from "./turnstile-mock";
 // not request anything from another origin because of these fields.
 
 const COPY = {
-  en: { budget: "Budget range", timeline: "Expected timeline", link: "Existing website or app", note: "Before describing your project", desc: "Project description", notSure: "Not sure yet", badUrl: "Enter a public website address" },
-  ar: { budget: "نطاق الميزانية", timeline: "المدة المتوقعة", link: "الموقع أو التطبيق الحالي", note: "قبل وصف مشروعك", desc: "وصف المشروع", notSure: "لست متأكدًا بعد", badUrl: "أدخل عنوان موقع عام" },
+  en: { budget: "Estimated budget", budgetHelp: "In US dollars, or the equivalent in your currency.", timeline: "Expected timeline", link: "Existing website or app", note: "Before describing your project", desc: "Project description", notSure: "Not sure yet", badUrl: "Enter a public website address" },
+  ar: { budget: "الميزانية التقديرية", budgetHelp: "بالدولار الأمريكي، أو ما يعادله بعملتك.", timeline: "المدة المتوقعة", link: "الموقع أو التطبيق الحالي", note: "قبل وصف مشروعك", desc: "وصف المشروع", notSure: "لست متأكدًا بعد", badUrl: "أدخل عنوان موقع عام" },
 } as const;
 
 async function fillRequired(page: Page) {
@@ -40,11 +40,15 @@ for (const viewport of [
         await expect(budget.locator("option", { hasText: c.notSure })).toHaveCount(1);
         await expect(timeline.locator("option", { hasText: c.notSure })).toHaveCount(1);
         await expect(page.getByLabel(c.link)).not.toHaveAttribute("required", "");
+        // The estimate is in US dollars or the local equivalent, and the help is announced with the field.
+        await expect(page.locator("#budget-help")).toHaveText(c.budgetHelp);
+        await expect(budget).toHaveAttribute("aria-describedby", /budget-help/);
+        await expect(budget.locator("option")).toHaveCount(7);
         await fillRequired(page);
         await expect(page.locator('button[type="submit"]')).toBeDisabled();
-        await budget.selectOption("Not sure yet");
+        await budget.selectOption("not_sure");
         await expect(page.locator('button[type="submit"]')).toBeDisabled();
-        await timeline.selectOption("Within 3 months");
+        await timeline.selectOption("within_3_months");
         await expect(page.locator('button[type="submit"]')).toBeEnabled({ timeout: 5000 });
         expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
       });
@@ -74,8 +78,8 @@ for (const viewport of [
         });
         await page.goto(`/${locale}/start`);
         await fillRequired(page);
-        await page.getByLabel(c.budget).selectOption("USD 5,000 - 15,000");
-        await page.getByLabel(c.timeline).selectOption("Not sure yet");
+        await page.getByLabel(c.budget).selectOption("5000_10000");
+        await page.getByLabel(c.timeline).selectOption("not_sure");
         await page.getByLabel(c.link).fill("javascript:alert(1)");
         await page.locator('button[type="submit"]').click();
         await expect(page.getByText(c.badUrl)).toBeVisible();
@@ -85,7 +89,8 @@ for (const viewport of [
         await page.locator('button[type="submit"]').click();
         await expect.poll(() => requests.length).toBe(1);
         const body = JSON.parse(requests[0]);
-        expect(body).toMatchObject({ budget: "USD 5,000 - 15,000", timeline: "Not sure yet", existingUrl: "acme.example.com/app" });
+        // Stable codes are sent, never the labels shown.
+        expect(body).toMatchObject({ budget: "5000_10000", timeline: "not_sure", existingUrl: "acme.example.com/app" });
         expect(foreign).toEqual([]);
       });
 

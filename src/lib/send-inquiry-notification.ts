@@ -13,6 +13,8 @@ export interface InquiryNotificationInput {
   company?: string;
   /** The client's explicit choice on the form; absent for older cached forms. */
   projectType?: string;
+  budget?: string;
+  timeline?: string;
   lang: string;
   desc: string;
 }

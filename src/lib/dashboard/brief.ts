@@ -1,6 +1,7 @@
 import { buildGenerationInput, type InquiryForPreparation } from "@/lib/preparation/input";
 import { draftSchema, figuresIn } from "@/lib/preparation/draft";
 import { clientProjectType } from "./project-type";
+import { budgetLabel, timelineLabel } from "@/lib/form-options";
 
 // The structured brief shown in the dashboard and copied into a team
 // member's own Claude chat. Built only from the preparation input (the brief
@@ -16,7 +17,7 @@ export interface StructuredBrief {
 
 const FIELDS: [keyof InquiryForPreparation, string][] = [
   ["project_type", "Project type"],
-  ["budget_range", "Budget range (client-stated)"],
+  ["budget_range", "Estimated budget (client-stated)"],
   ["timeline", "Timeline (client-stated)"],
   ["country", "Country"],
 ];
@@ -25,7 +26,10 @@ export function structuredBrief(inquiry: InquiryForPreparation): StructuredBrief
   const input = buildGenerationInput(inquiry);
   // Project type counts as provided only when it is one of the form's own choices.
   const has = (key: keyof InquiryForPreparation) => Boolean(key === "project_type" ? clientProjectType(inquiry.project_type) : inquiry[key]);
-  const provided = FIELDS.filter(([key]) => has(key)).map(([key, label]) => ({ label, value: String(inquiry[key]) }));
+  // Budget and timeline are stored as codes: show what they mean, in the brief's language.
+  const shown = (key: keyof InquiryForPreparation) =>
+    key === "budget_range" ? budgetLabel(inquiry.budget_range, input.language) : key === "timeline" ? timelineLabel(inquiry.timeline, input.language) : String(inquiry[key]);
+  const provided = FIELDS.filter(([key]) => has(key)).map(([key, label]) => ({ label, value: shown(key) ?? "" }));
   const missing = FIELDS.filter(([key]) => !has(key)).map(([, label]) => label.replace(/ \(client-stated\)$/, ""));
   return { language: input.language, provided, missing, description: inquiry.project_description.trim(), text: input.brief };
 }

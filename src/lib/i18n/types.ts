@@ -134,6 +134,7 @@ export interface HomeContent {
     fDescHelp: string;
     fDescPh: string;
     fBudget: string;
+    fBudgetHelp: string;
     fTimeline: string;
     chooseOne: string;
     fExistingLink: string;

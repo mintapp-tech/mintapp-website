@@ -245,6 +245,8 @@ export async function POST(request: NextRequest) {
         phone: body.phone,
         company: body.company,
         projectType: body.projectType,
+        budget: body.budget,
+        timeline: body.timeline,
         lang: body.lang,
         desc: body.desc,
       }),

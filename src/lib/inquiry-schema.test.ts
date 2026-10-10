@@ -83,11 +83,21 @@ describe("inquirySchema — budget, timeline and existing link", () => {
     expect(parsed.existingUrl).toBeUndefined();
   });
 
-  test("budget and timeline accept the listed choices, including Not sure yet, and nothing else", () => {
-    expect(inquirySchema.parse({ ...validBase, budget: "Not sure yet", timeline: "Not sure yet" })).toMatchObject({ budget: "Not sure yet", timeline: "Not sure yet" });
-    expect(inquirySchema.parse({ ...validBase, budget: "USD 5,000 - 15,000", timeline: "Within 3 months" }).budget).toBe("USD 5,000 - 15,000");
-    expect(inquirySchema.safeParse({ ...validBase, budget: "a million" }).success).toBe(false);
-    expect(inquirySchema.safeParse({ ...validBase, timeline: "yesterday" }).success).toBe(false);
+  test("budget and timeline accept the listed codes, including not_sure, and store them", () => {
+    expect(inquirySchema.parse({ ...validBase, budget: "5000_10000", timeline: "within_3_months" })).toMatchObject({ budget: "5000_10000", timeline: "within_3_months" });
+    expect(inquirySchema.parse({ ...validBase, budget: "not_sure", timeline: "not_sure" })).toMatchObject({ budget: "not_sure", timeline: "not_sure" });
+  });
+
+  test("an older cached form's labels are still accepted: exact meanings become codes, old budget bands are kept as sent", () => {
+    expect(inquirySchema.parse({ ...validBase, budget: "Not sure yet", timeline: "Within 3 months" })).toMatchObject({ budget: "not_sure", timeline: "within_3_months" });
+    expect(inquirySchema.parse({ ...validBase, timeline: "Later than 6 months" }).timeline).toBe("over_6_months");
+    expect(inquirySchema.parse({ ...validBase, budget: "USD 5,000 - 15,000" }).budget).toBe("USD 5,000 - 15,000");
+  });
+
+  test.each([["budget", "a million"], ["budget", "5,000"], ["budget", "NOT_SURE"], ["timeline", "yesterday"], ["timeline", "toString"], ["budget", 5000]])("rejects %s %j", (key, value) => {
+    const r = inquirySchema.safeParse({ ...validBase, [key]: value });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].path).toEqual([key]);
   });
 
   test("the existing link is stored normalized; unsafe links are refused", () => {

@@ -151,9 +151,10 @@ describe("insertInquiry: project type", () => {
   });
   test("budget, timeline and the existing link go to their columns, and only when answered", async () => {
     const { payloads, client } = recordingSupabase([{ error: null }, { error: null }]);
-    await insertInquiry(client, { ...inquiryBody, budget: "Not sure yet", timeline: "Within 3 months", existingUrl: "https://acme.example.com/" });
+    await insertInquiry(client, { ...inquiryBody, budget: "5000_10000", timeline: "within_3_months", existingUrl: "https://acme.example.com/" });
     await insertInquiry(client, inquiryBody);
-    expect(payloads[0]).toMatchObject({ budget_range: "Not sure yet", timeline: "Within 3 months", company_url: "https://acme.example.com/" });
+    // Codes are stored, never labels.
+    expect(payloads[0]).toMatchObject({ budget_range: "5000_10000", timeline: "within_3_months", company_url: "https://acme.example.com/" });
     for (const key of ["budget_range", "timeline", "company_url"]) expect(payloads[1]).not.toHaveProperty(key);
   });
 });
