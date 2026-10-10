@@ -180,7 +180,129 @@ the brief and no invented figures; its completion used 7,701 tokens, close to th
 free allowance and the gateway's data retention are not documented by the API and are
 not assumed.
 
-## 8. Later in this document
+## 8. The interface
 
-Sections for the pack schema, CodeCraft, privacy, the renderer, failure recovery,
-migrations and rollback are added as each milestone lands.
+| Address | What it is |
+| --- | --- |
+| `/dashboard` | The command centre (`crm_command_centre`). Alerts (actions with no owner, packs that stopped, paused automation, a meeting within 48 hours without an approved pack), actions grouped overdue / today / this week with one owner each, upcoming meetings (Cairo time, the client's time when different, the Cal.com manage link), packs waiting for review, leads waiting for a response, who is doing what, active projects, a small Growth snapshot. Every empty section is hidden; no KPI grid, no technical status names. Meetings, preparation, client and Growth items carry a labelled badge and a coloured edge. |
+| `/leads` | Leads & Clients (`lead_list`): client and company, project type and brief excerpt, meeting, pack state, position, priority, paused flag, owner, next action and date. Filters: text, owner, position (seven steps), priority, paused. No email or phone in the list. |
+| `/leads/<id>` | Overview: client and idea, budget, timeline and existing link (shown, never fetched), meeting, communication notes, position (seven steps, a loss needs its reason), priority, pause with a date to look again, owner, next actions (an automatic review with no owner can be assigned in place), contact details collapsed, and an **Advanced** area (collapsed) with source, attribution, the optional seven-part score, and the company and contact link. |
+| `/leads/<id>/pack` | The Pre-meeting Pack: its state and why, the review action and its deadline ("I will review it"), Prepare now (only when automation is on), Prepare by hand, Resume automation; the three artifacts, each with its versions, source (automated, written by hand, edited by hand), review buttons, an edit-as-text form (always a new version) and, for a library design, the design data as JSON (accepted only if it is still a library design); the manual Claude prompt with copy, the paste-back form; the sanitised input last sent to the AI service; older single notes. |
+| `/leads/<id>/pack/design?v=N` | The internal preview of one design version (noindex). |
+| `/leads/<id>/deal` | The final proposal (versioned, approved by the other founder, recorded as sent and accepted by hand), the contract (status, signed date, reference: no e-signature), commercial notes, and the project once won. |
+| `/leads/<id>/activity` | The trail: stage changes, bookings, reviews, contract, priority, pause. |
+| `/growth` | Prospects by priority (`growth_prospect_list`) with owner, reason now, history, next action and source; current numbers; the six-field quick form with research collapsed. A prospect's own page stays at `/outreach/<id>`, under Growth in the navigation. |
+| `/projects` | Won work, unchanged and simple: no controls that do nothing. |
+| `/settings` | Default reviewer, automation status (on/off, model, paused providers with Resume), links to companies and exports. |
+| `/inquiries`, `/inquiries/<id>`, `/pipeline`, `/proposals` | Redirect to `/leads`, the lead, `/leads`, and `/leads?stage=proposal`. `/metrics` and `/companies` stay, reached from Growth and More. |
+
+Positions map onto the stored stages without migrating them: New `new`; Reviewing
+`reviewing` (and the legacy `paused`); Meeting `meeting_booked`, `preparing`,
+`meeting_ready`, `meeting_completed`; Qualified `qualified`; Proposal `proposal_prep`,
+`proposal_sent`; Decision `negotiation`; Won `won`; Lost `lost`
+(`src/lib/crm/simple-stages.ts`). Choosing the step a lead is already in writes
+nothing, so a detailed value is never overwritten.
+
+## 9. The renderer
+
+- `src/lib/pack/patterns.ts`: 11 patterns (5 websites, 5 web apps, 1 mobile app with 7
+  screen templates) built from 23 templates; each pattern lists its templates and each
+  template its maximum number of items.
+- `src/lib/pack/foundations.ts`: type, spacing, grid, colour, radius, shadow; motion is
+  none, so reduced motion needs nothing special.
+- `src/components/pack/templates.tsx`: one trusted React component per template id. A
+  model's text is only ever rendered as text (React escapes it); no HTML injection, no
+  `eval`, no external asset, images are labelled placeholders (`aria-hidden`).
+- `src/components/pack/DesignPreview.tsx`: device frames (desktop and phone; phone only
+  for a mobile pattern), the user flow, the blueprint notes; the design's own language
+  sets its direction (an Arabic design is drawn right to left).
+- Before drawing, a stored design is checked again (`renderableDesign`): anything that is
+  not a library pattern with its own templates is not drawn. A design no pattern fits is
+  shown as notes, and the pack asks for a hand-made design.
+
+## 10. Privacy: what can reach an AI service
+
+| Data | Sent? |
+| --- | --- |
+| Project description | yes, after `scrubContactDetails` removes emails, links, domains, handles, phone numbers and the inquiry's own name, company, email, phone and link wherever they appear |
+| Project type, budget, timeline, country | yes, as the client chose them |
+| Name, email, phone, company, existing link, referral and tracking fields | never |
+| Notes, owners, CRM data | never |
+
+The manual prompt is built from the same scrubbed brief. Proof: the unit tests in
+`src/lib/preparation/scrub.test.ts` and `preparation.test.ts`; the browser tests assert
+the copied prompt contains the brief and none of the client's contact details
+(`tests/dashboard/dashboard.spec.ts`, `leads.spec.ts`, `tests/review/crm-live.spec.ts`).
+The exact payload of the last automated run is stored (`last_payload`, at most 40,000
+characters) and shown on the pack tab. No key is stored or shown. Real inquiries reach
+CodeCraft only with `CODECRAFT_CLIENT_DATA_APPROVED=true`, which is not set anywhere;
+the existing link is never fetched by any code.
+
+## 11. Failure and recovery
+
+| What happens | What the founders see | What to do |
+| --- | --- | --- |
+| Automation off (default) | *Needs manual action*: automated preparation is turned off | Prepare by hand with the Claude prompt |
+| CodeCraft 402, quota or allowance wording, bad key, unknown model | Automation paused for every lead; *Needs manual action*; a dashboard alert | Prepare by hand; resume in Settings once fixed. Nothing is charged; no paid fallback |
+| Timeout, 429, 5xx, malformed reply | *Preparing* while retries run (at most 3); then *Needs manual action* | Prepare by hand, or Prepare now later |
+| A reply that fails the checks (invented figure, ungrounded fact, wrong language, promise, wrong pattern) | Not saved; *Needs manual action* | Prepare by hand; a pasted reply that fails shows which checks failed |
+| No pattern fits the project | The design is notes only; *Needs manual action* | Write the design by hand on the pack tab |
+| Booking rescheduled | Review deadline moves | Nothing |
+| Booking cancelled | Meeting *Cancelled*; the review action closes; every version stays | Nothing; a new booking creates a new action |
+| Review deadline passed, pack not approved | *Needs attention*; dashboard alert within 48 hours of the meeting | Review and approve, or reassign |
+| An automatic review action with no owner | *Needs an owner* on the lead, the list and the dashboard | Assign it, or set the default reviewer in Settings |
+
+The public form, the booking page, the acknowledgment email and the Cal.com webhook
+never wait for preparation: the booking trigger catches its own errors, and the webhook
+starts the worker only after it has answered.
+
+## 12. Migrations, order and rollback
+
+Both migrations are additive and forward-only, and are **not applied anywhere** by this
+branch. In this order, after code review:
+
+1. `supabase/migrations/20261015000000_add_two_founder_workflow.sql`
+2. `supabase/migrations/20261016000000_add_two_founder_reads.sql`
+
+On the synthetic review project (`mintapp-review`), which already has every migration up
+to `20261014000000_add_crm_reads.sql`, apply exactly these two, in this order, then run
+`npm run review:verify` and `npm run test:review-live`. Production (`main`) stops at
+`20261007000000`; it needs, in file order, `20261005000000`, `20261006000000`,
+`20261010000000` to `20261014000000` (preparation, admin sign-in, CRM Release 1), then
+the two above. `20261005000000` sorts before `20261007000000`, which production already
+has; the two do not touch the same objects. The
+production-upgrade test (`tests/db/production-upgrade.test.mjs`) applies them on a copy
+of the production schema with data and checks nothing is lost.
+
+What they change in existing data: queued jobs for inquiries without a booking become
+`waiting_booking`; existing drafts get `artifact = 'note'`; every booked future meeting
+gets its review action. Nothing is deleted.
+
+Rollback (recovery only, owner's go-ahead, export first):
+`supabase/rollback/04_remove_two_founder_workflow.sql` removes both migrations in one
+transaction and restores the CRM Release 1 definitions; then, only if CRM Release 1 must
+go too, `03_remove_crm_release_1.sql`, and so on. The test above applies all migrations,
+rolls back 04, 03 and 02, and applies everything again. The booking-ledger migration is
+not part of this branch.
+
+## 13. Tests
+
+| Suite | Command | Result (10 Oct 2026) |
+| --- | --- | --- |
+| Types, lint | `npx tsc --noEmit`, `npx eslint src tests scripts` | clean |
+| Unit | `npm test` | 653 passed, 2 skipped (the live CodeCraft evaluation) |
+| Database | `npm run test:db` | 151 passed |
+| Public browser | `npx playwright test` | 342 passed (5 reflow tests timed out once while 8 workers cold-compiled every page; 22/22 on a re-run of that file) |
+| Admin browser | `npm run test:dashboard` | 58 passed: dashboard 13, CRM 21, two-founder workflow 14, sign-in 10 |
+| Builds | `npm run test:build` | public and admin builds, 7 passed |
+| Audit | `npm audit --omit=dev` | 0 vulnerabilities |
+| Live review | `npm run test:review-live` | not run: needs the two migrations on the review project |
+
+## 14. Deferred
+
+- **Release 2:** hours per project (the dashboard has no hours section until then);
+  CSV import of campaign numbers; editing the budget bands without a deploy; reminders
+  by email for review deadlines.
+- **Release 3:** richer design templates and brand context from approved assets;
+  generation of the final proposal from the approved draft; any social-platform
+  integration (none now: campaign figures are entered or imported by hand).
