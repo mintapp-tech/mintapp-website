@@ -10,7 +10,7 @@
 --   * the 'waiting_booking' job status (those jobs become 'queued', as before);
 --   * the Release 1 definitions of the six functions this workflow changed.
 --
--- THIS DELETES: the settings, priorities, deal fields, the stored generator
+-- THIS DELETES: the budget currency of newer inquiries (their range codes stay), the settings, priorities, deal fields, the stored generator
 -- input, and the automatic review actions that have no owner (owned ones are
 -- kept as ordinary follow-ups). Pack versions are kept as drafts; they lose only
 -- their artifact label. Export first; run only on the owner's go-ahead.
@@ -69,6 +69,75 @@ update public.inquiry_preparations set status = 'queued', updated_at = now() whe
 alter table public.inquiry_preparations drop constraint if exists inquiry_preparations_status_values;
 alter table public.inquiry_preparations add constraint inquiry_preparations_status_values
   check (status = any (array['queued', 'running', 'retry_scheduled', 'succeeded', 'failed', 'paused', 'manual']));
+
+-- The budget's currency goes; the range codes stay as stored. The two functions
+-- that read it return to their earlier definitions.
+alter table public.project_inquiries drop constraint if exists project_inquiries_budget_currency_range;
+alter table public.project_inquiries drop column if exists budget_currency;
+create or replace function public.preparation_input(p_inquiry_id uuid)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select jsonb_build_object(
+    'preferred_language', i.preferred_language,
+    'project_type', i.project_type,
+    'project_description', i.project_description,
+    'budget_range', i.budget_range,
+    'timeline', i.timeline,
+    'country', i.country)
+  from public.project_inquiries as i
+  where i.id = p_inquiry_id and i.deleted_at is null;
+$$;
+create or replace function public.crm_export(p_kind text, p_actor text)
+returns jsonb
+language plpgsql
+volatile
+security invoker
+set search_path = ''
+as $$
+declare
+  v_rows jsonb;
+begin
+  if p_kind = 'inquiries' then
+    select coalesce(jsonb_agg(jsonb_build_object(
+        'id', i.id, 'received', i.created_at, 'client', i.full_name, 'company', coalesce(co.name, i.company_name), 'language', i.preferred_language, 'project_type', i.project_type,
+        'stage', i.lead_status, 'owners', array_to_string(i.owners, ' & '), 'meeting', i.booking_status, 'meeting_at', i.meeting_start_at,
+        'preparation', p.status, 'origin', coalesce(d.lead_origin, 'inbound'), 'source', i.utm_source, 'medium', i.utm_medium, 'campaign', coalesce(d.campaign, i.utm_campaign),
+        'content', coalesce(d.content_id, i.utm_content), 'partner', d.referral_partner, 'fit', d.fit_tier, 'score', d.lead_score, 'loss_reason', d.loss_reason,
+        'next_action', (select f.action from public.inquiry_follow_ups as f where f.inquiry_id = i.id and f.done_at is null order by f.due_on limit 1),
+        'next_action_owner', (select f.owner from public.inquiry_follow_ups as f where f.inquiry_id = i.id and f.done_at is null order by f.due_on limit 1),
+        'next_action_due', (select f.due_on from public.inquiry_follow_ups as f where f.inquiry_id = i.id and f.done_at is null order by f.due_on limit 1)
+      ) order by i.created_at desc), '[]'::jsonb) into v_rows
+    from public.project_inquiries as i
+    left join public.inquiry_preparations as p on p.inquiry_id = i.id
+    left join public.inquiry_crm as d on d.inquiry_id = i.id
+    left join public.crm_companies as co on co.id = d.company_id
+    where i.deleted_at is null;
+  elsif p_kind = 'companies' then
+    select coalesce(jsonb_agg(jsonb_build_object('id', c.id, 'name', c.name, 'website', c.website, 'country', c.country, 'sector', c.sector, 'language', c.language,
+        'contacts', (select count(*) from public.crm_contacts as k where k.company_id = c.id and k.archived_at is null), 'created', c.created_at) order by c.name), '[]'::jsonb) into v_rows
+    from public.crm_companies as c where c.archived_at is null;
+  elsif p_kind = 'contacts' then
+    select coalesce(jsonb_agg(jsonb_build_object('id', k.id, 'name', k.full_name, 'role', k.role_title, 'company', co.name, 'email', k.email, 'phone', k.phone, 'language', k.preferred_language,
+        'consent', k.consent_status, 'consent_at', k.consent_at, 'do_not_contact', k.do_not_contact) order by k.full_name), '[]'::jsonb) into v_rows
+    from public.crm_contacts as k left join public.crm_companies as co on co.id = k.company_id where k.archived_at is null;
+  elsif p_kind = 'prospects' then
+    select coalesce(jsonb_agg(jsonb_build_object('id', p.id, 'company', p.company_name, 'country', p.country, 'pool', p.pool, 'origin', p.lead_origin, 'contact', p.contact_name, 'role', p.contact_role,
+        'channel', p.contact_channel, 'language', p.language, 'fit', p.fit_tier, 'score', p.lead_score, 'trigger', p.trigger_note, 'owner', p.owner, 'stage', p.stage,
+        'next_action', p.follow_up_action, 'next_action_owner', p.follow_up_owner, 'next_action_due', p.follow_up_due_on,
+        'outbound_touches', (select count(*) from public.crm_outreach_touches as t where t.prospect_id = p.id and t.kind = 'outbound'),
+        'last_touch', (select max(t.occurred_on) from public.crm_outreach_touches as t where t.prospect_id = p.id), 'closed_reason', p.closed_reason) order by p.company_name), '[]'::jsonb) into v_rows
+    from public.crm_prospects as p;
+  else
+    raise exception 'unknown_export';
+  end if;
+  perform public.crm_log(p_actor, 'export', null, null, 'exported', jsonb_build_object('kind', p_kind, 'rows', jsonb_array_length(v_rows)));
+  return v_rows;
+end;
+$$;
 
 -- Lead and prospect fields.
 alter table public.inquiry_crm drop constraint if exists inquiry_crm_signed_has_date;

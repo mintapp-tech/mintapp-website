@@ -79,6 +79,7 @@ security invoker
 set search_path = ''
 as $$
   select jsonb_build_object(
+    'budget_currency', i.budget_currency,
     'priority', d.priority,
     'paused_until', d.paused_until,
     'deal', jsonb_build_object('contract_status', d.contract_status, 'contract_signed_on', d.contract_signed_on, 'contract_reference', d.contract_reference, 'commercial_notes', d.commercial_notes),

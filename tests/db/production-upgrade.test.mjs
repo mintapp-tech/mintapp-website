@@ -64,8 +64,9 @@ const insertRow = (rowId, over = {}) =>
            values (${lit(rowId)}, ${lit(over.name ?? "Existing Client")}, ${lit(`client-${rowId.slice(-2)}@example.com`)}, '+20100000000', 'Existing Co', ${lit(over.lang ?? "en")}, ${lit(over.type ?? null)}, ${lit(over.desc ?? "A real project description from before the dashboard existed.")}, true, now(), ${over.deleted ? "now()" : "null"})`);
 
 // Every column of every existing inquiry as it was before launch. The new
-// "owners" and "utm_content" columns are excluded, so the same fingerprint works before and after.
-const inquiryFingerprint = () => db.psql(`select md5(coalesce(string_agg((to_jsonb(t) - 'owners' - 'utm_content')::text, '|' order by t.id), '')) from public.project_inquiries t`);
+// "owners", "utm_content" and "budget_currency" columns, added later, are excluded
+// (budget_currency stays null on existing rows), so the same fingerprint works before and after.
+const inquiryFingerprint = () => db.psql(`select md5(coalesce(string_agg((to_jsonb(t) - 'owners' - 'utm_content' - 'budget_currency')::text, '|' order by t.id), '')) from public.project_inquiries t`);
 
 // What the database looks like to the application: tables, project_inquiries
 // columns, public functions, triggers and constraints. Rolling back must restore it exactly.
@@ -315,6 +316,8 @@ describe("the two-founder workflow, applied on top of Release 1, file by file", 
   });
 
   test("existing inquiries are exactly as they were", () => {
+    // The budget currency is new: no existing row is given one.
+    assert.equal(db.psql("select count(*) from public.project_inquiries where budget_currency is not null"), "0");
     assert.equal(inquiryFingerprint(), preWorkflow);
   });
 

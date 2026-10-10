@@ -291,6 +291,35 @@ describe("simplified reads", () => {
   });
 });
 
+describe("the submitted budget and its currency", () => {
+  const setBudget = (range, currency) => `update public.project_inquiries set budget_range = ${range === null ? "null" : lit(range)}, budget_currency = ${currency === null ? "null" : lit(currency)} where id = ${lit(A)}`;
+  const ok = (range, currency) => db.psql(setBudget(range, currency));
+  const refused = (range, currency) => assert.match(db.psqlExpectError(setBudget(range, currency)), /budget_currency_range/, `${range} ${currency}`);
+
+  test("a currency must come with a range from its own scale; rows without a currency are left as they are", () => {
+    insertInquiry(A);
+    // Older rows: no currency, any stored text (including free text) stays readable.
+    for (const range of ["Not sure yet", "USD 5,000 - 15,000", "5000_10000", "غير محدد", null]) ok(range, null);
+    for (const range of ["under_2500", "2500_5000", "5000_10000", "10000_20000", "over_20000", "not_sure", "Under USD 5,000", "Over USD 40,000"]) ok(range, "USD");
+    for (const range of ["under_50000", "50000_100000", "100000_250000", "250000_500000", "over_500000", "not_sure"]) ok(range, "EGP");
+    // A range from the other scale, an older US-dollar label in pounds, a currency without a range, or another currency.
+    for (const [range, currency] of [["under_50000", "USD"], ["5000_10000", "EGP"], ["USD 5,000 - 15,000", "EGP"], [null, "USD"], [null, "EGP"], ["not_sure", "EUR"], ["Not sure yet", "EGP"], ["5000_10000", "usd"]]) refused(range, currency);
+  });
+
+  test("the preparation input, the lead and the inquiries export carry the currency", () => {
+    insertInquiry(A);
+    ok("100000_250000", "EGP");
+    const input = json(`select public.preparation_input(${lit(A)})`);
+    assert.equal(input.budget_range, "100000_250000");
+    assert.equal(input.budget_currency, "EGP");
+    assert.equal(json(`select public.lead_detail(${lit(A)})`).budget_currency, "EGP");
+    const row = json(`select public.crm_export('inquiries', ${lit(OMAR)})`).find((r) => r.id === A);
+    assert.deepEqual([row.budget, row.budget_currency, row.timeline], ["100000_250000", "EGP", "Within 3 months"]);
+    // The generator input still never carries contact details.
+    assert.doesNotMatch(JSON.stringify(input), /pack@two-founder|555 0101|Pack Co|pack.example/);
+  });
+});
+
 describe("access", () => {
   test("the public roles can read no new table and run no new function", () => {
     for (const role of ["anon", "authenticated"]) {

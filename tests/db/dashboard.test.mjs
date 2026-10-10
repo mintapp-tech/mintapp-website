@@ -31,7 +31,7 @@ describe("reads", () => {
   test("preparation input carries the brief and structured answers, never contact details", () => {
     insertInquiry(A, { budget: "Not sure yet" });
     const input = json(`select public.preparation_input(${lit(A)})`);
-    assert.deepEqual(Object.keys(input).sort(), ["budget_range", "country", "preferred_language", "project_description", "project_type", "timeline"]);
+    assert.deepEqual(Object.keys(input).sort(), ["budget_currency", "budget_range", "country", "preferred_language", "project_description", "project_type", "timeline"]);
     assert.doesNotMatch(JSON.stringify(input), /Synthetic Client|synthetic@example|\+2010|Synthetic Co/);
   });
 

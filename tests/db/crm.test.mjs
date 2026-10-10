@@ -292,7 +292,7 @@ describe("contact values for scrubbing a brief", () => {
     assert.deepEqual(json(`select public.preparation_redactions(${lit(B)})`), []);
     for (const role of ["anon", "authenticated"]) assert.match(db.psqlExpectError(`set role ${role}; select public.preparation_redactions('${A}')`), /permission denied/);
     // The generator-facing input is unchanged: still only the brief and the client's answers.
-    assert.deepEqual(Object.keys(json(`select public.preparation_input(${lit(A)})`)).sort(), ["budget_range", "country", "preferred_language", "project_description", "project_type", "timeline"]);
+    assert.deepEqual(Object.keys(json(`select public.preparation_input(${lit(A)})`)).sort(), ["budget_currency", "budget_range", "country", "preferred_language", "project_description", "project_type", "timeline"]);
   });
 });
 
