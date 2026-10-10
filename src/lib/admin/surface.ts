@@ -36,7 +36,7 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 //   /leads[/id[/pack[/design]|/deal|/activity]]  Leads & Clients and each lead
 //   /growth, /outreach[/id]            Growth: prospects
 //   /projects[/id]                     won work
-//   /settings, /companies[/id]         the secondary menu
+//   /settings[/design-library], /companies[/id]   the secondary menu
 //   /contacts/id, /search              contacts, search
 //   /export/kind                       CSV exports (POST only)
 //   /inquiries[/id], /pipeline, /proposals, /metrics   older addresses, redirected
@@ -51,6 +51,7 @@ const ADMIN_PAGES = new RegExp(
     `leads/${UUID}/pack/design`,
     "growth",
     "settings",
+    "settings/design-library",
     "pipeline",
     "metrics",
     "proposals",

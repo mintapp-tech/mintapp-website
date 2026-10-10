@@ -74,6 +74,12 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </Link>
           </p>
           <p className="mt-2 mb-0 text-[13.5px] text-ink-soft">{s.exports}</p>
+          <p className="mt-4 mb-0 text-[14px]">
+            <Link href="/settings/design-library" className={linkClass}>
+              {s.library}
+            </Link>
+          </p>
+          <p className="mt-1 mb-0 text-[13.5px] text-ink-soft">{s.libraryHelp}</p>
         </Panel>
       </div>
     </>

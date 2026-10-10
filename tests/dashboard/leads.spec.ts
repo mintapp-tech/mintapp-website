@@ -36,7 +36,7 @@ const setLanguage = async (page: Page, to: "en" | "ar") => {
 };
 
 test("the new pages refuse without a signed-in session and say nothing", async ({ page, request }) => {
-  for (const path of ["/leads", `/leads/${CLINIC}`, `/leads/${CLINIC}/pack`, `/leads/${CLINIC}/pack/design?v=1`, `/leads/${CLINIC}/deal`, `/leads/${CLINIC}/activity`, "/settings", "/growth"]) {
+  for (const path of ["/leads", `/leads/${CLINIC}`, `/leads/${CLINIC}/pack`, `/leads/${CLINIC}/pack/design?v=1`, `/leads/${CLINIC}/deal`, `/leads/${CLINIC}/activity`, "/settings", "/settings/design-library", "/growth"]) {
     await page.goto(path);
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.locator("body")).not.toContainText("physiotherapy");
@@ -74,6 +74,45 @@ test("settings: the default reviewer is chosen once, and automation is described
   await expect(notice(page)).toContainText("Saved.");
   await expect(page.locator("#default-owner-select")).toHaveValue("adam");
   expect(await axe(page)).toEqual([]);
+  await page.context().close();
+});
+
+test("design library: 11 patterns, 23 templates, and six synthetic examples drawn in both languages and on a phone", async ({ browser }) => {
+  test.setTimeout(240_000);
+  const page = await signIn(browser, OMAR);
+  await page.goto("/settings");
+  await page.getByRole("link", { name: "Design library" }).click();
+  await expect(page).toHaveURL(/\/settings\/design-library$/);
+  await expect(page.locator("[data-pattern-table] [data-pattern]")).toHaveCount(11);
+  await expect(page.locator("[data-template-table] [data-template]")).toHaveCount(23);
+  await expect(page.locator("[data-manual-cases] li")).toHaveCount(5);
+  const examples = ["service-website", "marketplace", "operations-dashboard", "booking-application", "mobile-application", "arabic-website"];
+  await expect(page.locator("[data-example]")).toHaveCount(examples.length);
+  for (const id of examples) {
+    await page.goto(`/settings/design-library?example=${id}`);
+    await expect(page.locator(`[data-example="${id}"]`)).toHaveAttribute("aria-current", "page");
+    const screens = await page.locator("[data-design-preview] [data-screen]").count();
+    expect(screens, id).toBeGreaterThanOrEqual(2);
+    expect(screens, id).toBeLessThanOrEqual(4);
+    expect(await axe(page), id).toEqual([]);
+    await shot(page, `library-${id}-en-desktop`);
+  }
+  // The Arabic example is drawn right to left inside its frames.
+  await expect(page.locator("[data-design-preview] [dir=rtl]").first()).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const id of ["mobile-application", "arabic-website", "operations-dashboard"]) {
+    await page.goto(`/settings/design-library?example=${id}`);
+    expect(await overflow(page), id).toBeLessThanOrEqual(0);
+    await shot(page, `library-${id}-en-phone`);
+  }
+  await setLanguage(page, "ar");
+  await page.goto("/settings/design-library?example=marketplace");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("مكتبة التصميم");
+  expect(await overflow(page)).toBeLessThanOrEqual(0);
+  expect(await axe(page)).toEqual([]);
+  await shot(page, "library-marketplace-ar-phone");
+  await setLanguage(page, "en");
   await page.context().close();
 });
 

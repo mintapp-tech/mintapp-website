@@ -101,7 +101,7 @@ describe("cookies and hosts", () => {
 
   test("only admin pages are served by the admin application", () => {
     const ID = "11111111-0000-4000-8000-000000000001";
-    for (const p of ["/login", "/login/mfa", "/dashboard", "/inquiries", `/inquiries/${ID}`, "/pipeline", "/outreach", `/outreach/${ID}`, "/companies", `/companies/${ID}`, `/contacts/${ID}`, "/proposals", "/projects", `/projects/${ID}`, "/metrics", "/search", "/export/contacts", "/export/inquiries/", "/leads", `/leads/${ID}`, `/leads/${ID}/pack`, `/leads/${ID}/pack/design`, `/leads/${ID}/deal`, `/leads/${ID}/activity`, "/growth", "/settings"]) expect(isAdminPage(p), p).toBe(true);
+    for (const p of ["/login", "/login/mfa", "/dashboard", "/inquiries", `/inquiries/${ID}`, "/pipeline", "/outreach", `/outreach/${ID}`, "/companies", `/companies/${ID}`, `/contacts/${ID}`, "/proposals", "/projects", `/projects/${ID}`, "/metrics", "/search", "/export/contacts", "/export/inquiries/", "/leads", `/leads/${ID}`, `/leads/${ID}/pack`, `/leads/${ID}/pack/design`, `/leads/${ID}/deal`, `/leads/${ID}/activity`, "/growth", "/settings", "/settings/design-library"]) expect(isAdminPage(p), p).toBe(true);
     for (const p of ["/", "/en", "/ar/start", "/api/inquiries", "/internal/concept-pack", "/inquiries/x", "/login/../en", "/contacts", "/export", "/export/everything", "/export/contacts/extra", `/dashboard/${ID}`, `/search/${ID}`, "/companies/not-an-id", "/leads/x", `/leads/${ID}/notes`, `/leads/${ID}/design`, `/settings/${ID}`]) expect(isAdminPage(p), p).toBe(false);
   });
 
