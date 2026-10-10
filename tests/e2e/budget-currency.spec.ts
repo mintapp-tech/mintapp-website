@@ -12,6 +12,52 @@ const COOKIE = "mintapp_budget_currency";
 const currency = (page: Page) => page.locator("[data-budget-currency]");
 const budget = (page: Page) => page.locator('select[name="budget"]');
 const options = (page: Page) => budget(page).locator("option:not([disabled])").allTextContents();
+// Every selectable option as [stored code, visible label], in the order shown.
+const optionPairs = (page: Page) =>
+  budget(page)
+    .locator("option:not([disabled])")
+    .evaluateAll((els) => els.map((el) => [(el as HTMLOptionElement).value, el.textContent ?? ""]));
+
+// The approved scales, written out here on purpose rather than imported from
+// src/lib/form-options.ts, so a change to the production options fails this test.
+const APPROVED = {
+  USD: {
+    en: [
+      ["under_2500", "Under USD 2,500"],
+      ["2500_5000", "USD 2,500–5,000"],
+      ["5000_10000", "USD 5,000–10,000"],
+      ["10000_20000", "USD 10,000–20,000"],
+      ["over_20000", "Over USD 20,000"],
+      ["not_sure", "Not sure yet"],
+    ],
+    ar: [
+      ["under_2500", "أقل من 2,500 دولار أمريكي"],
+      ["2500_5000", "من 2,500 إلى 5,000 دولار أمريكي"],
+      ["5000_10000", "من 5,000 إلى 10,000 دولار أمريكي"],
+      ["10000_20000", "من 10,000 إلى 20,000 دولار أمريكي"],
+      ["over_20000", "أكثر من 20,000 دولار أمريكي"],
+      ["not_sure", "لست متأكدًا بعد"],
+    ],
+  },
+  EGP: {
+    en: [
+      ["under_50000", "Under EGP 50,000"],
+      ["50000_100000", "EGP 50,000–100,000"],
+      ["100000_250000", "EGP 100,000–250,000"],
+      ["250000_500000", "EGP 250,000–500,000"],
+      ["over_500000", "Over EGP 500,000"],
+      ["not_sure", "Not sure yet"],
+    ],
+    ar: [
+      ["under_50000", "أقل من 50,000 جنيه مصري"],
+      ["50000_100000", "من 50,000 إلى 100,000 جنيه مصري"],
+      ["100000_250000", "من 100,000 إلى 250,000 جنيه مصري"],
+      ["250000_500000", "من 250,000 إلى 500,000 جنيه مصري"],
+      ["over_500000", "أكثر من 500,000 جنيه مصري"],
+      ["not_sure", "لست متأكدًا بعد"],
+    ],
+  },
+} as const;
 
 async function open(page: Page, locale: "en" | "ar", country?: string, saved?: "USD" | "EGP") {
   if (country) await page.setExtraHTTPHeaders({ "x-vercel-ip-country": country });
@@ -31,19 +77,22 @@ async function fillRequired(page: Page) {
 }
 
 test.describe("the starting currency", () => {
-  test("Egypt starts in Egyptian pounds", async ({ page }) => {
-    await open(page, "en", "EG");
-    await expect(currency(page)).toHaveAttribute("data-budget-currency", "EGP");
-    await expect(page.locator('input[name="budgetCurrency"][value="EGP"]')).toBeChecked();
-    expect(await options(page)).toEqual(["Under EGP 50,000", "EGP 50,000–100,000", "EGP 100,000–250,000", "EGP 250,000–500,000", "Over EGP 500,000", "Not sure yet"]);
-  });
-
-  for (const country of ["SA", "AE", "KW", "QA", "BH", "OM", "JO", "US"]) {
-    test(`${country} starts in US dollars`, async ({ page }) => {
-      await open(page, "en", country);
-      await expect(currency(page)).toHaveAttribute("data-budget-currency", "USD");
-      expect((await options(page))[0]).toBe("Under USD 2,500");
+  for (const locale of ["en", "ar"] as const) {
+    test(`${locale}: Egypt starts in Egyptian pounds, with every approved option in order`, async ({ page }) => {
+      await open(page, locale, "EG");
+      await expect(currency(page)).toHaveAttribute("data-budget-currency", "EGP");
+      await expect(page.locator('input[name="budgetCurrency"][value="EGP"]')).toBeChecked();
+      expect(await optionPairs(page)).toEqual(APPROVED.EGP[locale]);
     });
+
+    for (const country of ["US", "SA", "AE", "KW", "QA", "BH", "OM", "JO"]) {
+      test(`${locale}: ${country} starts in US dollars, with every approved option in order`, async ({ page }) => {
+        await open(page, locale, country);
+        await expect(currency(page)).toHaveAttribute("data-budget-currency", "USD");
+        await expect(page.locator('input[name="budgetCurrency"][value="USD"]')).toBeChecked();
+        expect(await optionPairs(page)).toEqual(APPROVED.USD[locale]);
+      });
+    }
   }
 
   test("no country (local or unknown) starts in US dollars", async ({ page }) => {
