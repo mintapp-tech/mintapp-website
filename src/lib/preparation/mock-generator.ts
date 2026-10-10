@@ -1,5 +1,6 @@
 import type { GenerationInput } from "./input";
 import type { PreparationGenerator } from "./generator";
+import type { PackStep } from "@/lib/pack/steps";
 import { PATTERNS, kindFromProjectType, type PatternId, type ProjectKind } from "@/lib/pack/patterns";
 
 // A deterministic, clearly labelled stand-in for a language model, so the whole
@@ -80,58 +81,65 @@ const COPY = {
   },
 } as const;
 
+// The whole labelled pack; each step returns its own part of it.
+export function mockPack(input: GenerationInput) {
+  const c = COPY[input.language];
+  const lines = input.brief.split("\n");
+  const description = lines.slice(lines.findIndex((l) => l.endsWith(":") && !l.includes(": ")) + 1).join("\n");
+  const facts = sentencesOf(description)
+    .slice(0, 4)
+    .map((s) => ({ text: s, evidence: s }));
+  const kind = kindFromProjectType(input.projectType);
+  const pattern = kind ? PATTERN_FOR[kind] : null;
+  const templates = pattern ? PATTERNS[pattern].templates.slice(0, 3) : [];
+  const screens = templates.map((template, i) => ({ id: `s${i + 1}`, template, ...c.screen(template.replaceAll("_", " ")) }));
+  return {
+    language: input.language,
+    client_facts: facts,
+    assumptions: [],
+    missing_information: [c.missing],
+    design_blueprint: {
+      pattern,
+      ...(pattern ? {} : { unsupported_reason: c.unsupported }),
+      audience: c.audience,
+      primary_goal: c.goal,
+      hierarchy: [...c.hierarchy],
+      responsive_notes: c.responsive,
+      brand_context: c.brand,
+    },
+    screens,
+    user_flow: screens.map((s) => ({ step: c.flow, screen: s.id })),
+    proposal: {
+      ...c.proposal,
+      first_release_scope: [...c.proposal.first_release_scope],
+      phases: [],
+      deliverables: [...c.proposal.deliverables],
+      assumptions: [...c.proposal.assumptions],
+      exclusions: [...c.proposal.exclusions],
+      cost_schedule_factors: [...c.proposal.cost_schedule_factors],
+    },
+    discovery_questions: c.questions.map((q) => ({ ...q })),
+    risks: [],
+    client_decisions: [],
+    meeting_agenda: c.agenda.map((a) => ({ ...a })),
+    confirm_before_pricing: [...c.confirm],
+  };
+}
+
+const PART: Record<PackStep, (p: ReturnType<typeof mockPack>) => Record<string, unknown>> = {
+  analysis: (p) => ({ language: p.language, client_facts: p.client_facts, assumptions: p.assumptions, missing_information: p.missing_information }),
+  design: (p) => ({ language: p.language, design_blueprint: p.design_blueprint, screens: p.screens, user_flow: p.user_flow }),
+  proposal: (p) => ({ language: p.language, proposal: p.proposal }),
+  discovery: (p) => ({ language: p.language, discovery_questions: p.discovery_questions, risks: p.risks, client_decisions: p.client_decisions, meeting_agenda: p.meeting_agenda, confirm_before_pricing: p.confirm_before_pricing }),
+};
+
 export function createMockGenerator(): PreparationGenerator {
   return {
     id: "mock",
     model: "mock-v1",
     estimateTokens: () => 0,
-    async generate(input: GenerationInput) {
-      const c = COPY[input.language];
-      const lines = input.brief.split("\n");
-      const description = lines.slice(lines.findIndex((l) => l.endsWith(":") && !l.includes(": ")) + 1).join("\n");
-      const facts = sentencesOf(description)
-        .slice(0, 4)
-        .map((s) => ({ text: s, evidence: s }));
-      const kind = kindFromProjectType(input.projectType);
-      const pattern = kind ? PATTERN_FOR[kind] : null;
-      const templates = pattern ? PATTERNS[pattern].templates.slice(0, 3) : [];
-      const screens = templates.map((template, i) => ({ id: `s${i + 1}`, template, ...c.screen(template.replaceAll("_", " ")) }));
-      return {
-        ok: true,
-        model: "mock-v1",
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, reported: true },
-        raw: {
-          language: input.language,
-          client_facts: facts,
-          assumptions: [],
-          missing_information: [c.missing],
-          design_blueprint: {
-            pattern,
-            ...(pattern ? {} : { unsupported_reason: c.unsupported }),
-            audience: c.audience,
-            primary_goal: c.goal,
-            hierarchy: [...c.hierarchy],
-            responsive_notes: c.responsive,
-            brand_context: c.brand,
-          },
-          screens,
-          user_flow: screens.map((s) => ({ step: c.flow, screen: s.id })),
-          proposal: {
-            ...c.proposal,
-            first_release_scope: [...c.proposal.first_release_scope],
-            phases: [],
-            deliverables: [...c.proposal.deliverables],
-            assumptions: [...c.proposal.assumptions],
-            exclusions: [...c.proposal.exclusions],
-            cost_schedule_factors: [...c.proposal.cost_schedule_factors],
-          },
-          discovery_questions: c.questions.map((q) => ({ ...q })),
-          risks: [],
-          client_decisions: [],
-          meeting_agenda: c.agenda.map((a) => ({ ...a })),
-          confirm_before_pricing: [...c.confirm],
-        },
-      };
+    async generate(step, input) {
+      return { ok: true, model: "mock-v1", usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, reported: true }, raw: PART[step](mockPack(input)) };
     },
   };
 }

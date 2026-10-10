@@ -5,7 +5,7 @@
 -- CRM Release 1 behaviour exactly:
 --   * the new read functions, settings, pack and action functions and triggers;
 --   * the columns: inquiry_crm priority and deal fields, crm_prospects.priority,
---     inquiry_preparations.last_payload, preparation_drafts.artifact,
+--     inquiry_preparations.last_payload and .pack_progress, preparation_drafts.artifact,
 --     inquiry_follow_ups.kind (and the owner becomes required again);
 --   * the 'waiting_booking' job status (those jobs become 'queued', as before);
 --   * the Release 1 definitions of the six functions this workflow changed.
@@ -36,7 +36,10 @@ drop function if exists public.pack_on_booking_change();
 drop function if exists public.pack_review_owner(text[]);
 drop function if exists public.pack_review_due(timestamptz);
 drop function if exists public.record_pack_payload(uuid, jsonb);
-drop function if exists public.complete_pack(uuid, jsonb, text, text);
+drop function if exists public.pack_finish(uuid, text);
+drop function if exists public.pack_progress_set(uuid, jsonb);
+drop function if exists public.pack_progress_get(uuid);
+drop function if exists public.pack_save_generated(uuid, text, jsonb, text, text);
 drop function if exists public.pack_save_all(uuid, jsonb, text, text);
 drop function if exists public.dashboard_save_draft(uuid, jsonb, text, text);
 drop function if exists public.pack_save_artifact(uuid, text, jsonb, text, text);
@@ -60,6 +63,8 @@ alter table public.preparation_drafts drop constraint if exists preparation_draf
 alter table public.preparation_drafts drop column if exists artifact;
 alter table public.inquiry_preparations drop constraint if exists inquiry_preparations_payload_shape;
 alter table public.inquiry_preparations drop column if exists last_payload;
+alter table public.inquiry_preparations drop constraint if exists inquiry_preparations_progress_shape;
+alter table public.inquiry_preparations drop column if exists pack_progress;
 update public.inquiry_preparations set status = 'queued', updated_at = now() where status = 'waiting_booking';
 alter table public.inquiry_preparations drop constraint if exists inquiry_preparations_status_values;
 alter table public.inquiry_preparations add constraint inquiry_preparations_status_values

@@ -117,7 +117,7 @@ export async function prepareNowAction(form: FormData) {
   await runPreparationBatch({
     store: createSqlPreparationStore(getSqlGateway()),
     generator: selection.generator,
-    monthlyTokenBudget: selection.monthlyTokenBudget,
+    monthlyTokenBudget: selection.monthlyTokenBudget, packTokenCap: selection.packTokenCap,
     inquiryId,
   });
   refresh(inquiryId);

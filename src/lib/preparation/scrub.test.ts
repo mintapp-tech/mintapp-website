@@ -78,32 +78,47 @@ describe("what the worker hands to a generator", () => {
       country: "Egypt",
       redact: knownDetails({ client_name: "Layla Hassan", company_name: "Cedar Labs", email: "layla@cedar-labs.test", phone: "01005550101", company_url: "https://www.cedar-labs.test" }),
     };
+    const { createCodeCraftGenerator } = await import("./codecraft-generator");
+    const { buildGenerationInput } = await import("./input");
+    const { mockPack } = await import("./mock-generator");
+    // A network double: records every request body that would leave, and answers
+    // each step with a valid part of a pack.
+    const pack = mockPack(buildGenerationInput(inquiry));
+    const parts = [
+      { language: pack.language, client_facts: [], assumptions: [], missing_information: pack.missing_information },
+      { language: pack.language, design_blueprint: pack.design_blueprint, screens: pack.screens, user_flow: pack.user_flow },
+      { language: pack.language, proposal: pack.proposal },
+      { language: pack.language, discovery_questions: pack.discovery_questions, risks: [], client_decisions: [], meeting_agenda: pack.meeting_agenda, confirm_before_pricing: pack.confirm_before_pricing },
+    ];
+    const fetchImpl = async (_url: string, init: RequestInit) => {
+      seen.push(String(init.body));
+      const content = JSON.stringify(parts[seen.length - 1]);
+      return new Response(JSON.stringify({ model: "m", choices: [{ message: { content }, finish_reason: "stop" }], usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 } }), { status: 200 });
+    };
+    const payloads: Record<string, unknown>[] = [];
     await runPreparationBatch({
       store: {
         claim: async () => [{ inquiryId: "inq-1", attempts: 1 }],
         claimInquiry: async () => [],
         loadInquiry: async () => inquiry,
-        complete: async () => 1,
-        completePack: async () => 3,
-        recordPayload: async () => {},
+        loadProgress: async () => null,
+        saveProgress: async () => {},
+        saveArtifact: async () => 1,
+        finishPack: async () => {},
+        recordPayload: async (_id, p) => void payloads.push(p),
         fail: async () => "failed",
         pause: async () => {},
         monthlyTokens: async () => 0,
         recordUsage: async () => {},
       },
-      generator: {
-        id: "mock",
-        model: "m",
-        estimateTokens: () => 0,
-        generate: async (input) => {
-          seen.push(input.brief);
-          return { ok: false, failure: "provider_error", retryable: false, pauseAutomation: false };
-        },
-      },
-      monthlyTokenBudget: 0,
+      generator: createCodeCraftGenerator({ apiKey: "k", baseUrl: "https://gateway.test/v1", model: "m", timeoutMs: 1000, fetchImpl: fetchImpl as unknown as typeof fetch }),
+      monthlyTokenBudget: 600_000,
     });
-    expect(seen).toHaveLength(1);
-    expect(seen[0]).not.toMatch(/Layla|Hassan|Cedar|cedar|@|0100|www\./);
-    expect(seen[0]).toContain("We run 3 clinics and want online booking.");
+    // Four requests left the app; none carries a way to reach the client.
+    expect(seen).toHaveLength(4);
+    for (const body of [...seen, JSON.stringify(payloads)]) {
+      expect(body).not.toMatch(/Layla|Hassan|Cedar|cedar|layla@|01005550101|www\./);
+      expect(body).toContain("We run 3 clinics and want online booking.");
+    }
   });
 });

@@ -143,6 +143,16 @@ alter table public.inquiry_preparations drop constraint if exists inquiry_prepar
 alter table public.inquiry_preparations add constraint inquiry_preparations_payload_shape
   check (last_payload is null or (jsonb_typeof(last_payload) = 'object' and char_length(last_payload::text) <= 40000));
 
+-- Automated preparation runs in four bounded steps (analysis, design, proposal,
+-- discovery). Their progress, so a retry repeats only what did not finish:
+-- {"v": 1, "tokens": n, "analysis": {...}, "steps": {"design": "done" | "failed"}, "failures": {...}}.
+-- Cleared when the pack finishes. Holds only the validated analysis of the
+-- scrubbed brief (never contact details) and step states.
+alter table public.inquiry_preparations add column if not exists pack_progress jsonb;
+alter table public.inquiry_preparations drop constraint if exists inquiry_preparations_progress_shape;
+alter table public.inquiry_preparations add constraint inquiry_preparations_progress_shape
+  check (pack_progress is null or (jsonb_typeof(pack_progress) = 'object' and char_length(pack_progress::text) <= 40000));
+
 alter table public.preparation_drafts add column if not exists artifact text not null default 'note';
 alter table public.preparation_drafts drop constraint if exists preparation_drafts_artifact_values;
 alter table public.preparation_drafts add constraint preparation_drafts_artifact_values check (artifact = any (array['note', 'design', 'proposal', 'discovery']));
@@ -169,6 +179,8 @@ from public.project_inquiries as i
 where i.id = prep.inquiry_id and prep.status = 'queued' and i.booking_status is distinct from 'booked';
 
 -- "Prepare now" and "retry": hand the pack back to automation, also before a booking.
+-- Steps that already finished are kept; steps that failed are tried again, with
+-- a fresh per-pack token allowance.
 create or replace function public.dashboard_retry_preparation(p_inquiry_id uuid)
 returns boolean
 language plpgsql
@@ -177,7 +189,10 @@ set search_path = ''
 as $$
 begin
   update public.inquiry_preparations
-  set status = 'queued', attempts = 0, last_error = null, next_attempt_at = now(), lease_expires_at = null, finished_at = null, updated_at = now()
+  set status = 'queued', attempts = 0, last_error = null, next_attempt_at = now(), lease_expires_at = null, finished_at = null, updated_at = now(),
+      pack_progress = case when pack_progress is null then null else jsonb_strip_nulls(jsonb_build_object(
+        'v', 1, 'tokens', 0, 'analysis', pack_progress -> 'analysis',
+        'steps', (select coalesce(jsonb_object_agg(e.key, e.value), '{}'::jsonb) from jsonb_each(coalesce(pack_progress -> 'steps', '{}'::jsonb)) as e where e.value = '"done"'::jsonb))) end
   where inquiry_id = p_inquiry_id and status in ('waiting_booking', 'failed', 'paused', 'manual', 'succeeded');
   return found;
 end;
@@ -263,9 +278,10 @@ begin
 end;
 $$;
 
--- The worker saves a generated pack: three versions, then the job succeeds.
--- Only a job the worker still holds (running) can be completed.
-create or replace function public.complete_pack(p_inquiry_id uuid, p_artifacts jsonb, p_source text, p_model text)
+-- The worker saves each generated artifact as soon as its step validates, so one
+-- step failing never discards another. Only a job the worker still holds
+-- (running) can save.
+create or replace function public.pack_save_generated(p_inquiry_id uuid, p_artifact text, p_content jsonb, p_source text, p_model text)
 returns integer
 language plpgsql
 security invoker
@@ -273,24 +289,54 @@ set search_path = ''
 as $$
 declare
   v_version integer;
-  v_artifact text;
 begin
-  if jsonb_typeof(p_artifacts) <> 'object' or not (p_artifacts ? 'design' and p_artifacts ? 'proposal' and p_artifacts ? 'discovery') then
-    raise exception 'pack_incomplete';
+  if p_artifact not in ('design', 'proposal', 'discovery') then
+    raise exception 'invalid_artifact';
   end if;
   perform 1 from public.inquiry_preparations as prep where prep.inquiry_id = p_inquiry_id and prep.status = 'running' for update;
   if not found then
     return null;
   end if;
-  select coalesce(max(draft.version), 0) into v_version from public.preparation_drafts as draft where draft.inquiry_id = p_inquiry_id;
-  foreach v_artifact in array array['design', 'proposal', 'discovery'] loop
-    v_version := v_version + 1;
-    insert into public.preparation_drafts (inquiry_id, version, artifact, content, source, model) values (p_inquiry_id, v_version, v_artifact, p_artifacts -> v_artifact, p_source, p_model);
-  end loop;
-  update public.inquiry_preparations
-  set status = 'succeeded', last_error = null, lease_expires_at = null, finished_at = now(), model = p_model, updated_at = now()
-  where inquiry_id = p_inquiry_id;
+  select coalesce(max(draft.version), 0) + 1 into v_version from public.preparation_drafts as draft where draft.inquiry_id = p_inquiry_id;
+  insert into public.preparation_drafts (inquiry_id, version, artifact, content, source, model) values (p_inquiry_id, v_version, p_artifact, p_content, p_source, p_model);
   return v_version;
+end;
+$$;
+
+create or replace function public.pack_progress_get(p_inquiry_id uuid)
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select pack_progress from public.inquiry_preparations where inquiry_id = p_inquiry_id;
+$$;
+
+create or replace function public.pack_progress_set(p_inquiry_id uuid, p_progress jsonb)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  update public.inquiry_preparations set pack_progress = p_progress, updated_at = now() where inquiry_id = p_inquiry_id and status = 'running';
+  return found;
+end;
+$$;
+
+-- All three artifacts saved: the job succeeds and its progress is cleared.
+create or replace function public.pack_finish(p_inquiry_id uuid, p_model text)
+returns boolean
+language plpgsql
+security invoker
+set search_path = ''
+as $$
+begin
+  update public.inquiry_preparations
+  set status = 'succeeded', last_error = null, lease_expires_at = null, finished_at = now(), model = p_model, pack_progress = null, updated_at = now()
+  where inquiry_id = p_inquiry_id and status = 'running';
+  return found;
 end;
 $$;
 
@@ -493,7 +539,7 @@ begin
     'public.crm_setting(text)', 'public.crm_get_settings()', 'public.crm_set_setting(text, text, text)',
     'public.crm_save_lead(uuid, jsonb, text)',
     'public.pack_save_artifact(uuid, text, jsonb, text, text)', 'public.pack_save_all(uuid, jsonb, text, text)',
-    'public.complete_pack(uuid, jsonb, text, text)', 'public.record_pack_payload(uuid, jsonb)',
+    'public.pack_save_generated(uuid, text, jsonb, text, text)', 'public.pack_progress_get(uuid)', 'public.pack_progress_set(uuid, jsonb)', 'public.pack_finish(uuid, text)', 'public.record_pack_payload(uuid, jsonb)',
     'public.pack_review_due(timestamptz)', 'public.pack_review_owner(text[])',
     'public.pack_on_booking_change()', 'public.pack_on_owners_change()',
     'public.crm_assign_follow_up(uuid, uuid, text, text)', 'public.crm_set_prospect_priority(uuid, text, text)',

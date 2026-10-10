@@ -17,7 +17,10 @@ type Signature = { params: [string, PgType][]; returnsSet?: boolean };
 export const SQL_FUNCTIONS = {
   claim_preparation_jobs: { params: [["p_provider", "text"], ["p_limit", "integer"], ["p_lease_seconds", "integer"]], returnsSet: true },
   claim_preparation_job_for: { params: [["p_provider", "text"], ["p_inquiry_id", "uuid"], ["p_lease_seconds", "integer"]], returnsSet: true },
-  complete_pack: { params: [["p_inquiry_id", "uuid"], ["p_artifacts", "jsonb"], ["p_source", "text"], ["p_model", "text"]] },
+  pack_save_generated: { params: [["p_inquiry_id", "uuid"], ["p_artifact", "text"], ["p_content", "jsonb"], ["p_source", "text"], ["p_model", "text"]] },
+  pack_progress_get: { params: [["p_inquiry_id", "uuid"]] },
+  pack_progress_set: { params: [["p_inquiry_id", "uuid"], ["p_progress", "jsonb"]] },
+  pack_finish: { params: [["p_inquiry_id", "uuid"], ["p_model", "text"]] },
   record_pack_payload: { params: [["p_inquiry_id", "uuid"], ["p_payload", "jsonb"]] },
   // The two-founder workflow (supabase/migrations/20261015 and 20261016).
   pack_save_artifact: { params: [["p_inquiry_id", "uuid"], ["p_artifact", "text"], ["p_content", "jsonb"], ["p_source", "text"], ["p_author", "text"]] },

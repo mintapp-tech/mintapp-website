@@ -14,7 +14,7 @@ export async function runConfiguredPreparation(limit = 3, env: Env = process.env
   const summary = await runPreparationBatch({
     store: createSqlPreparationStore(getSqlGateway()),
     generator: selection.generator,
-    monthlyTokenBudget: selection.monthlyTokenBudget,
+    monthlyTokenBudget: selection.monthlyTokenBudget, packTokenCap: selection.packTokenCap,
     limit,
   });
   return { ran: true, summary };
@@ -28,7 +28,7 @@ export async function kickPreparationAfterBooking(inquiryId: string, env: Env = 
   try {
     const selection = selectGenerator(env);
     if (!selection.enabled) return;
-    await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: selection.generator, monthlyTokenBudget: selection.monthlyTokenBudget, inquiryId });
+    await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: selection.generator, monthlyTokenBudget: selection.monthlyTokenBudget, packTokenCap: selection.packTokenCap, inquiryId });
   } catch {
     console.error("preparation_kick_failed");
   }

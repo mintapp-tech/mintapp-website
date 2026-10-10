@@ -95,7 +95,8 @@ describe("the booking-triggered review action", () => {
     book(A, "r-1", 5);
     svc(`select public.dashboard_retry_preparation(${lit(A)})`);
     svc(`select * from public.claim_preparation_job_for('mock', ${lit(A)}, 300)`);
-    svc(`select public.complete_pack(${lit(A)}, ${obj(PACK)}, 'mock', 'mock-v1')`);
+    for (const a of ["design", "proposal", "discovery"]) svc(`select public.pack_save_generated(${lit(A)}, '${a}', ${obj(PACK[a])}, 'mock', 'mock-v1')`);
+    svc(`select public.pack_finish(${lit(A)}, 'mock-v1')`);
     svc(`select public.apply_booking_rescheduled(${lit(A)}, 'r-1', 'r-2', now() + interval '9 days', 'Africa/Cairo', now() + interval '1 minute')`);
     assert.equal(reviewAction(A), `omar|${cairoDate(8)}|false|-`);
     svc(`select public.apply_booking_cancelled(${lit(A)}, 'r-2', now() + interval '9 days', 'Africa/Cairo', now() + interval '2 minutes')`);
@@ -132,20 +133,39 @@ describe("the booking-triggered review action", () => {
 });
 
 describe("the Pre-meeting Pack", () => {
-  test("a generated pack is three versions in one step, only from a job the worker holds", () => {
+  test("a generated pack is saved one artifact at a time, only from a job the worker holds, then finished", () => {
     insertInquiry(A);
-    assert.equal(svc(`select public.complete_pack(${lit(A)}, ${obj(PACK)}, 'codecraft', 'm')`), "", "not running: refused");
+    assert.equal(svc(`select public.pack_save_generated(${lit(A)}, 'design', ${obj(PACK.design)}, 'codecraft', 'm')`), "", "not running: refused");
+    assert.equal(svc(`select public.pack_progress_set(${lit(A)}, ${obj({ v: 1, tokens: 1, steps: {} })})`), "f", "not running: refused");
     svc(`select public.dashboard_retry_preparation(${lit(A)})`);
-    svc(`select * from public.claim_preparation_job_for('mock', ${lit(A)}, 300)`);
-    assert.match(fail(`select public.complete_pack(${lit(A)}, ${obj({ design: {} })}, 'codecraft', 'm')`), /pack_incomplete/);
-    assert.equal(svc(`select public.complete_pack(${lit(A)}, ${obj(PACK)}, 'codecraft', 'model-x')`), "3");
+    svc(`select * from public.claim_preparation_job_for('codecraft', ${lit(A)}, 300)`);
+    assert.match(fail(`select public.pack_save_generated(${lit(A)}, 'note', ${obj({})}, 'codecraft', 'm')`), /invalid_artifact/);
+    assert.equal(svc(`select public.pack_save_generated(${lit(A)}, 'design', ${obj(PACK.design)}, 'codecraft', 'model-x')`), "1");
+    assert.equal(svc(`select public.pack_progress_set(${lit(A)}, ${obj({ v: 1, tokens: 4200, steps: { analysis: "done", design: "done" } })})`), "t");
+    assert.match(fail(`select public.pack_progress_set(${lit(A)}, ${obj({ big: "x".repeat(40001) })})`), /progress_shape/);
+    for (const a of ["proposal", "discovery"]) svc(`select public.pack_save_generated(${lit(A)}, '${a}', ${obj(PACK[a])}, 'codecraft', 'model-x')`);
+    assert.equal(svc(`select public.pack_finish(${lit(A)}, 'model-x')`), "t");
     assert.equal(db.psql(`select string_agg(version || ':' || artifact || ':' || source || ':' || review_status, ',' order by version) from public.preparation_drafts where inquiry_id = ${lit(A)}`),
       "1:design:codecraft:draft,2:proposal:codecraft:draft,3:discovery:codecraft:draft");
     assert.equal(job(A), "succeeded");
+    assert.equal(svc(`select public.pack_progress_get(${lit(A)})`), "", "progress is cleared when the pack finishes");
+    assert.equal(svc(`select public.pack_finish(${lit(A)}, 'model-x')`), "f", "only once, from a running job");
     assert.equal(json(`select public.pack_latest(${lit(A)})`).design.unsupported, false);
     // A generated design that no library pattern fits is flagged for a hand-made design.
     svc(`select public.pack_save_artifact(${lit(A)}, 'design', ${obj({ format: "pack-design", blueprint: { pattern: null, unsupported_reason: "x" }, screens: [], user_flow: [] })}, 'manual', ${lit(OMAR)})`);
     assert.equal(json(`select public.pack_latest(${lit(A)})`).design.unsupported, true);
+  });
+
+  test("a founder's retry keeps the finished steps, retries the failed ones and resets the pack's token count", () => {
+    insertInquiry(A);
+    svc(`select public.dashboard_retry_preparation(${lit(A)})`);
+    svc(`select * from public.claim_preparation_job_for('codecraft', ${lit(A)}, 300)`);
+    const analysis = { language: "en", client_facts: [], assumptions: [], missing_information: [] };
+    svc(`select public.pack_progress_set(${lit(A)}, ${obj({ v: 1, tokens: 21000, analysis, steps: { analysis: "done", design: "failed", proposal: "done" }, failures: { design: "truncated" } })})`);
+    svc(`select public.fail_preparation(${lit(A)}, 'truncated', false, null)`);
+    assert.equal(job(A), "failed");
+    assert.equal(svc(`select public.dashboard_retry_preparation(${lit(A)})`), "t");
+    assert.deepEqual(json(`select public.pack_progress_get(${lit(A)})`), { v: 1, tokens: 0, analysis, steps: { analysis: "done", proposal: "done" } });
   });
 
   test("an edit is a new version of one artifact; every version is kept", () => {
@@ -277,7 +297,7 @@ describe("access", () => {
       assert.match(db.psqlExpectError(`set role ${role}; select count(*) from public.crm_settings`), /permission denied/);
       for (const call of [
         "public.crm_command_centre(current_date)", "public.lead_list('{}')", `public.lead_detail('${A}')`, "public.growth_prospect_list()", `public.pack_latest('${A}')`, "public.automation_paused()",
-        `public.complete_pack('${A}', '{}', 'x', 'x')`, `public.pack_save_all('${A}', '{}', 'manual', 'x')`, `public.crm_save_lead('${A}', '{}', 'x')`, "public.crm_set_setting('default_owner', 'omar', 'x')",
+        `public.pack_save_generated('${A}', 'design', '{}', 'x', 'x')`, `public.pack_progress_get('${A}')`, `public.pack_progress_set('${A}', '{}')`, `public.pack_finish('${A}', 'x')`, `public.pack_save_all('${A}', '{}', 'manual', 'x')`, `public.crm_save_lead('${A}', '{}', 'x')`, "public.crm_set_setting('default_owner', 'omar', 'x')",
       ]) {
         assert.match(db.psqlExpectError(`set role ${role}; select ${call}`), /permission denied/, `${role} ${call}`);
       }

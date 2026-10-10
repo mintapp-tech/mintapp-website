@@ -189,7 +189,7 @@ export async function prepareNowLeadAction(form: FormData) {
   await mutate(leadPath(inquiryId, "pack"), "prepared", async () => {
     if (!selection.enabled) throw notAllowed();
     await dashboard.retryPreparation(inquiryId);
-    await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: selection.generator, monthlyTokenBudget: selection.monthlyTokenBudget, inquiryId });
+    await runPreparationBatch({ store: createSqlPreparationStore(getSqlGateway()), generator: selection.generator, monthlyTokenBudget: selection.monthlyTokenBudget, packTokenCap: selection.packTokenCap, inquiryId });
   }, "pack-state");
 }
 

@@ -1,6 +1,6 @@
 import "server-only";
 import type { SqlGateway } from "@/lib/sql-gateway";
-import type { PreparationStore } from "./worker";
+import type { PackProgress, PreparationStore } from "./worker";
 import type { InquiryForPreparation } from "./input";
 
 // PreparationStore over the preparation database functions, through either
@@ -23,8 +23,15 @@ export function createSqlPreparationStore(sql: SqlGateway): PreparationStore {
       const redact = (await sql.call<string[] | null>("preparation_redactions", { p_inquiry_id: inquiryId })) ?? [];
       return { ...input, redact };
     },
-    complete: (inquiryId, content, source, model) => sql.call<number | null>("complete_preparation", { p_inquiry_id: inquiryId, p_content: content, p_source: source, p_model: model }),
-    completePack: (inquiryId, artifacts, source, model) => sql.call<number | null>("complete_pack", { p_inquiry_id: inquiryId, p_artifacts: artifacts, p_source: source, p_model: model }),
+    loadProgress: (inquiryId) => sql.call<PackProgress | null>("pack_progress_get", { p_inquiry_id: inquiryId }),
+    async saveProgress(inquiryId, progress) {
+      await sql.call("pack_progress_set", { p_inquiry_id: inquiryId, p_progress: progress });
+    },
+    saveArtifact: (inquiryId, artifact, content, source, model) =>
+      sql.call<number | null>("pack_save_generated", { p_inquiry_id: inquiryId, p_artifact: artifact, p_content: content, p_source: source, p_model: model }),
+    async finishPack(inquiryId, model) {
+      await sql.call("pack_finish", { p_inquiry_id: inquiryId, p_model: model });
+    },
     async recordPayload(inquiryId, payload) {
       await sql.call("record_pack_payload", { p_inquiry_id: inquiryId, p_payload: payload });
     },
