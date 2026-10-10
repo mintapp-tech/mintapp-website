@@ -9,7 +9,8 @@ import { Reveal } from "@/components/Reveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { INQUIRY_LIMITS } from "@/lib/inquiry-limits";
 import { PROJECT_TYPES, type ProjectType } from "@/lib/project-types";
-import { BUDGET_OPTIONS, TIMELINE_OPTIONS } from "@/lib/form-options";
+import { BUDGET_SCALES, TIMELINE_OPTIONS } from "@/lib/form-options";
+import { BUDGET_CURRENCIES, rememberBudgetCurrency, type BudgetCurrency } from "@/lib/budget-currency";
 import { EXISTING_LINK_MAX, normalizeExistingLink } from "@/lib/existing-link";
 import TurnstileWidget, { type TurnstileWidgetHandle } from "./TurnstileWidget";
 import ScheduleEmbed from "./ScheduleEmbed";
@@ -52,12 +53,17 @@ function readUtmParams() {
   return { utmSource, utmMedium, utmCampaign, utmContent };
 }
 
-export default function StartExperience() {
+// initialBudgetCurrency comes from the server for this one request (the visitor's
+// saved choice, else their country): the page is never served from a shared cache,
+// and the first render already shows the right scale, so nothing flips after load.
+export default function StartExperience({ initialBudgetCurrency = "USD" }: { initialBudgetCurrency?: BudgetCurrency }) {
   const { t, lang } = useLanguage();
   const prefersReducedMotion = usePrefersReducedMotion();
   const panelTransition = prefersReducedMotion ? { duration: 0 } : { duration: 0.5, ease: easeOut };
 
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [budgetCurrency, setBudgetCurrency] = useState<BudgetCurrency>(initialBudgetCurrency);
+  const [currencyChanged, setCurrencyChanged] = useState(false);
   const [honeypot, setHoneypot] = useState("");
   const [consent, setConsent] = useState(false);
   const [consentTouched, setConsentTouched] = useState(false);
@@ -156,6 +162,23 @@ export default function StartExperience() {
     });
   };
 
+  // Another currency is another scale: the earlier range no longer applies, so it
+  // is cleared (never translated) and the visitor chooses again. The choice is
+  // remembered for later visits.
+  const chooseBudgetCurrency = (value: BudgetCurrency) => {
+    if (value === budgetCurrency) return;
+    setBudgetCurrency(value);
+    setForm((prev) => ({ ...prev, budget: "" }));
+    setCurrencyChanged(true);
+    rememberBudgetCurrency(value);
+    setFieldErrors((prev) => {
+      if (!("budget" in prev)) return prev;
+      const next = { ...prev };
+      delete next.budget;
+      return next;
+    });
+  };
+
   const chooseProjectType = (value: ProjectType) => {
     setForm((prev) => ({ ...prev, projectType: value }));
     setFieldErrors((prev) => {
@@ -207,6 +230,7 @@ export default function StartExperience() {
           phone: form.phone.trim() || undefined,
           projectType: form.projectType || undefined,
           budget: form.budget || undefined,
+          budgetCurrency: form.budget ? budgetCurrency : undefined,
           timeline: form.timeline || undefined,
           existingUrl: form.existingUrl.trim() || undefined,
           desc: form.desc.trim(),
@@ -507,6 +531,24 @@ export default function StartExperience() {
                     )}
                   </fieldset>
 
+                  <fieldset className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 border-0 p-0" data-budget-currency={budgetCurrency}>
+                    <legend className="mb-2 p-0 text-[14px] font-medium text-ink">{t.start.fCurrency}</legend>
+                    <div className="inline-flex rounded-full border border-line bg-surface p-1">
+                      {BUDGET_CURRENCIES.map((c) => (
+                        <label
+                          key={c}
+                          className={`cursor-pointer rounded-full px-4 py-1.5 text-[13.5px] font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-mint-deep ${budgetCurrency === c ? "bg-dark text-white" : "text-ink-soft hover:text-ink"}`}
+                        >
+                          <input type="radio" name="budgetCurrency" value={c} checked={budgetCurrency === c} onChange={() => chooseBudgetCurrency(c)} className="sr-only" />
+                          {c === "USD" ? t.start.currencyUSD : t.start.currencyEGP}
+                        </label>
+                      ))}
+                    </div>
+                    <span role="status" aria-live="polite" className="text-[12.5px] text-ink-soft" data-currency-note>
+                      {currencyChanged ? t.start.currencyChanged : ""}
+                    </span>
+                  </fieldset>
+
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <label className="flex flex-col gap-2 text-[14px] font-medium text-ink">
                       {t.start.fBudget}
@@ -523,7 +565,7 @@ export default function StartExperience() {
                         <option value="" disabled>
                           {t.start.chooseOne}
                         </option>
-                        {BUDGET_OPTIONS.map((o) => (
+                        {BUDGET_SCALES[budgetCurrency].map((o) => (
                           <option key={o.value} value={o.value}>
                             {o[lang]}
                           </option>

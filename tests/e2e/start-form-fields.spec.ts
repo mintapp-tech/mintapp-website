@@ -8,8 +8,8 @@ import { installTurnstileMock, mockInquiriesRoute } from "./turnstile-mock";
 // not request anything from another origin because of these fields.
 
 const COPY = {
-  en: { budget: "Estimated budget", budgetHelp: "In US dollars, or the equivalent in your currency.", timeline: "Expected timeline", link: "Existing website or app", note: "Before describing your project", desc: "Project description", notSure: "Not sure yet", badUrl: "Enter a public website address" },
-  ar: { budget: "الميزانية التقديرية", budgetHelp: "بالدولار الأمريكي، أو ما يعادله بعملتك.", timeline: "المدة المتوقعة", link: "الموقع أو التطبيق الحالي", note: "قبل وصف مشروعك", desc: "وصف المشروع", notSure: "لست متأكدًا بعد", badUrl: "أدخل عنوان موقع عام" },
+  en: { budget: "Estimated budget", budgetHelp: "This helps us understand the suitable scope. It is not a final quote.", timeline: "Expected timeline", link: "Existing website or app", note: "Before describing your project", desc: "Project description", notSure: "Not sure yet", badUrl: "Enter a public website address" },
+  ar: { budget: "الميزانية التقديرية", budgetHelp: "يساعدنا ذلك على فهم النطاق المناسب، ولا يُعدّ عرض سعر نهائيًا.", timeline: "المدة المتوقعة", link: "الموقع أو التطبيق الحالي", note: "قبل وصف مشروعك", desc: "وصف المشروع", notSure: "لست متأكدًا بعد", badUrl: "أدخل عنوان موقع عام" },
 } as const;
 
 async function fillRequired(page: Page) {
@@ -40,7 +40,7 @@ for (const viewport of [
         await expect(budget.locator("option", { hasText: c.notSure })).toHaveCount(1);
         await expect(timeline.locator("option", { hasText: c.notSure })).toHaveCount(1);
         await expect(page.getByLabel(c.link)).not.toHaveAttribute("required", "");
-        // The estimate is in US dollars or the local equivalent, and the help is announced with the field.
+        // The ranges help with fit and are not a quote; the help is announced with the field.
         await expect(page.locator("#budget-help")).toHaveText(c.budgetHelp);
         await expect(budget).toHaveAttribute("aria-describedby", /budget-help/);
         await expect(budget.locator("option")).toHaveCount(7);
@@ -90,7 +90,7 @@ for (const viewport of [
         await expect.poll(() => requests.length).toBe(1);
         const body = JSON.parse(requests[0]);
         // Stable codes are sent, never the labels shown.
-        expect(body).toMatchObject({ budget: "5000_10000", timeline: "not_sure", existingUrl: "acme.example.com/app" });
+        expect(body).toMatchObject({ budget: "5000_10000", budgetCurrency: "USD", timeline: "not_sure", existingUrl: "acme.example.com/app" });
         expect(foreign).toEqual([]);
       });
 

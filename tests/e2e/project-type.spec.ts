@@ -101,7 +101,7 @@ for (const locale of ["en", "ar"] as const) {
       for (const [width, expectedRows] of [[320, 4], [360, 2], [390, 2], [768, 1], [1280, 1]] as const) {
         await page.setViewportSize({ width, height: 900 });
         await page.goto(`/${locale}/start`);
-        const labels = page.locator("fieldset label");
+        const labels = page.locator("fieldset:has(input[name=\"projectType\"]) label");
         const tops = await labels.evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().top)));
         expect(new Set(tops).size, `${width}px rows`).toBe(expectedRows);
         const clipped = await labels.evaluateAll((els) => els.filter((e) => e.scrollWidth > e.clientWidth + 1).length);
@@ -139,9 +139,9 @@ test("Arabic: the group reads right to left, first option on the right", async (
   await installTurnstileMock(page);
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto("/ar/start");
-  const lefts = await page.locator("fieldset label").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
+  const lefts = await page.locator("fieldset:has(input[name=\"projectType\"]) label").evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().left)));
   expect(lefts).toEqual([...lefts].sort((a, b) => b - a));
-  await expect(page.locator("fieldset label").first()).toContainText("موقع إلكتروني");
+  await expect(page.locator("fieldset:has(input[name=\"projectType\"]) label").first()).toContainText("موقع إلكتروني");
 });
 
 test.describe("reduced motion", () => {

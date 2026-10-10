@@ -135,6 +135,10 @@ export interface HomeContent {
     fDescPh: string;
     fBudget: string;
     fBudgetHelp: string;
+    fCurrency: string;
+    currencyUSD: string;
+    currencyEGP: string;
+    currencyChanged: string;
     fTimeline: string;
     chooseOne: string;
     fExistingLink: string;
