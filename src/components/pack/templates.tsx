@@ -1,14 +1,14 @@
 import type { ReactNode } from "react";
-import { FOUNDATIONS as F, type Frame } from "@/lib/pack/foundations";
-import type { TemplateId } from "@/lib/pack/patterns";
-import type { PackResponse } from "@/lib/pack/schema";
+import { FOUNDATIONS as F, type Frame, type TemplateId } from "@/lib/pack/library";
+import type { Pack } from "@/lib/pack/schema";
 
-// The trusted screen templates of the pattern library: one React component per
-// template id. They render the model's short text slots as plain text only; no
+// The trusted screen templates of the design library: one React component per
+// template id. They render the short text slots of a Pack as plain text only; no
 // markup, style, link or code from a model is ever interpreted. Images are
-// labelled placeholders (no external or unlicensed assets).
+// labelled placeholders (no external or unlicensed assets), and values in charts
+// and tiles are placeholders too: a concept never shows an invented figure.
 
-export type Screen = PackResponse["screens"][number];
+export type Screen = Pack["screens"][number];
 interface Props {
   screen: Screen;
   frame: Frame;
@@ -100,6 +100,20 @@ function Fields({ screen }: { screen: Screen }) {
           <p className={cx(F.type.small, "font-semibold")}>{item.title}</p>
           <div className={cx("mt-1 border px-3 py-2.5", F.radius.control, F.colour.line, F.colour.panel, F.type.small, F.colour.muted)}>{item.text}</div>
         </div>
+      ))}
+    </div>
+  );
+}
+
+// Filters above a list: the items' titles as chips (decorative, the list says the rest).
+function FilterBar({ screen }: { screen: Screen }) {
+  return (
+    <div aria-hidden className="flex flex-wrap gap-2">
+      <span className={cx("h-8 min-w-36 flex-1 border", F.radius.pill, F.colour.line, F.colour.panel)} />
+      {screen.items.slice(0, 3).map((item, i) => (
+        <span key={i} className={cx("inline-flex items-center border px-3", F.radius.pill, F.colour.line, F.type.small, i === 0 ? F.colour.accentText : F.colour.muted)}>
+          {item.title}
+        </span>
       ))}
     </div>
   );
@@ -227,6 +241,7 @@ const Dashboard = ({ screen, frame }: Props) => (
 const Table = ({ screen, frame }: Props) => (
   <AppChrome frame={frame} title={screen.title}>
     <Heading screen={screen} />
+    <FilterBar screen={screen} />
     <Rows screen={screen} />
     <Actions screen={screen} />
   </AppChrome>
@@ -282,12 +297,81 @@ const AppForm = ({ screen, frame }: Props) => (
   </AppChrome>
 );
 
+// A trend: the measures to watch, and bars that are placeholders (no values drawn).
+const TrendReport = ({ screen, frame }: Props) => (
+  <AppChrome frame={frame} title={screen.title}>
+    <Heading screen={screen} />
+    <div className={cx("border p-4", F.radius.card, F.colour.line, F.colour.panel)}>
+      <div aria-hidden className="flex h-32 items-end gap-2">
+        {[38, 52, 45, 63, 58, 71, 66, 80].map((h, i) => (
+          <span key={i} className={cx("flex-1", F.radius.control, i === 7 ? F.colour.accent : F.colour.placeholder)} style={{ height: `${h}%` }} />
+        ))}
+      </div>
+      <ul className="m-0 mt-3 flex list-none flex-wrap gap-x-5 gap-y-2 p-0">
+        {screen.items.map((item, i) => (
+          <li key={i} className="flex items-start gap-2">
+            <span aria-hidden className={cx("mt-1.5 size-2.5 flex-none", F.radius.pill, i === 0 ? F.colour.accent : F.colour.placeholder)} />
+            <span>
+              <span className={cx("block", F.type.small, "font-semibold")}>{item.title}</span>
+              <span className={cx("block", F.type.small, F.colour.muted)}>{item.text}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+    <Actions screen={screen} />
+  </AppChrome>
+);
+
+// Nothing here yet: what will appear, and the first actions.
+const EmptyState = ({ screen, frame }: Props) => {
+  const body = (
+    <div className={cx("mx-auto max-w-[420px] space-y-4 border border-dashed p-6 text-center", F.radius.card, F.colour.line)}>
+      <span aria-hidden className={cx("mx-auto block size-12", F.radius.pill, F.colour.placeholder)} />
+      <Heading screen={screen} />
+      {screen.items.length > 0 && (
+        <ul className="m-0 list-none space-y-2 p-0 text-start">
+          {screen.items.map((item, i) => (
+            <li key={i} className={cx(F.type.small)}>
+              <span className="font-semibold">{item.title}</span> <span className={F.colour.muted}>· {item.text}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+      <div className="flex justify-center">
+        <Actions screen={screen} full={frame === "phone"} />
+      </div>
+    </div>
+  );
+  return frame === "phone" ? <div className="p-4">{body}</div> : <AppChrome frame={frame} title={screen.title}>{body}</AppChrome>;
+};
+
+// A consequential step confirmed in a dialog over the dimmed screen.
+const Confirmation = ({ screen, frame }: Props) => (
+  <div className={cx("relative grid min-h-[320px] place-items-center p-4", F.colour.dim)}>
+    <div role="presentation" className={cx("w-full space-y-4 p-5", frame === "desktop" ? "max-w-[420px]" : "", F.radius.card, F.colour.panel, F.shadow.dialog)}>
+      <Heading screen={screen} />
+      {screen.items.length > 0 && (
+        <dl className={cx("m-0 divide-y border", F.radius.control, F.colour.line)}>
+          {screen.items.map((item, i) => (
+            <div key={i} className="flex justify-between gap-3 px-3 py-2">
+              <dt className={cx(F.type.small, F.colour.muted)}>{item.title}</dt>
+              <dd className={cx("m-0 text-end", F.type.small, "font-semibold")}>{item.text}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      <Actions screen={screen} full={frame === "phone"} />
+    </div>
+  </div>
+);
+
 // ----- Mobile screens (always drawn in a phone frame)
 
 const MobileList = ({ screen, frame }: Props) => (
   <div className="space-y-4 p-4">
     <Heading screen={screen} />
-    <div aria-hidden className={cx("h-9 border", F.radius.pill, F.colour.line, F.colour.panel)} />
+    <FilterBar screen={screen} />
     <Rows screen={screen} />
     <Actions screen={screen} full={frame === "phone"} />
   </div>
@@ -365,11 +449,14 @@ export const TEMPLATE_COMPONENTS: Record<TemplateId, (props: Props) => ReactNode
   faq: Faq,
   contact_cta: Cta,
   overview_dashboard: Dashboard,
+  trend_report: TrendReport,
   record_table: Table,
   record_detail: Detail,
   workflow_board: Board,
   schedule_calendar: Calendar,
   data_form: AppForm,
+  empty_state: EmptyState,
+  confirmation: Confirmation,
   onboarding: MobileOnboarding,
   home: MobileHome,
   list_search: MobileList,

@@ -1,20 +1,22 @@
 import { describe, expect, test } from "vitest";
 import { DESIGN_EXAMPLES } from "./examples";
-import { PATTERNS, type PatternId } from "./patterns";
-import { designProblems, renderableDesign } from "./schema";
+import { PATTERNS, PATTERN_IDS, TEMPLATE_IDS, type PatternId } from "./library";
+import { designProblems, proseProblems, renderableDesign } from "./schema";
 
 describe("the design library's synthetic examples", () => {
-  test("cover a service website, a marketplace, an operations dashboard, a booking app, a mobile app and an Arabic design", () => {
-    const patterns = DESIGN_EXAMPLES.map((e) => e.design.blueprint.pattern);
-    expect(patterns).toEqual(expect.arrayContaining(["studio_site", "marketplace_site", "operations_app", "scheduling_app", "mobile_app"]));
+  test("one example for every product pattern, every template but proof drawn somewhere, and an Arabic design", () => {
+    expect(DESIGN_EXAMPLES.map((e) => e.design.blueprint.pattern).sort()).toEqual([...PATTERN_IDS].sort());
+    const used = new Set(DESIGN_EXAMPLES.flatMap((e) => e.design.screens.map((s) => s.template)));
+    // Proof points need the client's own evidence, which an invented business does not have.
+    expect(TEMPLATE_IDS.filter((t) => !used.has(t))).toEqual(["proof"]);
     expect(DESIGN_EXAMPLES.some((e) => e.design.language === "ar")).toBe(true);
   });
 
-  test.each(DESIGN_EXAMPLES.map((e) => [e.id, e] as const))("%s is a valid library design that the renderer draws", (_id, e) => {
+  test.each(DESIGN_EXAMPLES.map((e) => [e.id, e] as const))("%s is a valid library design that the renderer draws, with no invented figure or claim", (_id, e) => {
     expect(renderableDesign(e.design)).not.toBeNull();
     const kind = PATTERNS[e.design.blueprint.pattern as PatternId].kind;
-    expect(designProblems({ design_blueprint: e.design.blueprint, screens: e.design.screens, user_flow: e.design.user_flow }, { brief: "", language: e.design.language, projectType: kind })).toEqual([]);
-    expect(e.design.screens.length).toBeGreaterThanOrEqual(2);
-    expect(e.design.screens.length).toBeLessThanOrEqual(4);
+    const ctx = { brief: "", language: e.design.language, projectType: kind };
+    expect(designProblems({ design_blueprint: e.design.blueprint, screens: e.design.screens, user_flow: e.design.user_flow }, ctx)).toEqual([]);
+    expect(proseProblems({ blueprint: e.design.blueprint, screens: e.design.screens, user_flow: e.design.user_flow }, ctx)).toEqual([]);
   });
 });
