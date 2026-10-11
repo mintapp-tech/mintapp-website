@@ -226,6 +226,10 @@ The client's acknowledgment email does not repeat the answers. Other export colu
 
 ## 6. The Pre-meeting Pack
 
+> **Superseded (11 Oct 2026)** by the structured Pack (format 2), the section-by-section
+> editor and the Direction Pack: see `docs/direction-pack.md`. This section describes
+> format 1, which stays readable in a version's history.
+
 The pack is three artifacts stored as versions in `preparation_drafts`:
 
 | Artifact | Content |
@@ -469,6 +473,11 @@ Positions map onto the stored stages without migrating them: New `new`; Reviewin
 nothing, so a detailed value is never overwritten.
 
 ## 9. The renderer and the pattern library
+
+> **Superseded (11 Oct 2026)**: the library now has 12 product patterns, 26 templates,
+> foundations, components, proposal patterns, discovery banks and quality rules
+> (`src/lib/pack/library/`, `docs/direction-pack.md`). The tables below are the first
+> version.
 
 - `src/lib/pack/patterns.ts`: 11 patterns (5 websites, 5 web apps, 1 mobile app) built
   from 23 templates; each pattern lists its templates and each template its maximum
