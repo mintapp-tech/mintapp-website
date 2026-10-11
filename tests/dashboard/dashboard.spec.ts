@@ -1,7 +1,8 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { DEMO_PORT } from "../../playwright.dashboard.config";
-import { signInAs } from "./helpers";
+import { approvePart, openEditor, signInAs } from "./helpers";
+import { craftsPack } from "./pack-fixtures";
 
 // The lead workflow with automated preparation OFF (the default): every pack is
 // prepared by hand or with the simulated generator. Synthetic fixture data
@@ -138,19 +139,34 @@ test("a lead with no booking is prepared by the simulated generator, made ready 
   }
   const adam = await signIn(browser, ADAM);
   await adam.goto(`/leads/${RESTAURANT}/pack`);
-  for (const name of ["design", "proposal", "discovery"]) await submit(adam, "Approve for the meeting", artifact(adam, name));
-  await expect(artifact(adam, "design").getByText("Last review change by Adam")).toBeVisible();
+  for (const name of ["design", "proposal", "discovery"]) {
+    await approvePart(artifact(adam, name));
+    await expect(artifact(adam, name).locator("[data-review]")).toHaveAttribute("data-review", "approved");
+  }
+  await expect(artifact(adam, "design").locator("[data-reviewer]")).toContainText("Adam");
   // No project type, so no library pattern fits: the design falls back to a person.
   await expect(adam.locator("#pack-state [data-pack-state]")).toHaveText("Needs manual action");
   await expect(adam.locator("[data-pack-explanation]")).toContainText("No pattern in the design library fits");
-  const design = artifact(adam, "design");
-  await design.getByText("Edit as text").click();
-  await design.locator("textarea").first().fill("User flow\n- Screen 1: the menu\n- Screen 2: the order\n\nScreen 1: Menu\nDishes with photos (placeholders) and prices from the restaurant.");
-  await submit(adam, "Save as a new version", design);
+  // Adam chooses a library pattern and draws two concept screens in the structured editor.
+  const editor = await openEditor(adam, "design", ["Product direction", "Concept screens", "Main user journey"]);
+  await editor.locator('[name="design_blueprint.pattern"]').selectOption("mobile_discovery");
+  for (const [i, [template, title, headline]] of [["home", "Menu", "Today's menu"], ["list_search", "Dishes", "Find a dish"]].entries()) {
+    await editor.locator(`[name="screens.${i}.template"]`).selectOption(template);
+    await editor.locator(`[name="screens.${i}.title"]`).fill(title);
+    await editor.locator(`[name="screens.${i}.purpose"]`).fill("Customers choose what to order.");
+    await editor.locator(`[name="screens.${i}.headline"]`).fill(headline);
+    await editor.locator(`[name="user_flow.${i}.step"]`).fill(i === 0 ? "A customer opens the menu." : "Finds a dish to order.");
+    await editor.locator(`[name="user_flow.${i}.screen"]`).selectOption(`s${i + 1}`);
+  }
+  await submit(adam, "Check and save as a new version", editor);
+  await expect(artifact(adam, "design").locator("[data-source]")).toHaveText("Edited by hand");
   await submit(adam, "Ready for review", artifact(adam, "design"));
   await omar.goto(`/leads/${RESTAURANT}/pack`);
-  await submit(omar, "Approve for the meeting", artifact(omar, "design"));
+  await approvePart(artifact(omar, "design"));
   await expect(omar.locator("#pack-state [data-pack-state]")).toHaveText("Approved for meeting");
+  // The mock generator's placeholder text is never presented to a client.
+  await expect(omar.locator("[data-direction-pack-card]")).toHaveAttribute("data-direction-pack-card", "not-ready");
+  await expect(omar.locator('[data-blocker="placeholder"]').first()).toBeVisible();
 });
 
 test("manual path: copy a prompt without contact details, write by hand, and figures the client never stated are flagged", async ({ browser }) => {
@@ -165,12 +181,24 @@ test("manual path: copy a prompt without contact details, write by hand, and fig
   expect(copied).toContain("three physiotherapy clinics");
   expect(copied).not.toMatch(/clinic@example\.com|Synthetic Clinic Group|Nile Physio|nile-physio/);
 
-  const proposal = artifact(page, "proposal");
-  await proposal.getByText("Edit", { exact: true }).click();
-  await proposal.locator("textarea").fill("Our understanding\nThree clinics want online booking.\n\nNext step\nPropose a $4,000 first phase.");
-  await submit(page, "Save as a new version", proposal);
+  // Written by hand in the structured editor: an invented figure is refused, the typing is kept.
+  const editor = await openEditor(page, "proposal", ["Recommended first release", "Proposal direction"]);
+  await editor.locator('[name="scope_direction.first_release.0"]').fill("Online booking for the three clinics");
+  await editor.locator('[name="proposal_direction.pattern"]').selectOption("web_app");
+  await editor.locator('[name="proposal_direction.approach"]').fill("Propose a $4,000 first phase.");
+  await editor.locator('[name="proposal_direction.phases.0.name"]').fill("First release");
+  await editor.locator('[name="proposal_direction.phases.0.summary"]').fill("Booking and the daily schedule.");
+  await editor.locator('[name="proposal_direction.deliverables.0"]').fill("A working web application");
+  await editor.locator('[name="proposal_direction.cost_schedule_factors.0"]').fill("How cancellations should work");
+  await submit(page, "Check and save as a new version", editor);
+  const refused = artifact(page, "proposal").locator("[data-editor-problems]");
+  await expect(refused).toContainText("A figure appears that the client never stated.");
+  await expect(artifact(page, "proposal").locator('[name="proposal_direction.approach"]')).toHaveValue("Propose a $4,000 first phase.");
+  await expect(artifact(page, "proposal").locator("[data-version]")).toHaveCount(0);
+  await artifact(page, "proposal").locator('[name="proposal_direction.approach"]').fill("Start with booking and the daily schedule.");
+  await submit(page, "Check and save as a new version", artifact(page, "proposal"));
   await expect(artifact(page, "proposal").locator("[data-source]")).toHaveText("Written by hand");
-  await expect(artifact(page, "proposal")).toContainText("the client did not state them: 4000");
+  await expect(artifact(page, "proposal").locator("[data-checks]")).toHaveAttribute("data-checks", "passed");
   // Only part of the pack exists: it says so in plain words.
   await expect(page.locator("#pack-state [data-pack-state]")).toHaveText("Needs manual action");
   await expect(page.locator("[data-pack-explanation]")).toContainText("Only part of the pack exists.");
@@ -199,7 +227,7 @@ test("founder approval: the writer cannot approve their own version, even with a
   const adam = await signIn(browser, ADAM);
   await adam.goto(`/leads/${CLINIC}/pack`);
   await expect(artifact(adam, "proposal").locator("[data-waiting-for-teammate]")).toHaveCount(0);
-  await submit(adam, "Approve for the meeting", artifact(adam, "proposal"));
+  await approvePart(artifact(adam, "proposal"));
   await expect(artifact(adam, "proposal").locator('[data-review="approved"]')).toHaveText("Approved for meeting");
 });
 
@@ -225,18 +253,22 @@ test("booking, reschedule, generator failure, quota pause, manual recovery and c
   await expect(page.getByRole("button", { name: /Resume automation/ })).toHaveCount(0);
 
   await submit(page, "Prepare by hand instead");
+  // Prepared with Claude by hand: the reply is pasted, checked and saved as the three parts.
+  await page.locator("#paste-pack").fill(JSON.stringify(craftsPack));
+  await submit(page, "Check and save the pack");
   for (const name of ["design", "proposal", "discovery"]) {
-    const part = artifact(page, name);
-    await part.locator("summary").first().click();
-    await part.locator("textarea").first().fill(`ملاحظات ${name}: منصة تربط الحرفيين بالعملاء.`);
-    await submit(page, "Save as a new version", part);
+    await expect(artifact(page, name).locator("[data-source]")).toHaveText("Written by hand");
     await submit(page, "Ready for review", artifact(page, name));
   }
   await expect(page.locator("[data-waiting-for-teammate]")).toHaveCount(3);
   const adam = await signIn(browser, ADAM);
   await adam.goto(`/leads/${CRAFTS}/pack`);
-  for (const name of ["design", "proposal", "discovery"]) await submit(adam, "Approve for the meeting", artifact(adam, name));
+  for (const name of ["design", "proposal", "discovery"]) {
+    await approvePart(artifact(adam, name));
+    await expect(artifact(adam, name).locator("[data-review]")).toHaveAttribute("data-review", "approved");
+  }
   await expect(adam.locator("#pack-state [data-pack-state]")).toHaveText("Approved for meeting");
+  await expect(adam.locator("[data-direction-pack-card]")).toHaveAttribute("data-direction-pack-card", "ready");
 
   await page.reload();
   await submit(page, "Simulate cancellation");

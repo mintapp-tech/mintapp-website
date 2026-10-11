@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { REVIEW_PORT } from "../../playwright.review-live.config";
-import { signInAs } from "../dashboard/helpers";
+import { approvePart, signInAs, writeMeetingPlan } from "../dashboard/helpers";
 import { adminClient, assertReviewProject, reviewProjectFromEnv } from "../../scripts/lib/review-auth.mjs";
 
 // The two-founder CRM (CRM Release 1 as Leads & Clients, the Pre-meeting Pack, the command
@@ -15,11 +15,17 @@ import { adminClient, assertReviewProject, reviewProjectFromEnv } from "../../sc
 const OMAR = "omar.review@example.com";
 const ADAM = "adam.review@example.com";
 const ORIGIN = `http://localhost:${REVIEW_PORT}`;
+// The run's tag is hidden: it lives in the email addresses and the booking id, which
+// lists never show, so names stay readable. supabase/review/review_tools.sql removes a
+// run by that tag (and every older live-test leftover) when it is installed.
 const tag = new Date().toISOString().replace(/\D/g, "").slice(2, 12);
-const COMPANY = `Review Co ${tag}`;
-const CLIENT = `Review Client ${tag}`;
-const CLIENT_AR = `عميل مراجعة ${tag}`;
-const EMAIL = `e2e-${tag}@example.com`;
+const COMPANY = "Juniper Physio Group";
+const CLIENT = "Rana Selim";
+const CLIENT_AR = "ليلى حسن";
+const PROSPECT = "Olive Grove Studios";
+const PROJECT = "Juniper booking system";
+const EMAIL = `${tag}-en@review-run.invalid`;
+const EMAIL_AR = `${tag}-ar@review-run.invalid`;
 const SHOTS = "review-evidence";
 
 test.describe.configure({ mode: "serial" });
@@ -37,13 +43,40 @@ const shot = (page: Page, name: string) => page.screenshot({ path: `${SHOTS}/${n
 
 let inquiry = "";
 let inquiryAr = "";
+let prospectId = "";
 let db: ReturnType<typeof adminClient>;
+let purge = false;
+
+// Removes live-test rows through the review-only tools when they are installed; without
+// them, hides this run's own rows (soft delete, archive, close) so lists stay readable.
+async function cleanUp(run: string | null) {
+  if (purge) {
+    const { error } = await db.rpc("review_purge", { p_apply: true, p_run: run });
+    expect(error).toBeNull();
+    return;
+  }
+  if (!run) return;
+  const at = new Date().toISOString();
+  const ids = [inquiry, inquiryAr].filter(Boolean);
+  if (ids.length) {
+    const { data: links } = await db.from("inquiry_crm").select("company_id, contact_id").in("inquiry_id", ids);
+    await db.from("project_inquiries").update({ deleted_at: at }).in("id", ids);
+    for (const l of links ?? []) {
+      if (l.company_id) await db.from("crm_companies").update({ archived_at: at }).eq("id", l.company_id);
+      if (l.contact_id) await db.from("crm_contacts").update({ archived_at: at }).eq("id", l.contact_id);
+    }
+  }
+  if (prospectId) await db.from("crm_prospects").update({ stage: "disqualified", closed_reason: "Synthetic live test", follow_up_action: null, follow_up_owner: null, follow_up_due_on: null }).eq("id", prospectId);
+}
 
 test.beforeAll(async () => {
   mkdirSync(SHOTS, { recursive: true });
   const project = reviewProjectFromEnv();
   await assertReviewProject(project);
   db = adminClient(project);
+  // Older live-test leftovers go first, when the tools exist (dry runs change nothing).
+  purge = !(await db.rpc("review_purge", { p_apply: false, p_run: null })).error;
+  await cleanUp(null);
   const make = async (name: string, lang: "en" | "ar", description: string, company: string | null, email: string) => {
     const { data, error } = await db
       .from("project_inquiries")
@@ -72,11 +105,15 @@ test.beforeAll(async () => {
     return data!.id as string;
   };
   inquiry = await make(CLIENT, "en", "We run 3 physiotherapy clinics in Cairo and want online booking for patients. Reach me at personal@review-check.invalid.", COMPANY, EMAIL);
-  inquiryAr = await make(CLIENT_AR, "ar", "لدينا مدرسة خاصة ونريد موقعًا يعرض معلومات المدرسة ويتيح التقديم أونلاين.", null, `e2e-ar-${tag}@example.com`);
+  inquiryAr = await make(CLIENT_AR, "ar", "لدينا مدرسة خاصة ونريد موقعًا يعرض معلومات المدرسة ويتيح التقديم أونلاين.", null, EMAIL_AR);
   // A booked meeting, as the Cal.com webhook would record it (a database function; Cal.com is not contacted).
   const start = new Date(Date.now() + 3 * 86_400_000).toISOString();
   const booked = await db.rpc("apply_booking_created", { p_inquiry_id: inquiry, p_uid: `review-${tag}`, p_start_time: start, p_timezone: "Africa/Cairo", p_event_at: new Date().toISOString() });
   expect(booked.error).toBeNull();
+});
+
+test.afterAll(async () => {
+  await cleanUp(tag);
 });
 
 test("the deployment answers only for the synthetic review project, and refuses a stranger", async ({ page, request }) => {
@@ -143,11 +180,10 @@ test("Pre-meeting Pack: automation is off, so the manual path is offered, versio
   const prompt = (await omar.locator("[data-manual-prompt]").textContent()) ?? "";
   expect(prompt).toContain("physiotherapy clinics");
   expect(prompt).not.toMatch(new RegExp(`${EMAIL}|personal@review-check|555 0199|${COMPANY}|${CLIENT}|review-check\\.invalid`));
-  const discovery = omar.locator('[data-artifact="discovery"]');
-  await discovery.locator("summary").first().click();
-  await discovery.locator("textarea").first().fill("Questions to ask\n- Who books today?\n- What happens when a patient cancels?");
-  await discovery.getByRole("button", { name: "Save as a new version" }).click();
+  // Written by hand in the structured editor, checked like automation, saved as a new version.
+  await writeMeetingPlan(omar);
   await expect(notice(omar)).toContainText("saved as a new version");
+  await expect(omar.locator('[data-artifact="discovery"] [data-checks]')).toHaveAttribute("data-checks", "passed");
   await omar.locator('[data-artifact="discovery"]').getByRole("button", { name: "Ready for review" }).click();
   await expect(omar.locator('[data-artifact="discovery"] [data-review]')).toHaveText("Ready for review");
   await expect(omar.locator('[data-artifact="discovery"] [data-waiting-for-teammate]')).toBeVisible();
@@ -155,7 +191,7 @@ test("Pre-meeting Pack: automation is off, so the manual path is offered, versio
   await adam.goto("/dashboard");
   await expect(adam.locator('[data-section="packs"]')).toContainText(COMPANY);
   await adam.goto(`/leads/${inquiry}/pack`);
-  await adam.locator('[data-artifact="discovery"]').getByRole("button", { name: "Approve for the meeting" }).click();
+  await approvePart(adam.locator('[data-artifact="discovery"]'));
   await expect(adam.locator('[data-artifact="discovery"] [data-review]')).toHaveText("Approved for meeting");
   await adam.goto("/dashboard");
   // Nothing is waiting for review any more, so the section may be gone entirely; it must not list this lead.
@@ -180,8 +216,9 @@ test("company and contact are created from the inquiry; contact details stay on 
   await page.goto(`/search?q=${encodeURIComponent(EMAIL.slice(0, 14))}`);
   await expect(page.locator('[data-results="inquiries"]')).toContainText(CLIENT);
   await expect(page.locator("body")).not.toContainText(EMAIL);
-  await page.goto("/companies");
-  await page.getByRole("link", { name: COMPANY }).click();
+  await page.goto(`/leads/${inquiry}`);
+  await openAdvanced(page);
+  await page.locator("[data-linked-company] a").first().click();
   await expect(page.locator("[data-contact]")).toContainText(EMAIL);
   await shot(page, "en-desktop-company");
   expect(await axe(page)).toEqual([]);
@@ -217,11 +254,11 @@ test("proposal and scope: written by Omar, approved by Adam, sent by hand, won, 
   await adam.getByRole("button", { name: "Save position" }).click();
   await adam.waitForURL(/n=stageChanged/);
   await adam.goto(`/leads/${inquiry}/deal`);
-  await adam.locator("#project-name").fill(`Project ${tag}`);
+  await adam.locator("#project-name").fill(PROJECT);
   await adam.getByRole("button", { name: "Create the project" }).click();
   await expect(notice(adam)).toContainText("The project was created.");
   await adam.locator("[data-project]").getByRole("link").click();
-  await expect(adam.getByRole("heading", { level: 1 })).toHaveText(`Project ${tag}`);
+  await expect(adam.getByRole("heading", { level: 1 })).toHaveText(PROJECT);
   await expect(panel(adam, "decisions")).toContainText("proposal v1 accepted");
   await expect(panel(adam, "history")).toContainText("stay on the inquiry");
   expect(await axe(adam)).toEqual([]);
@@ -232,7 +269,7 @@ test("proposal and scope: written by Omar, approved by Adam, sent by hand, won, 
 test("outreach: a prospect with a dated next action, a touch, and the hand-over to an inquiry", async ({ browser }) => {
   const page = await signIn(browser, OMAR);
   await page.goto("/outreach");
-  await page.locator("#new-company").fill(`Prospect ${tag}`);
+  await page.locator("#new-company").fill(PROSPECT);
   await page.locator("#new-pool").selectOption("trigger_startup");
   await page.locator("#new-owner").selectOption("omar");
   await page.locator("#new-contact").fill("Dana Lee");
@@ -241,6 +278,7 @@ test("outreach: a prospect with a dated next action, a touch, and the hand-over 
   for (const key of ["trigger", "problem", "access", "proof", "timing", "commercial", "geo"]) await page.locator(`#new-score-${key}`).selectOption("2");
   await page.getByRole("button", { name: "Save prospect" }).click();
   await expect(page).toHaveURL(/\/outreach\/[0-9a-f-]{36}\?n=created/);
+  prospectId = new URL(page.url()).pathname.split("/").pop()!;
   await page.locator("#t-summary").fill("Observation about the seed round");
   await page.getByRole("button", { name: "Record the touch" }).click();
   await page.waitForURL(/e=follow_up_required/);
@@ -254,7 +292,7 @@ test("outreach: a prospect with a dated next action, a touch, and the hand-over 
   await page.goto("/outreach");
   await expect(page.locator("body")).not.toContainText(`handle-${tag}`);
   await shot(page, "en-desktop-outreach");
-  await page.getByRole("link", { name: `Prospect ${tag}` }).click();
+  await page.goto(`/outreach/${prospectId}`);
   const target = await page.locator("#link-inquiry option", { hasText: CLIENT_AR }).getAttribute("value");
   await page.locator("#link-inquiry").selectOption(target!);
   await page.getByRole("button", { name: "Link", exact: true }).click();

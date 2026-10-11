@@ -52,9 +52,11 @@ const routesOf = (dir) => {
   return Object.values(manifest);
 };
 
-const ADMIN_ROUTE = /^\/(login|dashboard|pipeline|metrics|proposals|search|inquiries|outreach|companies|contacts|projects|export)(\/|$)/;
+const ADMIN_ROUTE = /^\/(login|dashboard|pipeline|metrics|proposals|search|inquiries|outreach|companies|contacts|projects|export|present|leads|settings|growth)(\/|$)/;
 
-const FORBIDDEN_IN_CLIENT = ["service_role", "SUPABASE_SECRET_KEY", "crm_save_company", "crm_export", "ADMIN_SESSION_SECRET", "CODECRAFT_API_KEY", "PREPARATION_WORKER_SECRET", "claim_preparation_job"];
+// Server secrets and database function names, and the review-only tools and synthetic
+// seed (test data must never ship to a browser either).
+const FORBIDDEN_IN_CLIENT = ["service_role", "SUPABASE_SECRET_KEY", "crm_save_company", "crm_export", "ADMIN_SESSION_SECRET", "CODECRAFT_API_KEY", "PREPARATION_WORKER_SECRET", "claim_preparation_job", "review_purge", "review-seed.invalid", "review-run.invalid", "pack_save_artifact"];
 
 function scanClient(dir) {
   const files = [...walk(join(dir, "static"))].filter((f) => /\.(js|css|html|json|txt|map)$/.test(f));
@@ -140,7 +142,7 @@ describe("admin build", () => {
 
   test("contains every CRM route", () => {
     const routes = routesOf(join(root, ".next-admin"));
-    for (const expected of ["/login", "/login/mfa", "/dashboard", "/inquiries", "/inquiries/[id]", "/pipeline", "/outreach", "/outreach/[id]", "/companies", "/companies/[id]", "/contacts/[id]", "/proposals", "/projects", "/projects/[id]", "/metrics", "/search", "/export/[kind]"]) {
+    for (const expected of ["/login", "/login/mfa", "/dashboard", "/inquiries", "/inquiries/[id]", "/pipeline", "/outreach", "/outreach/[id]", "/companies", "/companies/[id]", "/contacts/[id]", "/proposals", "/projects", "/projects/[id]", "/metrics", "/search", "/export/[kind]", "/leads/[id]/pack", "/present/[id]", "/settings/design-library"]) {
       assert.ok(routes.includes(expected), `${expected} is missing from the admin build`);
     }
     // The admin build may contain the public pages' files, but the proxy answers none of them (tested below).
@@ -163,7 +165,7 @@ describe("admin build", () => {
 
   test("on its host but without sign-in configured, nothing private is served and every page is private", async () => {
     await serve({ ...BASE_ENV, APP_SURFACE: "admin", NODE_ENV: "production", SUPABASE_URL: "", SUPABASE_PUBLISHABLE_KEY: "", ADMIN_HOSTS: "localhost", ADMIN_TEAM: "", ADMIN_SESSION_SECRET: "" }, 3293, async () => {
-      for (const path of ["/dashboard", "/inquiries", "/pipeline", "/outreach", "/companies", "/metrics", "/search?q=a"]) {
+      for (const path of ["/dashboard", "/inquiries", "/pipeline", "/outreach", "/companies", "/metrics", "/search?q=a", "/present/5eed0000-0000-4000-8000-000000000009", "/settings/design-library"]) {
         const res = await get(3293, path, { host: "localhost" });
         assert.ok([302, 303, 307, 308].includes(res.status), `${path} ${res.status}`);
         assert.match(res.headers.location, /\/login$/);

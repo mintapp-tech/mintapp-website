@@ -2,7 +2,7 @@ import { test, expect, type Browser, type Page } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 import { mkdirSync } from "node:fs";
 import { DEMO_PORT } from "../../playwright.leads.config";
-import { signInAs } from "./helpers";
+import { approvePart, openEditor, signInAs } from "./helpers";
 
 // The corrected two-founder workflow, on the synthetic fixture
 // (tests/fixtures/synthetic-inquiries.sql), signed in as both founders through the
@@ -77,16 +77,23 @@ test("settings: the default reviewer is chosen once, and automation is described
   await page.context().close();
 });
 
-test("design library: 11 patterns, 23 templates, and six synthetic examples drawn in both languages and on a phone", async ({ browser }) => {
-  test.setTimeout(240_000);
+test("design library: the whole standard, and one synthetic example per pattern drawn in both languages and on a phone", async ({ browser }) => {
+  test.setTimeout(420_000);
   const page = await signIn(browser, OMAR);
   await page.goto("/settings");
   await page.getByRole("link", { name: "Design library" }).click();
   await expect(page).toHaveURL(/\/settings\/design-library$/);
-  await expect(page.locator("[data-pattern-table] [data-pattern]")).toHaveCount(11);
-  await expect(page.locator("[data-template-table] [data-template]")).toHaveCount(23);
+  await expect(page.locator("[data-foundation]")).toHaveCount(10);
+  await expect(page.locator("[data-component]")).toHaveCount(13);
+  await expect(page.locator("[data-table=patterns] [data-pattern]")).toHaveCount(12);
+  await expect(page.locator("[data-table=templates] [data-template]")).toHaveCount(26);
+  await expect(page.locator("[data-proposal-pattern]")).toHaveCount(4);
+  await expect(page.locator("[data-bank]")).toHaveCount(12);
+  await expect(page.locator("[data-rule]")).toHaveCount(9);
+  await expect(page.locator("[data-rubric] li")).toHaveCount(10);
+  await expect(page.locator("[data-approval-checklist] li")).toHaveCount(7);
   await expect(page.locator("[data-manual-cases] li")).toHaveCount(5);
-  const examples = ["service-website", "marketplace", "operations-dashboard", "booking-application", "mobile-application", "arabic-website"];
+  const examples = ["service-website", "saas-marketing", "marketplace", "academy-website", "booking-website", "operational-dashboard", "crm-workflow", "marketplace-admin", "scheduling-system", "mobile-onboarding", "mobile-discovery", "mobile-transactions"];
   await expect(page.locator("[data-example]")).toHaveCount(examples.length);
   for (const id of examples) {
     await page.goto(`/settings/design-library?example=${id}`);
@@ -98,10 +105,11 @@ test("design library: 11 patterns, 23 templates, and six synthetic examples draw
     await shot(page, `library-${id}-en-desktop`);
   }
   // The Arabic example is drawn right to left inside its frames.
+  await page.goto("/settings/design-library?example=academy-website");
   await expect(page.locator("[data-design-preview] [dir=rtl]").first()).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ reducedMotion: "reduce" });
-  for (const id of ["mobile-application", "arabic-website", "operations-dashboard"]) {
+  for (const id of ["mobile-transactions", "academy-website", "operational-dashboard"]) {
     await page.goto(`/settings/design-library?example=${id}`);
     expect(await overflow(page), id).toBeLessThanOrEqual(0);
     await shot(page, `library-${id}-en-phone`);
@@ -254,7 +262,9 @@ test("Prepare now, then three artifacts reviewed separately: the proposal is lab
   await expect(omar.locator("#pack-state [data-pack-state]")).toHaveText("Ready for review");
   for (const name of ["design", "proposal", "discovery"]) await expect(artifact(omar, name).locator("[data-source]")).toHaveText("Automated (test generator)");
   await expect(artifact(omar, "proposal").locator("[data-proposal-label]")).toHaveText("Initial draft for discussion — not a final quote or commitment.");
-  await expect(artifact(omar, "discovery")).toContainText("Questions to ask");
+  await expect(artifact(omar, "discovery")).toContainText("Questions for the meeting");
+  // Every statement carries its basis.
+  await expect(artifact(omar, "design").locator('[data-basis="client_fact"]').first()).toBeVisible();
   // The sanitised input is inspectable (the mock generator sends nothing anywhere).
   await expect(omar.locator("[data-audit]")).toBeVisible();
 
@@ -276,11 +286,13 @@ test("Prepare now, then three artifacts reviewed separately: the proposal is lab
 
   // Omar rewrites the proposal by hand: a new version he cannot approve himself.
   await omar.goto(`/leads/${CLINIC}/pack`);
-  const proposal = artifact(omar, "proposal");
-  await proposal.getByText("Edit as text").click();
-  await proposal.locator("textarea").fill("Our understanding\nA booking system for three clinics.\n\nNext step\nAgree the first release in the meeting.");
-  await proposal.getByRole("button", { name: "Save as a new version" }).click();
+  const editor = await openEditor(omar, "proposal", ["Proposal direction"]);
+  await editor.locator('[name="proposal_direction.approach"]').fill("A booking system for three clinics, agreed in the meeting.");
+  await editor.getByRole("button", { name: "Check and save as a new version" }).click();
   await expect(notice(omar)).toContainText("saved as a new version");
+  // What changed since the generated version.
+  await artifact(omar, "proposal").locator("[data-changes] > summary").click();
+  await expect(artifact(omar, "proposal").locator("[data-added]")).toContainText("A booking system for three clinics, agreed in the meeting.");
   await expect(artifact(omar, "proposal").locator("[data-source]")).toHaveText("Edited by hand");
   await expect(artifact(omar, "proposal").locator("[data-history]")).toBeAttached();
   for (const name of ["design", "proposal", "discovery"]) {
@@ -290,13 +302,13 @@ test("Prepare now, then three artifacts reviewed separately: the proposal is lab
   await expect(artifact(omar, "proposal").locator("[data-waiting-for-teammate]")).toBeVisible();
   // Automated versions may be approved by either founder.
   for (const name of ["design", "discovery"]) {
-    await artifact(omar, name).getByRole("button", { name: "Approve for the meeting" }).click();
+    await approvePart(artifact(omar, name));
     await expect(artifact(omar, name).locator("[data-review]")).toHaveAttribute("data-review", "approved");
   }
 
   const adam = await signIn(browser, ADAM);
   await adam.goto(`/leads/${CLINIC}/pack`);
-  await artifact(adam, "proposal").getByRole("button", { name: "Approve for the meeting" }).click();
+  await approvePart(artifact(adam, "proposal"));
   await expect(artifact(adam, "proposal").locator("[data-review]")).toHaveAttribute("data-review", "approved");
   await expect(adam.locator("#pack-state [data-pack-state]")).toHaveText("Approved for meeting");
   expect(await axe(adam)).toEqual([]);
@@ -318,7 +330,7 @@ test("the manual Claude path: the prompt carries no contact details, and a paste
   await page.locator("#paste-pack").fill(JSON.stringify({ language: "en", client_facts: [{ text: "They have ten restaurants", evidence: "ten restaurants across Cairo" }] }));
   await page.getByRole("button", { name: "Check and save the pack" }).click();
   await expect(notice(page)).toContainText("The pack was not saved");
-  await expect(page.locator("[data-pack-problems]")).toContainText("The reply does not have the required structure.");
+  await expect(page.locator("[data-pack-problems]")).toContainText("The structure is incomplete or has something it should not.");
   await expect(artifact(page, "design").locator("[data-version]")).toHaveCount(0);
   await page.context().close();
 });

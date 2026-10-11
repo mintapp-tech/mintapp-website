@@ -9,7 +9,11 @@
 // local values, so it cannot reach the real Supabase project or send mail.
 // Ctrl+C stops everything and deletes the cluster.
 //
-//   node scripts/admin-local.mjs [--port 3200] [--live]
+//   node scripts/admin-local.mjs [--port 3200] [--live] [--seed review]
+//
+//   --seed review  loads the curated review dataset (supabase/review/: the review marker,
+//                  the review tools and seed_curated.sql) instead of the small synthetic
+//                  fixture, so the local server shows exactly what the review project will.
 //
 //   --live  runs the same server against the REAL Supabase Auth and database of the
 //           isolated synthetic review project (REVIEW_SUPABASE_* from .env.review.local,
@@ -74,8 +78,15 @@ if (live) {
 } else {
   db = await startCluster();
   for (const file of db.migrations) db.applyMigration(file);
-  // SYNTHETIC inquiries: a test fixture, not product data.
-  db.applyFile(join(process.cwd(), "tests", "fixtures", "synthetic-inquiries.sql"));
+  if (arg("--seed") === "review") {
+    // The curated, fictional review dataset, loaded exactly as the owner would load it.
+    db.applyFile(join(process.cwd(), "tests", "fixtures", "review-marker.sql"));
+    db.applyFile(join(process.cwd(), "supabase", "review", "review_tools.sql"));
+    db.applyFile(join(process.cwd(), "supabase", "review", "seed_curated.sql"));
+  } else {
+    // SYNTHETIC inquiries: a test fixture, not product data.
+    db.applyFile(join(process.cwd(), "tests", "fixtures", "synthetic-inquiries.sql"));
+  }
   fakeAuth = await startFakeAuth({ port: Number(arg("--auth-port")) || 0, users: [...team.map((m) => m.email), outsider].map((email) => ({ email, password })) });
   env = {
     ...process.env,
