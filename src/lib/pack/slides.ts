@@ -33,7 +33,8 @@ export interface SlideColumn {
 export type Slide =
   | { kind: "cover" }
   | { kind: "columns"; title: string; continued: boolean; columns: SlideColumn[]; banner?: boolean; empty?: string }
-  | { kind: "direction"; title: string; pattern: string; direction: string; hierarchy: string[]; responsive: string; brand: string }
+  // hierarchy is null when it continues on its own slide (it would not fit beside the direction).
+  | { kind: "direction"; title: string; pattern: string; direction: string; hierarchy: string[] | null; responsive: string; brand: string; large: boolean }
   | { kind: "screen"; title: string; index: number; total: number; screen: Pack["screens"][number] };
 
 // Column widths on the stage (px) and the height a column's items may use.
@@ -91,6 +92,19 @@ function columnsSlides(lang: Lang, title: string, columns: SlideColumn[], opts: 
 
 const tagged = (s: { text: string; basis: Tag }): SlideItem => ({ text: s.text, tag: s.basis });
 
+// The product direction: the direction itself (smaller type when long), how it works on
+// phones and desktops and the brand material on the left; the hierarchy on the right, or
+// on its own slide when it would not fit there.
+function directionSlides(lang: Lang, title: string, pattern: string, b: Pack["design_blueprint"], hierarchyHeading: string): Slide[] {
+  const large = b.direction.length <= 220;
+  const items = b.hierarchy.map((text) => ({ text }));
+  const fits = items.reduce((h, i) => h + itemHeight(i, 520, lang), 0) <= BODY - 60;
+  return [
+    { kind: "direction", title, pattern, direction: b.direction, hierarchy: fits ? b.hierarchy : null, responsive: b.responsive_notes, brand: b.brand_context, large },
+    ...(fits ? [] : columnsSlides(lang, title, [{ heading: hierarchyHeading, numbered: true, items }]).map((s) => (s.kind === "columns" ? { ...s, continued: true } : s))),
+  ];
+}
+
 export function buildSlides(pack: Pack): Slide[] {
   const lang = pack.language;
   const c = PRESENTATION_COPY[lang];
@@ -115,7 +129,7 @@ export function buildSlides(pack: Pack): Slide[] {
       { heading: L.assume, items: pack.assumptions.map((a) => ({ text: a.text, note: a.reason })) },
       { heading: L.learn, items: pack.missing_information.map((m) => ({ text: m })) },
     ]),
-    { kind: "direction", title: c.slides.direction, pattern: info ? info[lang] : "", direction: b.direction, hierarchy: b.hierarchy, responsive: b.responsive_notes, brand: b.brand_context },
+    ...directionSlides(lang, c.slides.direction, info ? info[lang] : "", b, L.hierarchy),
     ...pack.screens.map((screen, i) => ({ kind: "screen" as const, title: c.slides.screen(i + 1, pack.screens.length), index: i + 1, total: pack.screens.length, screen })),
     ...columnsSlides(lang, c.slides.flow, [{ heading: "", numbered: true, items: pack.user_flow.map((u) => ({ text: u.step, note: pack.screens[(order.get(u.screen) ?? 1) - 1]?.title })) }]),
     ...columnsSlides(lang, c.slides.scope, [

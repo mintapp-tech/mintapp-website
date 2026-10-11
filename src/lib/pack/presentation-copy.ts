@@ -16,7 +16,8 @@ export const PRESENTATION_COPY = {
     continued: "continued",
     slides: {
       understood: "What we understood",
-      people: "Users, problem and goals",
+      // The problem is on the slide before, with the business.
+      people: "Users and goals",
       factsAssumptions: "What you told us, and what we assume",
       direction: "Initial product direction",
       screen: (n: number, total: number) => `Concept screen ${n} of ${total}`,
@@ -63,6 +64,7 @@ export const PRESENTATION_COPY = {
     nothingAssumed: "Nothing assumed beyond what you told us.",
     noRisks: "No particular risks identified yet. We will check them with you in the meeting.",
     footer: (version: string) => `Mintapp · Direction Pack · ${version}`,
+    pageOf: (n: number, m: number) => `${n} / ${m}`,
   },
   ar: {
     brand: "Mintapp",
@@ -75,7 +77,7 @@ export const PRESENTATION_COPY = {
     continued: "تابع",
     slides: {
       understood: "ما فهمناه",
-      people: "المستخدمون والمشكلة والأهداف",
+      people: "المستخدمون والأهداف",
       factsAssumptions: "ما أخبرتنا به، وما نفترضه",
       direction: "الاتجاه المبدئي للمنتج",
       screen: (n: number, total: number) => `الشاشة المبدئية ${n} من ${total}`,
@@ -122,6 +124,7 @@ export const PRESENTATION_COPY = {
     nothingAssumed: "لا نفترض شيئًا غير ما أخبرتنا به.",
     noRisks: "لم نحدد مخاطر بعينها حتى الآن، وسنراجعها معك في الاجتماع.",
     footer: (version: string) => `Mintapp · حزمة الاتجاه · ${version}`,
+    pageOf: (n: number, m: number) => `${n} من ${m}`,
   },
 } satisfies Record<Lang, unknown>;
 

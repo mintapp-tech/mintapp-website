@@ -49,12 +49,12 @@ const CSS = `
 .dp-tag[data-tag=client_fact]{background:#e3f1ec;color:#1b5c4c}
 .dp-tag[data-tag=assumption]{background:#fbf0d9;color:#7a4b06}
 .dp-banner{flex:none;margin:-10px 0 18px;border-radius:10px;background:#fbf0d9;color:#5e3b05;padding:10px 16px;font-size:15px;font-weight:600}
-.dp-foot{position:absolute;inset-inline:64px;bottom:18px;display:flex;justify-content:space-between;font-size:12.5px;color:#7a837e}
+.dp-foot{position:absolute;inset-inline:64px;bottom:18px;display:flex;justify-content:space-between;font-size:12.5px;color:#5a635e}
 .dp-watermark{position:absolute;top:14px;inset-inline-end:18px;border-radius:9999px;background:#fde8e6;color:#8f2418;padding:4px 12px;font-size:12.5px;font-weight:700}
 .dp-frames{display:flex;align-items:flex-start;gap:28px;justify-content:flex-end}
-.dp-frame-desktop{zoom:.62;width:1040px;flex:none}
-.dp-frame-phone{zoom:.62;width:340px;flex:none}
-.dp-mobile .dp-frame-phone{zoom:.66}
+.dp-frame-desktop{zoom:.55;width:1040px;flex:none}
+.dp-frame-phone{zoom:.55;width:340px;flex:none}
+.dp-mobile .dp-frame-phone{zoom:.6}
 .dp-print-blocked{display:none}
 @media (max-width:699px){
  .dp-deck{padding:16px 16px 48px;gap:16px}
@@ -70,7 +70,6 @@ const CSS = `
  .dp-cover-title{font-size:34px!important}
  .dp-split{grid-template-columns:minmax(0,1fr)!important}
 }
-@page{size:1280px 720px;margin:0}
 @media print{
  html,body{background:#fff!important}
  .dp-root{background:#fff}
@@ -83,6 +82,9 @@ const CSS = `
  .dp-root[data-mode=preview] .dp-print-blocked{display:block;padding:40px;font-size:18px}
 }
 `;
+
+// One slide per printed page: 1280 x 720 CSS px is 13.33 x 7.5 inches (16:9).
+export const PAGE_16_9 = "@page{size:1280px 720px;margin:0}";
 
 function Head({ kicker, title }: { kicker: string; title: string }) {
   return (
@@ -134,7 +136,7 @@ export default function DirectionPack({ source, cover, ui }: { source: Direction
   const total = slides.length;
 
   const body = (slide: Slide, n: number) => {
-    const kicker = `${n} / ${total}`;
+    const kicker = c.pageOf(n, total);
     switch (slide.kind) {
       case "cover":
         return (
@@ -180,28 +182,30 @@ export default function DirectionPack({ source, cover, ui }: { source: Direction
           <>
             <Head kicker={kicker} title={slide.title} />
             <div className="dp-body">
-              <div className="dp-split grid h-full grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-12">
+              <div className={`dp-split grid h-full gap-12 ${slide.hierarchy ? "grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]" : "grid-cols-1"}`}>
                 <div className="min-w-0">
                   {slide.pattern && <p className="dp-tag m-0 mb-3 bg-[#e3f1ec] text-[#1b5c4c]">{`${c.labels.pattern}: ${slide.pattern}`}</p>}
-                  <p className="m-0 text-[25px] leading-[1.45] font-semibold">{slide.direction}</p>
-                  <p className="mt-6 mb-0 text-[15px] font-bold text-[#5a635e]">{c.labels.responsive}</p>
+                  <p className={`m-0 font-semibold ${slide.large ? "text-[25px] leading-[1.45]" : "text-[21px] leading-[1.5]"}`}>{slide.direction}</p>
+                  <p className="mt-5 mb-0 text-[15px] font-bold text-[#5a635e]">{c.labels.responsive}</p>
                   <p className="m-0 text-[17px] leading-relaxed">{slide.responsive}</p>
-                </div>
-                <div className="min-w-0">
-                  <h3 className="m-0 mb-3 text-[16px] font-bold text-[#5a635e]">{c.labels.hierarchy}</h3>
-                  <ol className="dp-list" data-numbered="">
-                    {slide.hierarchy.map((h, i) => (
-                      <li key={i} className="dp-item">
-                        <span aria-hidden className="dp-num">
-                          {i + 1}
-                        </span>
-                        {h}
-                      </li>
-                    ))}
-                  </ol>
-                  <p className="mt-5 mb-0 text-[15px] font-bold text-[#5a635e]">{c.labels.brand}</p>
+                  <p className="mt-4 mb-0 text-[15px] font-bold text-[#5a635e]">{c.labels.brand}</p>
                   <p className="m-0 text-[16px] leading-relaxed">{slide.brand}</p>
                 </div>
+                {slide.hierarchy && (
+                  <div className="min-w-0">
+                    <h3 className="m-0 mb-3 text-[16px] font-bold text-[#5a635e]">{c.labels.hierarchy}</h3>
+                    <ol className="dp-list" data-numbered="">
+                      {slide.hierarchy.map((h, i) => (
+                        <li key={i} className="dp-item">
+                          <span aria-hidden className="dp-num">
+                            {i + 1}
+                          </span>
+                          {h}
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                )}
               </div>
             </div>
           </>
@@ -240,6 +244,8 @@ export default function DirectionPack({ source, cover, ui }: { source: Direction
   return (
     <div className="dp-root" data-mode={mode}>
       <style>{CSS}</style>
+      {/* The printed page size, on its own so an A4 export can replace it (DeckControls). */}
+      <style id="dp-page">{PAGE_16_9}</style>
       <DeckControls total={total} mode={mode} labels={ui} dir={lang === "ar" ? "rtl" : "ltr"} />
       <main className="dp-deck" dir={lang === "ar" ? "rtl" : "ltr"} lang={lang} aria-label={c.title} data-direction-pack data-pack-version={`${versions.design}.${versions.proposal}.${versions.discovery}`}>
         {slides.map((slide, i) => (
@@ -249,10 +255,14 @@ export default function DirectionPack({ source, cover, ui }: { source: Direction
               {i > 0 && (
                 <footer className="dp-foot">
                   <span>{c.footer(version)}</span>
-                  <span>{`${i + 1} / ${total}`}</span>
+                  <span>{c.pageOf(i + 1, total)}</span>
                 </footer>
               )}
-              {mode === "preview" && <p className="dp-watermark m-0">{ui.previewBanner}</p>}
+              {mode === "preview" && (
+                <p className="dp-watermark m-0" dir="auto">
+                  {ui.previewBanner}
+                </p>
+              )}
             </div>
           </section>
         ))}

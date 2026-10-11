@@ -32,7 +32,7 @@ const n = (template: string, i: number) => template.replace("{n}", String(i + 1)
 const field = "w-full rounded-lg border border-ink/15 bg-surface px-3 py-2 text-[14px] leading-relaxed focus:border-ink/40 focus:outline-none";
 const label = "mb-1 block text-[12.5px] font-semibold text-ink-soft";
 
-// How many rows to show: every filled one, plus one empty to add, within the limits.
+// How many rows to show: every filled one, plus two empty to add, within the limits.
 function count(values: Fields, prefix: string, min: number, max: number) {
   let last = -1;
   const re = new RegExp(`^${prefix.replace(/\./g, "\\.")}\\.(\\d+)(\\.|$)`);
@@ -40,7 +40,7 @@ function count(values: Fields, prefix: string, min: number, max: number) {
     const m = re.exec(k);
     if (m && values[k]) last = Math.max(last, Number(m[1]));
   }
-  return Math.min(max, Math.max(min, last + 2, 1));
+  return Math.min(max, Math.max(min, last + 3, 2));
 }
 
 function Input({ name, spec, values, labels, options, id }: { name: string; spec: EditorInput; values: Fields; labels: EditorLabels; options: EditorOptions; id: string }) {

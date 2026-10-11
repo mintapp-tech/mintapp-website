@@ -43,6 +43,25 @@ export default function DeckControls({ total, mode, labels, dir }: { total: numb
     return () => window.removeEventListener("resize", fit);
   }, []);
 
+  // Concept screens are drawn at their natural size inside device frames; a long one is
+  // scaled down until its slide fits (measured, so nothing is ever clipped). Phones read
+  // the deck as a column and need no fitting.
+  useEffect(() => {
+    const fitFrames = () => {
+      if (window.innerWidth < 700) return;
+      for (const body of Array.from(document.querySelectorAll<HTMLElement>(".dp-slide[data-slide=screen] .dp-body"))) {
+        const frames = Array.from(body.querySelectorAll<HTMLElement>(".dp-frame-desktop, .dp-frame-phone"));
+        for (let pass = 0; pass < 4 && body.scrollHeight > body.clientHeight + 1; pass++) {
+          const ratio = (body.clientHeight / body.scrollHeight) * 0.97;
+          for (const frame of frames) frame.style.zoom = String(Number(getComputedStyle(frame).zoom || "1") * ratio);
+        }
+      }
+    };
+    fitFrames();
+    window.addEventListener("resize", fitFrames);
+    return () => window.removeEventListener("resize", fitFrames);
+  }, []);
+
   // Which slide is on screen.
   useEffect(() => {
     const slides = Array.from(document.querySelectorAll<HTMLElement>(".dp-slide"));
@@ -84,15 +103,13 @@ export default function DeckControls({ total, mode, labels, dir }: { total: numb
     const root = document.querySelector<HTMLElement>(".dp-root");
     if (!root) return;
     root.dataset.print = layout;
-    let style: HTMLStyleElement | null = null;
-    if (layout === "a4") {
-      style = document.createElement("style");
-      style.textContent = A4_STYLE;
-      document.head.append(style);
-    }
+    // The deck's page-size rule is rewritten in place, so it wins whatever the order of styles.
+    const page = document.getElementById("dp-page");
+    const before = page?.textContent ?? "";
+    if (page && layout === "a4") page.textContent = A4_STYLE;
     const done = () => {
       delete root.dataset.print;
-      style?.remove();
+      if (page) page.textContent = before;
       window.removeEventListener("afterprint", done);
     };
     window.addEventListener("afterprint", done);
