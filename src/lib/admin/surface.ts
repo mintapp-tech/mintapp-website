@@ -34,6 +34,7 @@ const UUID = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 //   /login, /login/mfa                 sign-in
 //   /dashboard                         the command centre
 //   /leads[/id[/pack[/design]|/deal|/activity]]  Leads & Clients and each lead
+//   /present/id                        the Direction Pack (full-screen presentation)
 //   /growth, /outreach[/id]            Growth: prospects
 //   /projects[/id]                     won work
 //   /settings[/design-library], /companies[/id]   the secondary menu
@@ -49,6 +50,7 @@ const ADMIN_PAGES = new RegExp(
     `leads/${UUID}`,
     `leads/${UUID}/(pack|deal|activity)`,
     `leads/${UUID}/pack/design`,
+    `present/${UUID}`,
     "growth",
     "settings",
     "settings/design-library",
