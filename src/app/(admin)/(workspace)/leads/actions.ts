@@ -9,10 +9,10 @@ import * as dashboard from "@/lib/dashboard/data";
 import { dealSchema, pauseSchema, positionSchema, prioritySchema, settingsSchema } from "@/lib/crm/schemas";
 import { stageToWrite } from "@/lib/crm/simple-stages";
 import { leadPath } from "@/lib/crm/lead-path";
+import { packContext, packInput } from "@/lib/crm/pack-input";
 import { mayApproveArtifact } from "@/lib/pack/state";
-import { renderableDesign, splitPack, validatePack } from "@/lib/pack/schema";
-import { buildGenerationInput } from "@/lib/preparation/input";
-import { knownDetails } from "@/lib/preparation/scrub";
+import { PROBLEM_KINDS, splitPack, validateArtifact, validatePack, type PackProblem } from "@/lib/pack/schema";
+import { contentFrom, fieldsFromForm, type Fields } from "@/lib/pack/editor";
 import { selectGenerator } from "@/lib/preparation/config";
 import { createSqlPreparationStore } from "@/lib/preparation/sql-store";
 import { runPreparationBatch } from "@/lib/preparation/worker";
@@ -90,7 +90,8 @@ export async function saveDealAction(form: FormData) {
 // ----- The Pre-meeting Pack
 
 // Review one artifact's version. Approval is by the founder who did not write it,
-// enforced here as well as in the page.
+// enforced here as well as in the page, and only after they confirm the approval
+// checklist.
 export async function packReviewAction(form: FormData) {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
@@ -100,41 +101,42 @@ export async function packReviewAction(form: FormData) {
     const draft = (await dashboard.getInquiry(inquiryId))?.drafts.find((d) => d.version === version);
     if (!draft || draft.artifact === "note") throw notAllowed();
     if (to === "approved" && !mayApproveArtifact(draft, member.email)) throw new z.ZodError([{ code: "custom", message: "teammate_approval_required", path: [], input: to }]);
+    if (to === "approved" && form.get("checked") !== "1") throw new z.ZodError([{ code: "custom", message: "checklist_required", path: [], input: to }]);
     if (!(await dashboard.review(inquiryId, version, to, member.email))) throw notAllowed();
   }, `artifact-${form.get("artifact") === "proposal" ? "proposal" : form.get("artifact") === "discovery" ? "discovery" : "design"}`);
 }
 
-// A founder's edit of one artifact, as text: always a new version.
-export async function packEditTextAction(form: FormData) {
+// What the structured editor gets back when a version is refused: the problems in
+// plain-language keys, and the fields as typed (so nothing is lost).
+export interface PackEditState {
+  problems: { kind: PackProblem["kind"]; section?: string }[];
+  fields: Fields | null;
+  attempt: number;
+}
+
+// A founder's edit of one part, section by section: built into the structured
+// format and checked exactly as automation is, then saved as a new version. A
+// refused edit keeps everything typed and says why.
+export async function packEditAction(previous: PackEditState, form: FormData): Promise<PackEditState> {
   const member = await requireAdmin();
   const inquiryId = uuid(form, "inquiryId");
   const which = artifact.parse(form.get("artifact"));
-  await mutate(leadPath(inquiryId, "pack"), "packSaved", async () => {
-    const body = z.string().trim().min(1).max(20000).parse(form.get("body"));
-    const source = form.get("source") === "manual" ? "manual" : "edited";
-    await crm.packSaveArtifact(inquiryId, which, { format: "text", body }, source, member.email);
-  }, `artifact-${which}`);
+  const fields = fieldsFromForm(form);
+  const [detail, lead] = await Promise.all([dashboard.getInquiry(inquiryId), crm.leadDetail(inquiryId)]);
+  if (!detail) return { problems: [{ kind: "schema" }], fields, attempt: previous.attempt + 1 };
+  const input = packInput(detail.inquiry, lead?.budget_currency);
+  const result = validateArtifact(which, contentFrom(which, input.language, fields), packContext(input));
+  if (!result.ok) {
+    // The section each problem belongs to, as the form names it (the stored design keeps its blueprint as "blueprint").
+    const sectionOf = (s: string | undefined) => (s === "blueprint" ? "design_blueprint" : s);
+    const problems = result.problems.map((p) => ({ kind: p.kind, section: sectionOf("section" in p ? p.section : "path" in p ? p.path.split(".")[0] : "screen" in p ? "screens" : undefined) }));
+    return { problems, fields, attempt: previous.attempt + 1 };
+  }
+  const source = form.get("source") === "manual" ? "manual" : "edited";
+  return mutate(leadPath(inquiryId, "pack"), "packSaved", () => crm.packSaveArtifact(inquiryId, which, result.content, source, member.email), `artifact-${which}`);
 }
 
-// The design's structured data, edited directly: accepted only if it is still a
-// library design (the same check the renderer applies).
-export async function packEditDesignAction(form: FormData) {
-  const member = await requireAdmin();
-  const inquiryId = uuid(form, "inquiryId");
-  await mutate(leadPath(inquiryId, "pack"), "packSaved", async () => {
-    let parsed: unknown;
-    try {
-      parsed = JSON.parse(z.string().max(40000).parse(form.get("body")));
-    } catch {
-      throw new z.ZodError([{ code: "custom", message: "design_invalid", path: [], input: null }]);
-    }
-    const design = renderableDesign({ format: "pack-design", ...(parsed as object) });
-    if (!design) throw new z.ZodError([{ code: "custom", message: "design_invalid", path: [], input: null }]);
-    await crm.packSaveArtifact(inquiryId, "design", design, "edited", member.email);
-  }, "artifact-design");
-}
-
-const PROBLEM_KINDS = new Set(["schema", "wrong_language", "ungrounded_fact", "unsupported_number", "commitment", "pattern_kind", "template_not_in_pattern", "screens", "flow_screen"]);
+const KNOWN_PROBLEMS = new Set<string>(PROBLEM_KINDS);
 
 // The manual Claude path: the whole reply pasted back, checked exactly as an
 // automated pack is (structure, language, grounded facts, no invented figures,
@@ -160,20 +162,10 @@ export async function packPasteAction(form: FormData) {
   // The same brief the copied prompt carried, so the facts are checked against what the founder sent.
   const [detail, lead] = await Promise.all([dashboard.getInquiry(inquiryId), crm.leadDetail(inquiryId)]);
   if (!detail) redirect(`${back}?e=failed#claude`);
-  const i = detail.inquiry;
-  const input = buildGenerationInput({
-    preferred_language: i.language,
-    project_type: i.project_type,
-    project_description: i.project_description,
-    budget_range: i.budget_range,
-    budget_currency: lead?.budget_currency ?? null,
-    timeline: i.timeline,
-    country: i.country,
-    redact: knownDetails({ client_name: i.client_name, company_name: i.company_name, email: i.email, phone: i.phone, company_url: i.company_url }),
-  });
-  const result = validatePack(json, { brief: input.brief, language: input.language, projectType: input.projectType });
+  const input = packInput(detail.inquiry, lead?.budget_currency);
+  const result = validatePack(json, packContext(input));
   if (!result.ok) {
-    const kinds = [...new Set(result.problems.map((p) => p.kind))].filter((k) => PROBLEM_KINDS.has(k)).slice(0, 6);
+    const kinds = [...new Set(result.problems.map((p) => p.kind))].filter((k) => KNOWN_PROBLEMS.has(k)).slice(0, 6);
     redirect(`${back}?e=pack_invalid&p=${kinds.join(",")}#claude`);
   }
   await mutate(back, "packSaved", async () => {

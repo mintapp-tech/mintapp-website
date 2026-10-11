@@ -6,3 +6,5 @@ export type LeadTab = (typeof LEAD_TABS)[number];
 
 export const leadPath = (inquiryId: string, tab: LeadTab = "overview") => (tab === "overview" ? `/leads/${inquiryId}` : `/leads/${inquiryId}/${tab}`);
 export const designPath = (inquiryId: string, version: number) => `/leads/${inquiryId}/pack/design?v=${version}`;
+// The Direction Pack: the approved presentation, or the founders' preview of the latest versions.
+export const presentPath = (inquiryId: string, preview = false) => `/present/${inquiryId}${preview ? "?mode=preview" : ""}`;

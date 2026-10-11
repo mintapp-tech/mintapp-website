@@ -132,7 +132,9 @@ describe("the four steps", () => {
   const input = buildGenerationInput(clinic.inquiry);
   const ctx = { brief: input.brief, language: input.language, projectType: input.projectType };
   const pack = clinicPack();
-  const analysis = { language: pack.language, client_facts: pack.client_facts, assumptions: pack.assumptions, missing_information: pack.missing_information };
+  const analysis = { language: pack.language, client_facts: pack.client_facts, assumptions: pack.assumptions, missing_information: pack.missing_information, business_context: pack.business_context, users: pack.users, problem: pack.problem, goals: pack.goals };
+  const scope = { scope_direction: pack.scope_direction, proposal_direction: pack.proposal_direction };
+  const meeting = { discovery_questions: pack.discovery_questions, decisions_needed: pack.decisions_needed, risks: pack.risks, meeting_agenda: pack.meeting_agenda, next_steps: pack.next_steps };
 
   test("each step's request carries only its own instructions, and the later ones the checked analysis", () => {
     const first = stepMessages("analysis", input, {});
@@ -140,7 +142,9 @@ describe("the four steps", () => {
     expect(first[0].content).not.toContain('"design_blueprint"');
     expect(first[1].content).toContain("three physiotherapy clinics");
     const design = stepMessages("design", input, { analysis });
-    expect(design[0].content).toContain("Pattern catalogue:");
+    expect(design[0].content).toContain("Product pattern catalogue:");
+    expect(stepMessages("proposal", input, { analysis })[0].content).toContain("Proposal pattern catalogue:");
+    expect(stepMessages("discovery", input, { analysis })[0].content).toContain("Discovery banks:");
     expect(design[1].content).toContain("already checked");
     expect(() => stepMessages("proposal", input, {})).toThrow("analysis_required");
     expect(Object.values(STEP_MAX_TOKENS).every((n) => n >= 2048 && n <= 8000)).toBe(true);
@@ -150,18 +154,21 @@ describe("the four steps", () => {
     expect(validateStep("analysis", analysis, ctx).ok).toBe(true);
     expect(validateStep("analysis", { ...analysis, client_facts: [{ text: "They have ten clinics", evidence: "We run ten clinics" }] }, ctx)).toMatchObject({ ok: false });
     expect(validateStep("design", { language: "en", design_blueprint: pack.design_blueprint, screens: pack.screens, user_flow: pack.user_flow }, ctx).ok).toBe(true);
-    const proposal = { language: "en", proposal: { ...pack.proposal, next_step: "Quote $9,999." } };
+    expect(validateStep("proposal", { language: "en", ...scope }, ctx).ok).toBe(true);
+    const proposal = { language: "en", ...scope, proposal_direction: { ...pack.proposal_direction, approach: "Quote $9,999." } };
     expect(validateStep("proposal", proposal, ctx)).toMatchObject({ ok: false, problems: [{ kind: "unsupported_number" }] });
-    expect(validateStep("discovery", { language: "ar", discovery_questions: pack.discovery_questions, risks: [], client_decisions: [], meeting_agenda: pack.meeting_agenda, confirm_before_pricing: pack.confirm_before_pricing }, ctx)).toMatchObject({ ok: false, problems: [{ kind: "wrong_language" }] });
+    expect(validateStep("proposal", { language: "en", ...scope, proposal_direction: { ...pack.proposal_direction, pattern: "mobile_app" } }, ctx)).toMatchObject({ ok: false, problems: [{ kind: "proposal_kind" }] });
+    expect(validateStep("discovery", { language: "en", ...meeting }, ctx).ok).toBe(true);
+    expect(validateStep("discovery", { language: "ar", ...meeting }, ctx)).toMatchObject({ ok: false, problems: [{ kind: "wrong_language" }] });
     // Unknown keys are refused.
-    expect(validateStep("proposal", { language: "en", proposal: pack.proposal, price: "1" }, ctx).ok).toBe(false);
+    expect(validateStep("proposal", { language: "en", ...scope, price: "1" }, ctx).ok).toBe(false);
   });
 
   test("the three artifacts assembled from the steps match the single-object pack", () => {
     const whole = splitPack(pack);
     expect(artifactFor("design", { design_blueprint: pack.design_blueprint, screens: pack.screens, user_flow: pack.user_flow }, analysis)).toEqual(whole.design);
-    expect(artifactFor("proposal", { proposal: pack.proposal }, analysis)).toEqual(whole.proposal);
-    expect(artifactFor("discovery", pack, analysis)).toEqual(whole.discovery);
+    expect(artifactFor("proposal", scope, analysis)).toEqual(whole.proposal);
+    expect(artifactFor("discovery", meeting, analysis)).toEqual(whole.discovery);
   });
 });
 
@@ -320,10 +327,10 @@ function fakeStore(over: Partial<PreparationStore> = {}) {
 
 const pack = clinicPack();
 const STEP_RAW: Record<PackStep, unknown> = {
-  analysis: { language: "en", client_facts: pack.client_facts, assumptions: pack.assumptions, missing_information: pack.missing_information },
+  analysis: { language: "en", client_facts: pack.client_facts, assumptions: pack.assumptions, missing_information: pack.missing_information, business_context: pack.business_context, users: pack.users, problem: pack.problem, goals: pack.goals },
   design: { language: "en", design_blueprint: pack.design_blueprint, screens: pack.screens, user_flow: pack.user_flow },
-  proposal: { language: "en", proposal: pack.proposal },
-  discovery: { language: "en", discovery_questions: pack.discovery_questions, risks: pack.risks, client_decisions: pack.client_decisions, meeting_agenda: pack.meeting_agenda, confirm_before_pricing: pack.confirm_before_pricing },
+  proposal: { language: "en", scope_direction: pack.scope_direction, proposal_direction: pack.proposal_direction },
+  discovery: { language: "en", discovery_questions: pack.discovery_questions, decisions_needed: pack.decisions_needed, risks: pack.risks, meeting_agenda: pack.meeting_agenda, next_steps: pack.next_steps },
 };
 const ok = (step: PackStep, total = 1000): GenerationResult => ({ ok: true, raw: STEP_RAW[step], model: "m", usage: { promptTokens: total / 2, completionTokens: total / 2, totalTokens: total, reported: true } });
 // A generator whose answer per step can be overridden; it records which steps were asked.
@@ -392,7 +399,7 @@ describe("worker: four bounded steps", () => {
 
   test("an answer that breaks the rules is never saved and not retried automatically", async () => {
     const { store, calls } = fakeStore();
-    const bad: GenerationResult = { ok: true, raw: { language: "en", proposal: { ...pack.proposal, next_step: "Quote $9,999." } }, model: "m", usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2, reported: true } };
+    const bad: GenerationResult = { ok: true, raw: { language: "en", scope_direction: pack.scope_direction, proposal_direction: { ...pack.proposal_direction, approach: "Quote $9,999." } }, model: "m", usage: { promptTokens: 1, completionTokens: 1, totalTokens: 2, reported: true } };
     await runPreparationBatch({ store, generator: stepGenerator({ proposal: bad }).generator, monthlyTokenBudget: 600_000 });
     expect(calls).not.toContain("save:proposal:codecraft");
     expect(calls).toContain("usage:proposal:invalid_unsupported_number:2");

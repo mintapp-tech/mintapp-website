@@ -3,6 +3,7 @@
 // English and Arabic (RTL); a native reader should review the Arabic before the
 // team relies on it daily.
 
+import { ARTIFACT_NAMES } from "@/lib/pack/labels";
 import type { ManualReason, PackState } from "@/lib/pack/state";
 
 type Position = "new" | "reviewing" | "meeting" | "qualified" | "proposal" | "decision" | "won" | "lost" | "closed";
@@ -41,7 +42,7 @@ const en = {
     needs_attention: "Needs attention",
   } as Record<PackState, string>,
   waitingBooking: "Waiting for booking",
-  artifacts: { design: "Initial design", proposal: "Draft proposal", discovery: "Discovery pack" } as Record<ArtifactName, string>,
+  artifacts: ARTIFACT_NAMES.en as Record<ArtifactName, string>,
   reviewStatus: { draft: "Draft", in_review: "Ready for review", approved: "Approved for meeting", superseded: "Earlier version" } as Record<string, string>,
   sources: { mock: "Automated (test generator)", codecraft: "Automated", manual: "Written by hand", edited: "Edited by hand" } as Record<string, string>,
   contract: { not_started: "Not started", sent: "Sent for signature", signed: "Signed", declined: "Declined" } as Record<string, string>,
@@ -171,18 +172,8 @@ const en = {
       withdraw: "Withdraw approval",
       waitingForTeammate: "Waiting for the other founder to approve.",
       openPreview: "Open the design preview",
-      edit: "Edit",
-      editHelp: (v: number) => `Saving creates version ${v}. Earlier versions are kept.`,
-      editText: "Edit as text",
-      editDesignData: "Edit the design data (JSON)",
-      editDesignDataHelp: "Advanced. Only library patterns and templates are accepted; anything else is refused.",
-      writeDesign: "Write the design notes by hand",
-      writeDesignHelp: "For a project no library pattern fits: the user flow, two to four screens and their hierarchy, in words.",
-      saveVersion: "Save as a new version",
       history: (n: number) => `Earlier versions (${n})`,
       proposalLabel: "Initial draft for discussion — not a final quote or commitment.",
-      checkFigures: (list: string) => `Check these figures: the client did not state them: ${list}`,
-      unsupported: "No library pattern fits this design.",
       claude: {
         title: "Prepare it with Claude (manual)",
         steps: [
@@ -194,7 +185,7 @@ const en = {
         copied: "Copied",
         copyFailed: "Copy failed. Select the text instead.",
         paste: "Paste Claude's reply",
-        pasteHelp: "The reply is checked before anything is saved: the structure, the language, that every client fact quotes the brief, and that no price, date or figure was invented.",
+        pasteHelp: "The reply is checked before anything is saved, exactly as automation is: the structure, the language, that every 'client said' item quotes the brief, no invented figures, promises or claims, and library patterns only.",
         save: "Check and save the pack",
         promptLabel: "Prompt",
       },
@@ -203,17 +194,6 @@ const en = {
         help: "The exact sanitised input of the last automated run. It never contains the client's name, email, phone, company or link.",
         none: "Nothing has been sent for this lead.",
       },
-      problems: {
-        schema: "The reply does not have the required structure.",
-        wrong_language: "The reply is in the wrong language.",
-        ungrounded_fact: "A client fact does not quote the brief.",
-        unsupported_number: "A figure appears that the client never stated.",
-        commitment: "The reply makes a promise the team does not make before a meeting.",
-        pattern_kind: "The design pattern does not suit the project type the client chose.",
-        template_not_in_pattern: "A screen uses a template outside its pattern.",
-        screens: "The screens or the user flow are incomplete.",
-        flow_screen: "The user flow points at a screen that does not exist.",
-      } as Record<string, string>,
     },
     design: {
       title: "Initial design",
@@ -221,6 +201,7 @@ const en = {
       notRenderable: "This version cannot be drawn: it is not a library design. Its notes are shown on the Pre-meeting Pack tab.",
       labels: {
         pattern: "Pattern",
+        direction: "Direction",
         audience: "Audience",
         goal: "Primary goal",
         hierarchy: "Content hierarchy",
@@ -268,7 +249,7 @@ const en = {
   },
   library: {
     title: "Design library",
-    intro: "What an initial design can be drawn from: 11 patterns built from 23 trusted screen templates. The examples are invented businesses written by hand; no client data and no AI service.",
+    intro: "Mintapp's design standard, used by automated and manual preparation alike: foundations, components, 12 product patterns built from 26 trusted screen templates, proposal patterns, discovery topics, quality rules and the review rubric. The examples are invented businesses written by hand; no client data and no AI service.",
     patterns: "Patterns",
     columns: { id: "Pattern", kind: "Category", name: "Name (English / Arabic)", use: "Intended use", templates: "Screen templates" },
     kinds: { website: "Website", web_app: "Web application", mobile_app: "Mobile application" } as Record<string, string>,
@@ -381,7 +362,7 @@ const ar: LeadMessages = {
     needs_attention: "تحتاج إلى انتباه",
   },
   waitingBooking: "بانتظار الحجز",
-  artifacts: { design: "التصميم المبدئي", proposal: "مسودة العرض", discovery: "حزمة الاستكشاف" },
+  artifacts: ARTIFACT_NAMES.ar,
   reviewStatus: { draft: "مسودة", in_review: "جاهزة للمراجعة", approved: "معتمدة للاجتماع", superseded: "نسخة سابقة" },
   sources: { mock: "آلي (مولّد تجريبي)", codecraft: "آلي", manual: "مكتوب يدويًا", edited: "معدّل يدويًا" },
   contract: { not_started: "لم يبدأ", sent: "أُرسل للتوقيع", signed: "موقَّع", declined: "مرفوض" },
@@ -511,18 +492,8 @@ const ar: LeadMessages = {
       withdraw: "سحب الاعتماد",
       waitingForTeammate: "بانتظار اعتماد الشريك الآخر.",
       openPreview: "فتح معاينة التصميم",
-      edit: "تعديل",
-      editHelp: (v: number) => `الحفظ يُنشئ النسخة ${v}، وتبقى النسخ السابقة محفوظة.`,
-      editText: "تعديل كنص",
-      editDesignData: "تعديل بيانات التصميم (JSON)",
-      editDesignDataHelp: "متقدّم. لا تُقبل إلا أنماط المكتبة وقوالبها، ويُرفض ما سواها.",
-      writeDesign: "كتابة ملاحظات التصميم يدويًا",
-      writeDesignHelp: "لمشروع لا يناسبه أي نمط في المكتبة: مسار المستخدم، ومن شاشتين إلى أربع شاشات وترتيب محتواها، بالكلمات.",
-      saveVersion: "حفظ كنسخة جديدة",
       history: (n: number) => `النسخ السابقة (${n})`,
       proposalLabel: "مسودة أولية للنقاش — ليست عرض سعر نهائيًا ولا التزامًا.",
-      checkFigures: (list: string) => `تحقّق من هذه الأرقام، فالعميل لم يذكرها: ${list}`,
-      unsupported: "لا يناسب أيُّ نمط في المكتبة هذا التصميم.",
       claude: {
         title: "التحضير عبر Claude (يدويًا)",
         steps: ["انسخ التعليمات. تحتوي على الوصف بعد حذف بيانات التواصل، وعلى القواعد.", "الصقها في محادثة Claude الخاصة بك وأرسلها.", "انسخ ردّ Claude كاملًا (كائن JSON) والصقه أدناه."],
@@ -530,7 +501,7 @@ const ar: LeadMessages = {
         copied: "تم النسخ",
         copyFailed: "تعذّر النسخ. حدّد النص بدلًا من ذلك.",
         paste: "الصق ردّ Claude",
-        pasteHelp: "يُفحص الردّ قبل حفظ أي شيء: البنية واللغة، وأن كل حقيقة عن العميل مقتبسة من الوصف، وأنه لم يُخترع أي سعر أو تاريخ أو رقم.",
+        pasteHelp: "يُفحص الردّ قبل حفظ أي شيء كما يُفحص الإعداد الآلي تمامًا: البنية واللغة، وأن كل ما وُسم «قاله العميل» مقتبس من طلبه، ولا أرقام أو وعود أو ادعاءات مختلَقة، وأنماط المكتبة فقط.",
         save: "فحص الحزمة وحفظها",
         promptLabel: "التعليمات",
       },
@@ -539,17 +510,6 @@ const ar: LeadMessages = {
         help: "المُدخل المنقّى كما أُرسل في آخر تشغيل آلي. لا يحتوي أبدًا على اسم العميل أو بريده أو هاتفه أو شركته أو رابطه.",
         none: "لم يُرسل شيء لهذه الفرصة.",
       },
-      problems: {
-        schema: "لا يلتزم الردّ بالبنية المطلوبة.",
-        wrong_language: "الردّ بلغة غير المطلوبة.",
-        ungrounded_fact: "إحدى الحقائق عن العميل غير مقتبسة من الوصف.",
-        unsupported_number: "ورد رقم لم يذكره العميل.",
-        commitment: "يتضمّن الردّ وعدًا لا يقدّمه الفريق قبل الاجتماع.",
-        pattern_kind: "نمط التصميم لا يناسب نوع المشروع الذي اختاره العميل.",
-        template_not_in_pattern: "إحدى الشاشات تستخدم قالبًا من خارج نمطها.",
-        screens: "الشاشات أو مسار المستخدم غير مكتملة.",
-        flow_screen: "يشير مسار المستخدم إلى شاشة غير موجودة.",
-      },
     },
     design: {
       title: "التصميم المبدئي",
@@ -557,6 +517,7 @@ const ar: LeadMessages = {
       notRenderable: "لا يمكن رسم هذه النسخة لأنها ليست تصميمًا من المكتبة. ملاحظاتها معروضة في تبويب حزمة ما قبل الاجتماع.",
       labels: {
         pattern: "النمط",
+        direction: "الاتجاه",
         audience: "الجمهور",
         goal: "الهدف الأساسي",
         hierarchy: "ترتيب المحتوى",
@@ -604,7 +565,7 @@ const ar: LeadMessages = {
   },
   library: {
     title: "مكتبة التصميم",
-    intro: "ما يُرسم منه التصميم المبدئي: 11 نمطًا مبنية من 23 قالب شاشة موثوقًا. الأمثلة شركات متخيَّلة مكتوبة يدويًا، بلا بيانات عملاء ولا خدمة ذكاء اصطناعي.",
+    intro: "معيار Mintapp للتصميم، يستخدمه الإعداد الآلي واليدوي على السواء: الأسس والمكوّنات و12 نمط منتج مبنية من 26 قالب شاشة موثوقًا، وأنماط العروض وموضوعات الاستكشاف وقواعد الجودة ومعايير المراجعة. الأمثلة شركات متخيَّلة مكتوبة يدويًا، بلا بيانات عملاء ولا خدمة ذكاء اصطناعي.",
     patterns: "الأنماط",
     columns: { id: "النمط", kind: "الفئة", name: "الاسم (بالإنجليزية / بالعربية)", use: "الاستخدام المقصود", templates: "قوالب الشاشات" },
     kinds: { website: "موقع إلكتروني", web_app: "تطبيق ويب", mobile_app: "تطبيق جوّال" },

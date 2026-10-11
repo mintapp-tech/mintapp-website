@@ -6,29 +6,34 @@ import SubmitButton from "@/components/dashboard/SubmitButton";
 import { Chip, REVIEW_TONES, button, card, field, formatDate, formatDay, primary, todayInCairo } from "@/components/dashboard/ui";
 import Notice from "@/components/crm/Notice";
 import { PackChip } from "@/components/crm/LeadParts";
+import ArtifactEditor, { type EditorLabels, type EditorOptions } from "@/components/pack/ArtifactEditor";
 import { requireAdmin } from "@/lib/admin/auth/state";
 import { teamMembers } from "@/lib/admin/auth/config";
 import { adminText } from "@/lib/admin/locale";
 import type { AdminMessages } from "@/lib/admin/messages";
 import { people } from "@/lib/admin/people";
 import { automationStatus, isLeadId, loadInquiry, loadLead } from "@/lib/crm/lead-load";
-import { designPath } from "@/lib/crm/lead-path";
+import { designPath, presentPath } from "@/lib/crm/lead-path";
+import { packContext, packInput } from "@/lib/crm/pack-input";
 import type { DraftRow } from "@/lib/dashboard/data";
-import { draftText, unstatedFigures } from "@/lib/dashboard/brief";
-import { ARTIFACTS, manualReason, mayApproveArtifact, packState, type Artifact } from "@/lib/pack/state";
-import { renderableDesign } from "@/lib/pack/schema";
-import { artifactLanguage, artifactSections, artifactText } from "@/lib/pack/text";
+import { draftText } from "@/lib/dashboard/brief";
+import { EDITOR, PHASE_ROWS, SCREEN_FIELDS, fieldsFrom, optionValues, type OptionSource } from "@/lib/pack/editor";
+import { APPROVAL_CHECKLIST, DISCOVERY_BANKS, PATTERNS, PROPOSAL_PATTERNS, type DiscoveryBankId, type PatternId, type ProposalPatternId, type TemplateId } from "@/lib/pack/library";
+import { ARTIFACT_NAMES, BASIS_LABELS, FIELD_LABELS, SECTION_LABELS, TEMPLATE_LABELS, type Lang } from "@/lib/pack/labels";
+import { directionPack, PACK_PARTS } from "@/lib/pack/presentation";
+import { ARTIFACT_SCHEMAS, artifactFindings, artifactProblems, renderableDesign, type ArtifactKind, type PackArtifact, type PackContext } from "@/lib/pack/schema";
+import { manualReason, mayApproveArtifact, packState } from "@/lib/pack/state";
+import { artifactLanguage, artifactView, compareVersions, legacyArtifactSections } from "@/lib/pack/text";
 import { manualPackPrompt } from "@/lib/pack/prompt";
-import { buildGenerationInput } from "@/lib/preparation/input";
-import { knownDetails } from "@/lib/preparation/scrub";
 import { demoBookingAction, demoGenerateAction, markManualAction, resumeAutomationAction } from "../../../inquiries/actions";
 import { isLocalDashboardDemo } from "@/lib/sql-gateway";
-import { packEditDesignAction, packEditTextAction, packPasteAction, packReviewAction, prepareNowLeadAction, takeReviewAction } from "../../actions";
+import { packEditAction, packPasteAction, packReviewAction, prepareNowLeadAction, takeReviewAction } from "../../actions";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Pre-meeting Pack" };
 
 const summaryClass = "flex cursor-pointer list-none items-center gap-2 text-[14px] font-semibold [&::-webkit-details-marker]:hidden";
+const BASIS_TONES = { client_fact: "bg-mint/25 text-ink", assumption: "bg-amber-100 text-amber-950", recommendation: "bg-surface-2 text-ink", question: "bg-sky-100 text-sky-950" } as const;
 
 function Hidden({ values }: { values: Record<string, string | number> }) {
   return (
@@ -40,92 +45,203 @@ function Hidden({ values }: { values: Record<string, string | number> }) {
   );
 }
 
-// Consecutive "- " lines become one list; other lines stay paragraphs.
-function groupLines(lines: string[]) {
-  const groups: { list: boolean; lines: string[] }[] = [];
-  for (const l of lines) {
-    const list = l.startsWith("- ");
-    const last = groups.at(-1);
-    if (last && last.list === list) last.lines.push(l);
-    else groups.push({ list, lines: [l] });
-  }
-  return groups;
-}
-
-// One version's content: headed sections for a structured version, the text as
-// written for a hand-written one. Content keeps its own direction.
-function ArtifactBody({ content }: { content: unknown }) {
-  const sections = artifactSections(content);
+// One version's content: the structured view with each statement's basis; an
+// older format as its headed notes; a free-text version as written.
+function VersionBody({ kind, content, locale }: { kind: ArtifactKind; content: unknown; locale: Lang }) {
+  const view = artifactView(kind, content, locale);
   const lang = artifactLanguage(content);
-  if (!sections) {
+  const dir = lang === "ar" ? "rtl" : "ltr";
+  if (view) {
     return (
-      <div dir="auto" className="rounded-xl bg-canvas p-4 text-[14.5px] leading-[1.8] whitespace-pre-wrap" data-artifact-text>
-        {artifactText(content)}
+      <div className="flex flex-col gap-4 rounded-xl bg-canvas p-4 text-[14.5px] leading-[1.7]" data-artifact-view>
+        {view.map((section) => (
+          <section key={section.key} data-section={section.key}>
+            <h4 className="m-0 mb-1.5 text-[13px] font-bold text-ink">{SECTION_LABELS[locale][section.key]}</h4>
+            <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              {section.items.map((item, i) => (
+                <li key={i} className="min-w-0">
+                  <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    {item.basis && (
+                      <span className={`rounded-full px-2 py-0.5 text-[11.5px] font-semibold ${BASIS_TONES[item.basis]}`} data-basis={item.basis}>
+                        {BASIS_LABELS[locale][item.basis]}
+                      </span>
+                    )}
+                    {item.field && item.field !== "screen" && item.field !== "topic" && <span className="text-[12.5px] font-semibold text-ink-soft">{FIELD_LABELS[locale][item.field]}:</span>}
+                    <span dir={dir} className="min-w-0">
+                      {item.text}
+                    </span>
+                  </span>
+                  {item.note && (
+                    <span className="mt-0.5 block text-[13px] text-ink-soft">
+                      {FIELD_LABELS[locale][item.note.field]}: <span dir={dir}>{item.note.text}</span>
+                    </span>
+                  )}
+                  {item.lines && (
+                    <ul dir={dir} className="mt-1 mb-0 list-disc ps-5 text-[13.5px] text-ink-soft">
+                      {item.lines.map((l, j) => (
+                        <li key={j}>{l}</li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
       </div>
     );
   }
+  const legacy = legacyArtifactSections(content);
+  if (legacy) {
+    return (
+      <div dir={dir} className="flex flex-col gap-3 rounded-xl bg-canvas p-4 text-[14px] leading-[1.7]" data-artifact-legacy>
+        {legacy.map((s) => (
+          <section key={s.title}>
+            <h4 className="m-0 mb-1 text-[13px] font-bold">{s.title}</h4>
+            {s.lines.map((l, i) => (
+              <p key={i} className="m-0">
+                {l}
+              </p>
+            ))}
+          </section>
+        ))}
+      </div>
+    );
+  }
+  const c = content as { format?: string; body?: unknown } | null;
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"} lang={lang ?? undefined} className="flex flex-col gap-4 rounded-xl bg-canvas p-4 text-[14.5px] leading-[1.75]" data-artifact-sections>
-      {sections.map((s) => (
-        <section key={s.title}>
-          <h4 className="m-0 mb-1 text-[13px] font-bold text-ink">{s.title}</h4>
-          {groupLines(s.lines).map((g, i) =>
-            g.list ? (
-              <ul key={i} className="m-0 list-disc ps-5">
-                {g.lines.map((l, j) => (
-                  <li key={j}>{l.slice(2)}</li>
-                ))}
-              </ul>
-            ) : (
-              g.lines.map((l, j) => (
-                <p key={`${i}-${j}`} className="m-0">
-                  {l}
-                </p>
-              ))
-            ),
-          )}
-        </section>
-      ))}
+    <div dir="auto" className="rounded-xl bg-canvas p-4 text-[14.5px] leading-[1.8] whitespace-pre-wrap" data-artifact-text>
+      {c?.format === "text" && typeof c.body === "string" ? c.body : ""}
     </div>
   );
 }
 
-function ArtifactCard({
+// The checks of a version against the brief, and what the reviewer should know.
+function Checks({ kind, content, ctx, t, locale }: { kind: ArtifactKind; content: unknown; ctx: PackContext; t: AdminMessages; locale: Lang }) {
+  const p = t.pack;
+  const parsed = ARTIFACT_SCHEMAS[kind].safeParse(content);
+  if (!parsed.success)
+    return (
+      <p className="m-0 mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[13.5px] text-amber-950" data-checks="legacy">
+        {p.checks.notChecked}
+      </p>
+    );
+  const problems = artifactProblems(kind, parsed.data as PackArtifact, ctx);
+  const findings = artifactFindings(kind, content);
+  const sectionName = (s: string) => (s in SECTION_LABELS[locale] ? ` (${SECTION_LABELS[locale][s as keyof (typeof SECTION_LABELS)["en"]]})` : "");
+  return (
+    <div className="mb-3 flex flex-col gap-2" data-checks={problems.length ? "problems" : "passed"}>
+      {problems.length === 0 ? (
+        <p className="m-0 rounded-xl border border-mint/50 bg-mint/10 px-3 py-2 text-[13px]">{p.checks.passed}</p>
+      ) : (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-[13.5px] text-red-900">
+          <p className="m-0 font-semibold">{p.checks.problems}</p>
+          <ul className="mt-1 mb-0 ps-5">
+            {[...new Set(problems.map((x) => x.kind))].map((k) => (
+              <li key={k}>{p.problems[k]}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {findings.length > 0 && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[13.5px] text-amber-950" data-findings>
+          <p className="m-0 font-semibold">{p.checks.findings}</p>
+          <ul className="mt-1 mb-0 ps-5">
+            {findings.map((f, i) => (
+              <li key={i} data-finding={f.kind}>
+                {p.findings[f.kind]}
+                {"count" in f ? p.findingCount(f.count) : ""}
+                {"section" in f ? sectionName(f.section) : ""}
+                {f.kind === "placeholder" || f.kind === "hand_design" ? ` ${p.checks.blocks}` : ""}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const template = (format: (i: number) => string) => format(0).replace("1", "{n}");
+
+function editorLabels(t: AdminMessages, locale: Lang, help: string): EditorLabels {
+  const e = t.pack.editor;
+  return {
+    sections: { ...SECTION_LABELS[locale] },
+    fields: e.fields,
+    problems: t.pack.problems,
+    row: template(e.row),
+    screen: template(e.screen),
+    screenItem: template(e.screenItem),
+    phases: e.phases,
+    choose: e.choose,
+    noPattern: e.noPattern,
+    help,
+    save: e.save,
+    failed: e.failed,
+  };
+}
+
+function editorOptions(t: AdminMessages, locale: Lang, projectType: string | null, pattern: string | null): EditorOptions {
+  const label = (source: OptionSource, v: string): string => {
+    switch (source) {
+      case "basis":
+        return t.pack.editor.basis[v as "client_fact" | "assumption"];
+      case "bank":
+        return DISCOVERY_BANKS[v as DiscoveryBankId][locale];
+      case "pattern":
+        return PATTERNS[v as PatternId][locale];
+      case "proposal_pattern":
+        return PROPOSAL_PATTERNS[v as ProposalPatternId][locale];
+      case "template":
+        return TEMPLATE_LABELS[locale][v as TemplateId];
+      case "screen":
+        return t.pack.editor.screen(Number(v.slice(1)) - 1);
+    }
+  };
+  const sources: OptionSource[] = ["basis", "bank", "pattern", "proposal_pattern", "template", "screen"];
+  return Object.fromEntries(sources.map((s) => [s, optionValues(s, projectType, pattern).map((v) => ({ value: v, label: label(s, v) }))])) as EditorOptions;
+}
+
+function ArtifactArea({
   inquiryId,
-  name,
+  kind,
   versions,
   me,
   t,
   locale,
   nameOf,
-  brief,
+  ctx,
+  projectType,
   nextVersion,
 }: {
   inquiryId: string;
-  name: Artifact;
+  kind: ArtifactKind;
   versions: DraftRow[];
   me: string;
   t: AdminMessages;
-  locale: "en" | "ar";
+  locale: Lang;
   nameOf: (email: string) => string;
-  brief: string;
+  ctx: PackContext;
+  projectType: string | null;
   nextVersion: number;
 }) {
   const p = t.lead.detail.pack;
+  const q = t.pack;
   const latest = versions[0] ?? null;
+  const previous = versions[1] ?? null;
   const earlier = versions.slice(1);
-  const design = name === "design" && latest ? renderableDesign(latest.content) : null;
-  const structuredDesign = name === "design" && latest && (latest.content as { format?: string }).format === "pack-design";
-  const text = latest ? artifactText(latest.content) : "";
-  const figures = name === "proposal" && latest && latest.source !== "mock" ? unstatedFigures(text, brief) : [];
-  // An automated version already says so in its source; it has no author to name.
+  const design = kind === "design" && latest ? renderableDesign(latest.content) : null;
+  const current = latest && ARTIFACT_SCHEMAS[kind].safeParse(latest.content).success ? latest.content : null;
   const who = (email: string) => (email === "automation" ? "" : nameOf(email));
+  const change = latest && previous ? compareVersions(kind, previous.content, latest.content, locale) : null;
+  const pattern = current && kind === "design" ? ((current as { blueprint: { pattern: string | null } }).blueprint.pattern ?? null) : null;
 
   return (
-    <section aria-labelledby={`artifact-${name}-title`} id={`artifact-${name}`} className={`${card} p-5 sm:p-6`} data-artifact={name}>
+    <section aria-labelledby={`artifact-${kind}-title`} id={`artifact-${kind}`} className={`${card} p-5 sm:p-6`} data-artifact={kind}>
       <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id={`artifact-${name}-title`} className="m-0 text-[17px] font-bold tracking-[-0.01em] rtl:tracking-normal">
-          {t.lead.artifacts[name]}
+        <h2 id={`artifact-${kind}-title`} className="m-0 text-[17px] font-bold tracking-[-0.01em] rtl:tracking-normal">
+          {ARTIFACT_NAMES[locale][kind]}
         </h2>
         {latest && (
           <span className="flex flex-wrap items-center gap-1.5">
@@ -137,7 +253,7 @@ function ArtifactCard({
         )}
       </div>
 
-      {name === "proposal" && (
+      {kind === "proposal" && (
         <p className="m-0 mb-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-[13.5px] font-semibold text-amber-950" data-proposal-label>
           {p.proposalLabel}
         </p>
@@ -145,11 +261,21 @@ function ArtifactCard({
 
       {latest ? (
         <article data-version={latest.version}>
-          <p className="m-0 mb-3 text-[12.5px] text-ink-soft">
-            <span data-source={latest.source}>{t.lead.sources[latest.source] ?? latest.source}</span> · {who(latest.created_by) ? p.by(who(latest.created_by), formatDate(latest.created_at, true, locale)) : formatDate(latest.created_at, true, locale)}
-            {latest.model ? <span dir="ltr"> · {latest.model}</span> : null}
+          <p className="m-0 mb-3 flex flex-wrap gap-x-2 text-[12.5px] text-ink-soft">
+            <span data-source={latest.source}>{t.lead.sources[latest.source] ?? latest.source}</span>
+            <span aria-hidden>·</span>
+            <span>{who(latest.created_by) ? q.meta.author(who(latest.created_by)) : q.meta.automated}</span>
+            <span aria-hidden>·</span>
+            <span>{formatDate(latest.created_at, true, locale)}</span>
+            {latest.model ? <span dir="ltr">· {latest.model}</span> : null}
+            {latest.reviewed_by && latest.reviewed_at && (
+              <>
+                <span aria-hidden>·</span>
+                <span data-reviewer>{q.meta.reviewed(nameOf(latest.reviewed_by), formatDate(latest.reviewed_at, true, locale))}</span>
+              </>
+            )}
           </p>
-          {name === "design" && structuredDesign && !design && <p className="m-0 mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[13.5px] text-amber-950">{p.unsupported}</p>}
+          <Checks kind={kind} content={latest.content} ctx={ctx} t={t} locale={locale} />
           {design && (
             <p className="m-0 mb-3">
               <Link href={designPath(inquiryId, latest.version)} className={primary} data-open-preview>
@@ -157,21 +283,62 @@ function ArtifactCard({
               </Link>
             </p>
           )}
-          <ArtifactBody content={latest.content} />
-          {figures.length > 0 && <p className="mt-3 mb-0 rounded-xl border border-amber-200 bg-amber-50 p-3 text-[13.5px] text-amber-900">{p.checkFigures(figures.join(", "))}</p>}
+          <VersionBody kind={kind} content={latest.content} locale={locale} />
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          {change && previous && (
+            <details className="group mt-3 rounded-xl border border-line p-3" data-changes>
+              <summary className={summaryClass}>{q.changes.title(previous.version)}</summary>
+              {change.added.length + change.removed.length === 0 ? (
+                <p className="mt-2 mb-0 text-[13px] text-ink-soft">{q.changes.none}</p>
+              ) : (
+                <div className="mt-2 grid gap-3 text-[13px] sm:grid-cols-2">
+                  <div>
+                    <p className="m-0 mb-1 font-semibold text-mint-deep">{q.changes.added}</p>
+                    <ul className="m-0 ps-5" data-added>
+                      {change.added.map((l, i) => (
+                        <li key={i} dir="auto">
+                          {l}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="m-0 mb-1 font-semibold text-red-800">{q.changes.removed}</p>
+                    <ul className="m-0 ps-5" data-removed>
+                      {change.removed.map((l, i) => (
+                        <li key={i} dir="auto" className="line-through decoration-red-300">
+                          {l}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              )}
+            </details>
+          )}
+
+          <div className="mt-4 flex flex-wrap items-start gap-2">
             {latest.review_status === "draft" && (
               <form action={packReviewAction}>
-                <Hidden values={{ inquiryId, artifact: name, version: latest.version, to: "in_review" }} />
+                <Hidden values={{ inquiryId, artifact: kind, version: latest.version, to: "in_review" }} />
                 <SubmitButton className={primary}>{p.markReady}</SubmitButton>
               </form>
             )}
             {latest.review_status === "in_review" && (
               <>
                 {mayApproveArtifact(latest, me) ? (
-                  <form action={packReviewAction}>
-                    <Hidden values={{ inquiryId, artifact: name, version: latest.version, to: "approved" }} />
+                  <form action={packReviewAction} className="w-full rounded-xl border border-line p-3" data-approve-form>
+                    <Hidden values={{ inquiryId, artifact: kind, version: latest.version, to: "approved" }} />
+                    <p className="m-0 mb-1 text-[13px] font-semibold">{q.approve.checklist}</p>
+                    <ul className="m-0 mb-2 ps-5 text-[13px] text-ink-soft" data-checklist>
+                      {APPROVAL_CHECKLIST.map((c) => (
+                        <li key={c.id}>{c[locale]}</li>
+                      ))}
+                    </ul>
+                    <label className="mb-3 flex items-center gap-2 text-[13.5px] font-semibold">
+                      <input type="checkbox" name="checked" value="1" required className="size-4" />
+                      {q.approve.confirm}
+                    </label>
                     <SubmitButton className={primary}>{p.approve}</SubmitButton>
                   </form>
                 ) : (
@@ -180,65 +347,38 @@ function ArtifactCard({
                   </p>
                 )}
                 <form action={packReviewAction}>
-                  <Hidden values={{ inquiryId, artifact: name, version: latest.version, to: "draft" }} />
+                  <Hidden values={{ inquiryId, artifact: kind, version: latest.version, to: "draft" }} />
                   <SubmitButton className={button}>{p.sendBack}</SubmitButton>
                 </form>
               </>
             )}
             {latest.review_status === "approved" && (
               <form action={packReviewAction}>
-                <Hidden values={{ inquiryId, artifact: name, version: latest.version, to: "draft" }} />
+                <Hidden values={{ inquiryId, artifact: kind, version: latest.version, to: "draft" }} />
                 <SubmitButton className={button}>{p.withdraw}</SubmitButton>
               </form>
             )}
           </div>
-          {latest.reviewed_by && latest.reviewed_at && (
-            <p className="mt-2 mb-0 text-[12.5px] text-ink-soft">{t.detail.draft.lastReview(nameOf(latest.reviewed_by), formatDate(latest.reviewed_at, true, locale))}</p>
-          )}
         </article>
       ) : (
         <p className="m-0 rounded-xl border border-dashed border-ink/20 p-4 text-[14px] text-ink-soft">{p.empty}</p>
       )}
 
-      <details className="group mt-4 border-t border-line pt-4">
-        <summary className={summaryClass}>{latest ? p.editText : name === "design" ? p.writeDesign : p.edit}</summary>
-        <form action={packEditTextAction} className="mt-3 flex flex-col gap-2">
-          <Hidden values={{ inquiryId, artifact: name, source: latest ? "edited" : "manual" }} />
-          <label htmlFor={`edit-${name}`} className="text-[13px] text-ink-soft">
-            {name === "design" && !latest ? p.writeDesignHelp : p.editHelp(nextVersion)}
-          </label>
-          <textarea id={`edit-${name}`} name="body" rows={12} required maxLength={20000} dir="auto" defaultValue={text} className={`${field} leading-relaxed`} />
-          <SubmitButton className={`${primary} self-start`}>{p.saveVersion}</SubmitButton>
-        </form>
+      <details className="group mt-4 border-t border-line pt-4" data-edit>
+        <summary className={summaryClass}>{latest ? q.editor.open : q.editor.write}</summary>
+        <ArtifactEditor
+          action={packEditAction}
+          inquiryId={inquiryId}
+          kind={kind}
+          source={latest ? "edited" : "manual"}
+          spec={EDITOR[kind]}
+          phases={PHASE_ROWS}
+          screens={SCREEN_FIELDS}
+          initial={current ? fieldsFrom(kind, current) : {}}
+          labels={editorLabels(t, locale, q.editor.help(nextVersion))}
+          options={editorOptions(t, locale, projectType, pattern)}
+        />
       </details>
-
-      {structuredDesign && latest && (
-        <details className="group mt-3 border-t border-line pt-4">
-          <summary className={summaryClass}>{p.editDesignData}</summary>
-          <form action={packEditDesignAction} className="mt-3 flex flex-col gap-2">
-            <Hidden values={{ inquiryId }} />
-            <label htmlFor="edit-design-json" className="text-[13px] text-ink-soft">
-              {p.editDesignDataHelp}
-            </label>
-            <textarea
-              id="edit-design-json"
-              name="body"
-              rows={14}
-              required
-              maxLength={40000}
-              dir="ltr"
-              spellCheck={false}
-              defaultValue={JSON.stringify(
-                { language: (latest.content as { language: string }).language, blueprint: (latest.content as { blueprint: unknown }).blueprint, screens: (latest.content as { screens: unknown }).screens, user_flow: (latest.content as { user_flow: unknown }).user_flow },
-                null,
-                2,
-              )}
-              className={`${field} font-mono text-[12.5px] leading-relaxed`}
-            />
-            <SubmitButton className={`${primary} self-start`}>{p.saveVersion}</SubmitButton>
-          </form>
-        </details>
-      )}
 
       {earlier.length > 0 && (
         <details className="group mt-3 border-t border-line pt-4">
@@ -252,7 +392,7 @@ function ArtifactCard({
                   <span className="text-ink-soft">
                     · {t.lead.sources[v.source] ?? v.source} · {who(v.created_by) ? p.by(who(v.created_by), formatDate(v.created_at, true, locale)) : formatDate(v.created_at, true, locale)}
                   </span>
-                  {name === "design" && renderableDesign(v.content) && (
+                  {kind === "design" && renderableDesign(v.content) && (
                     <Link href={designPath(inquiryId, v.version)} className="font-semibold underline decoration-mint decoration-2 underline-offset-4">
                       {p.openPreview}
                     </Link>
@@ -261,7 +401,7 @@ function ArtifactCard({
                 <details className="mt-1">
                   <summary className="cursor-pointer text-[12.5px] text-ink-soft">{p.version(v.version)}</summary>
                   <div className="mt-2">
-                    <ArtifactBody content={v.content} />
+                    <VersionBody kind={kind} content={v.content} locale={locale} />
                   </div>
                 </details>
               </li>
@@ -269,6 +409,53 @@ function ArtifactCard({
           </ul>
         </details>
       )}
+    </section>
+  );
+}
+
+function DirectionPackCard({ inquiryId, drafts, ctx, t, locale }: { inquiryId: string; drafts: DraftRow[]; ctx: PackContext; t: AdminMessages; locale: Lang }) {
+  const d = t.pack.direction;
+  const parts = drafts.filter((x) => x.artifact && x.artifact !== "note");
+  const approved = directionPack(parts, ctx, "approved");
+  const preview = directionPack(parts, ctx, "preview");
+  return (
+    <section aria-labelledby="direction-pack-title" id="direction-pack" className={`${card} mb-5 p-5 sm:p-6`} data-direction-pack-card={approved.ok ? "ready" : "not-ready"}>
+      <h2 id="direction-pack-title" className="m-0 text-[17px] font-bold tracking-[-0.01em] rtl:tracking-normal">
+        {d.title}
+      </h2>
+      <p className="mt-2 mb-3 text-[13.5px] text-ink-soft">{d.intro}</p>
+      {approved.ok ? (
+        <>
+          <p className="m-0 font-semibold text-mint-deep">{d.ready}</p>
+          <p className="mt-1 mb-0 text-[13.5px]">{d.readyBody(approved.source.versions.design, approved.source.versions.proposal, approved.source.versions.discovery)}</p>
+          {approved.source.newerDraft && <p className="mt-1 mb-0 text-[13px] text-amber-900">{d.newerDraft}</p>}
+        </>
+      ) : (
+        <>
+          <p className="m-0 font-semibold">{d.notReady}</p>
+          <ul className="mt-1 mb-0 ps-5 text-[13.5px]" data-blockers>
+            {approved.blockers.map((b) => (
+              <li key={`${b.part}-${b.reason}`} data-blocker={b.reason}>
+                {d.reasons[b.reason](ARTIFACT_NAMES[locale][b.part])}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {approved.ok && (
+          <Link href={presentPath(inquiryId)} className={primary} data-present>
+            {d.present}
+          </Link>
+        )}
+        {preview.ok ? (
+          <Link href={presentPath(inquiryId, true)} className={button} data-preview title={d.previewHelp}>
+            {d.preview}
+          </Link>
+        ) : (
+          <span className="text-[13px] text-ink-soft">{d.noPreview}</span>
+        )}
+      </div>
     </section>
   );
 }
@@ -288,30 +475,21 @@ export default async function LeadPack({ params, searchParams }: { params: Promi
   const job = detail.preparation?.status ?? null;
   const auto = automationStatus(detail.automation);
   const state = packState({ job, artifacts: lead.pack_latest, reviewDue: lead.review_action?.due_on ?? null, today, automation: auto });
-  const i = detail.inquiry;
   // The manual prompt carries the brief only, with the client's contact details removed.
-  const input = buildGenerationInput({
-    preferred_language: i.language,
-    project_type: i.project_type,
-    project_description: i.project_description,
-    budget_range: i.budget_range,
-    budget_currency: lead.budget_currency,
-    timeline: i.timeline,
-    country: i.country,
-    redact: knownDetails({ client_name: i.client_name, company_name: i.company_name, email: i.email, phone: i.phone, company_url: i.company_url }),
-  });
+  const input = packInput(detail.inquiry, lead.budget_currency);
+  const ctx = packContext(input);
   const prompt = manualPackPrompt(input);
-  const byArtifact = (a: Artifact) => detail.drafts.filter((d) => d.artifact === a);
+  const byArtifact = (a: ArtifactKind) => detail.drafts.filter((d) => d.artifact === a);
   const notes = detail.drafts.filter((d) => !d.artifact || d.artifact === "note");
   // Versions are numbered per lead, across the three parts.
   const nextVersion = Math.max(0, ...detail.drafts.map((d) => d.version)) + 1;
   const review = lead.review_action;
   const working = job === "running";
-  const canPrepare = auto.enabled && !auto.paused && !working && job !== null && ["waiting_booking", "queued", "retry_scheduled", "failed", "paused", "manual"].includes(job) && !ARTIFACTS.some((a) => lead.pack_latest[a]);
+  const canPrepare = auto.enabled && !auto.paused && !working && job !== null && ["waiting_booking", "queued", "retry_scheduled", "failed", "paused", "manual"].includes(job) && !PACK_PARTS.some((a) => lead.pack_latest[a]);
   const canHandOver = job !== null && ["waiting_booking", "queued", "retry_scheduled", "failed", "paused"].includes(job);
   const problems = String(sp.p ?? "")
     .split(",")
-    .filter((k) => k in p.problems);
+    .filter((k): k is keyof typeof t.pack.problems => k in t.pack.problems);
   const explanation =
     state === "not_started"
       ? p.notStarted
@@ -327,7 +505,7 @@ export default async function LeadPack({ params, searchParams }: { params: Promi
       {problems.length > 0 && (
         <ul className="mt-0 mb-5 rounded-xl border border-red-200 bg-red-50 py-3 ps-8 pe-4 text-[13.5px] text-red-900" data-pack-problems>
           {problems.map((k) => (
-            <li key={k}>{p.problems[k]}</li>
+            <li key={k}>{t.pack.problems[k]}</li>
           ))}
         </ul>
       )}
@@ -381,9 +559,11 @@ export default async function LeadPack({ params, searchParams }: { params: Promi
         )}
       </section>
 
+      <DirectionPackCard inquiryId={id} drafts={detail.drafts} ctx={ctx} t={t} locale={locale} />
+
       <div className="flex flex-col gap-5">
-        {ARTIFACTS.map((a) => (
-          <ArtifactCard key={a} inquiryId={id} name={a} versions={byArtifact(a)} me={me.email} t={t} locale={locale} nameOf={who.ofEmail} brief={input.brief} nextVersion={nextVersion} />
+        {PACK_PARTS.map((a) => (
+          <ArtifactArea key={a} inquiryId={id} kind={a} versions={byArtifact(a)} me={me.email} t={t} locale={locale} nameOf={who.ofEmail} ctx={ctx} projectType={input.projectType} nextVersion={nextVersion} />
         ))}
 
         <section aria-labelledby="claude-title" id="claude" className={`${card} p-5 sm:p-6`} data-manual-claude>

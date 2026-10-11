@@ -85,10 +85,10 @@ describe("what the worker hands to a generator", () => {
     // each step with a valid part of a pack.
     const pack = mockPack(buildGenerationInput(inquiry));
     const parts = [
-      { language: pack.language, client_facts: [], assumptions: [], missing_information: pack.missing_information },
+      { language: pack.language, client_facts: pack.client_facts, assumptions: [], missing_information: pack.missing_information, business_context: pack.business_context, users: pack.users, problem: pack.problem, goals: pack.goals },
       { language: pack.language, design_blueprint: pack.design_blueprint, screens: pack.screens, user_flow: pack.user_flow },
-      { language: pack.language, proposal: pack.proposal },
-      { language: pack.language, discovery_questions: pack.discovery_questions, risks: [], client_decisions: [], meeting_agenda: pack.meeting_agenda, confirm_before_pricing: pack.confirm_before_pricing },
+      { language: pack.language, scope_direction: pack.scope_direction, proposal_direction: pack.proposal_direction },
+      { language: pack.language, discovery_questions: pack.discovery_questions, decisions_needed: pack.decisions_needed, risks: pack.risks, meeting_agenda: pack.meeting_agenda, next_steps: pack.next_steps },
     ];
     const fetchImpl = async (_url: string, init: RequestInit) => {
       seen.push(String(init.body));
