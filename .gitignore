@@ -57,3 +57,7 @@ next-env.d.ts
 /.next-admin/
 /review/
 /review-evidence/
+
+# private client workspaces for manual Packs live OUTSIDE the repository
+# (scripts/new-client-workspace.mjs refuses a root in here); never commit one
+mintapp-client-work/

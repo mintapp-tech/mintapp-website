@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { figuresIn, normalizeForMatch } from "@/lib/preparation/draft";
 import type { BriefLanguage } from "@/lib/preparation/input";
-import { PATTERNS, PROPOSAL_PATTERNS, TEMPLATES, isDiscoveryBankId, isPatternId, isProposalPatternId, isTemplateId, kindFromProjectType, patternInfo, type PatternId, type ProjectKind, type ProposalPatternId } from "./library";
+import { DISCOVERY_BANK_IDS, PATTERNS, PATTERN_IDS, PROPOSAL_PATTERNS, PROPOSAL_PATTERN_IDS, TEMPLATES, TEMPLATE_IDS, kindFromProjectType, patternInfo, type PatternId, type ProjectKind, type ProposalPatternId } from "./library";
 
 // The Pre-meeting Pack: one strict, versioned structure, the single source of truth
 // for the Direction Pack (the client presentation and its PDF are only renderings of
@@ -29,6 +29,8 @@ export const PACK_FORMAT_VERSION = 2;
 const text = (max: number) => z.string().trim().min(1).max(max);
 const list = <T extends z.ZodType>(item: T, min: number, max: number) => z.array(item).min(min).max(max);
 const screenId = z.string().regex(/^s[1-4]$/);
+// Library ids: only these are accepted (and the JSON Schema lists them).
+const ids = <T extends string>(values: readonly T[]) => z.enum(values as [T, ...T[]]);
 
 export const languageSchema = z.enum(["en", "ar"]);
 // Where a statement about the client comes from: the brief (quoted) or our inference.
@@ -50,7 +52,7 @@ export const understandingPart = {
 const screen = z
   .object({
     id: screenId,
-    template: z.string().refine(isTemplateId, "unknown_template"),
+    template: ids(TEMPLATE_IDS),
     title: text(80),
     purpose: text(240),
     headline: text(120),
@@ -65,7 +67,7 @@ export const designPart = {
   design_blueprint: z
     .object({
       // null when no pattern in the library fits: the design is then prepared by hand.
-      pattern: z.union([z.string().refine(isPatternId, "unknown_pattern"), z.null()]),
+      pattern: z.union([ids(PATTERN_IDS), z.null()]),
       unsupported_reason: text(240).optional(),
       direction: text(400),
       hierarchy: list(text(200), 1, 6),
@@ -87,7 +89,7 @@ export const scopePart = {
     .strict(),
   proposal_direction: z
     .object({
-      pattern: z.string().refine(isProposalPatternId, "unknown_proposal_pattern"),
+      pattern: ids(PROPOSAL_PATTERN_IDS),
       approach: text(600),
       phases: list(z.object({ name: text(80), summary: text(300) }).strict(), 1, 4),
       deliverables: list(text(200), 1, 8),
@@ -97,7 +99,7 @@ export const scopePart = {
 };
 
 export const meetingPart = {
-  discovery_questions: list(z.object({ question: text(250), purpose: text(250), bank: z.string().refine(isDiscoveryBankId, "unknown_bank") }).strict(), 3, 10),
+  discovery_questions: list(z.object({ question: text(250), purpose: text(250), bank: ids(DISCOVERY_BANK_IDS) }).strict(), 3, 10),
   decisions_needed: list(text(200), 0, 6),
   risks: list(z.object({ risk: text(240), why: text(240) }).strict(), 0, 6),
   meeting_agenda: list(z.object({ item: text(120), purpose: text(200) }).strict(), 2, 8),

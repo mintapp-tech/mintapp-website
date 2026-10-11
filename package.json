@@ -15,6 +15,10 @@
     "review:verify": "node --env-file=.env.review.local scripts/review-verify.mjs",
     "test:build": "node --test --test-concurrency=1 --test-timeout=900000 \"tests/build/*.test.mjs\"",
     "test:db": "node --test --test-concurrency=1 \"tests/db/*.test.mjs\"",
+    "test:scripts": "node --test \"tests/scripts/*.test.mjs\"",
+    "pack:rules": "node scripts/pack-rules.mjs",
+    "pack:check": "node scripts/pack-check.mjs",
+    "pack:workspace": "node scripts/new-client-workspace.mjs",
     "check:commits": "node scripts/check-commits.mjs",
     "email:preview": "node scripts/email-previews.mjs"
   },

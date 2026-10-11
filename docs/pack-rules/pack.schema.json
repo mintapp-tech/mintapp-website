@@ -1,0 +1,655 @@
+{
+  "$comment": "Generated from src/lib/pack/schema.ts by `npm run pack:rules`. The application also checks every rule in library.md, which a JSON Schema cannot express.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "language": {
+      "type": "string",
+      "enum": [
+        "en",
+        "ar"
+      ]
+    },
+    "client_facts": {
+      "minItems": 1,
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "text",
+          "evidence"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "assumptions": {
+      "minItems": 0,
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "text",
+          "reason"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "missing_information": {
+      "minItems": 0,
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "business_context": {
+      "minItems": 1,
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "client_fact",
+              "assumption"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "text",
+          "basis"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "users": {
+      "minItems": 1,
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "group": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "needs": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "client_fact",
+              "assumption"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "group",
+          "needs",
+          "basis"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "problem": {
+      "minItems": 1,
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "client_fact",
+              "assumption"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "text",
+          "basis"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "goals": {
+      "minItems": 1,
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "basis": {
+            "type": "string",
+            "enum": [
+              "client_fact",
+              "assumption"
+            ]
+          },
+          "evidence": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "text",
+          "basis"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "design_blueprint": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "studio_site",
+                "saas_marketing",
+                "marketplace_site",
+                "academy_site",
+                "booking_site",
+                "dashboard_app",
+                "crm_app",
+                "marketplace_admin",
+                "scheduling_app",
+                "mobile_onboarding",
+                "mobile_discovery",
+                "mobile_transactions"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unsupported_reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        },
+        "direction": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "hierarchy": {
+          "minItems": 1,
+          "maxItems": 6,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "responsive_notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "brand_context": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 240
+        }
+      },
+      "required": [
+        "pattern",
+        "direction",
+        "hierarchy",
+        "responsive_notes",
+        "brand_context"
+      ],
+      "additionalProperties": false
+    },
+    "screens": {
+      "minItems": 0,
+      "maxItems": 4,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^s[1-4]$"
+          },
+          "template": {
+            "type": "string",
+            "enum": [
+              "hero",
+              "value_points",
+              "services",
+              "how_it_works",
+              "catalogue",
+              "course_list",
+              "booking_form",
+              "proof",
+              "faq",
+              "contact_cta",
+              "overview_dashboard",
+              "trend_report",
+              "record_table",
+              "record_detail",
+              "workflow_board",
+              "schedule_calendar",
+              "data_form",
+              "empty_state",
+              "confirmation",
+              "onboarding",
+              "home",
+              "list_search",
+              "detail",
+              "booking_order",
+              "tracking",
+              "profile"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "headline": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "supporting_text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "items": {
+            "minItems": 0,
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 60
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 160
+                }
+              },
+              "required": [
+                "title",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "primary_action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "secondary_action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          }
+        },
+        "required": [
+          "id",
+          "template",
+          "title",
+          "purpose",
+          "headline",
+          "items"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "user_flow": {
+      "minItems": 0,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 160
+          },
+          "screen": {
+            "type": "string",
+            "pattern": "^s[1-4]$"
+          }
+        },
+        "required": [
+          "step",
+          "screen"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "scope_direction": {
+      "type": "object",
+      "properties": {
+        "first_release": {
+          "minItems": 1,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "later": {
+          "minItems": 0,
+          "maxItems": 6,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "not_included": {
+          "minItems": 0,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        }
+      },
+      "required": [
+        "first_release",
+        "later",
+        "not_included"
+      ],
+      "additionalProperties": false
+    },
+    "proposal_direction": {
+      "type": "object",
+      "properties": {
+        "pattern": {
+          "type": "string",
+          "enum": [
+            "website",
+            "web_app",
+            "mobile_app",
+            "existing_product"
+          ]
+        },
+        "approach": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "phases": {
+          "minItems": 1,
+          "maxItems": 4,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 80
+              },
+              "summary": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 300
+              }
+            },
+            "required": [
+              "name",
+              "summary"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "deliverables": {
+          "minItems": 1,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "cost_schedule_factors": {
+          "minItems": 1,
+          "maxItems": 8,
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        }
+      },
+      "required": [
+        "pattern",
+        "approach",
+        "phases",
+        "deliverables",
+        "cost_schedule_factors"
+      ],
+      "additionalProperties": false
+    },
+    "discovery_questions": {
+      "minItems": 3,
+      "maxItems": 10,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 250
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 250
+          },
+          "bank": {
+            "type": "string",
+            "enum": [
+              "project_type",
+              "business_model",
+              "users",
+              "operations",
+              "payments",
+              "integrations",
+              "roles_permissions",
+              "content",
+              "security_privacy",
+              "analytics",
+              "language",
+              "support_maintenance"
+            ]
+          }
+        },
+        "required": [
+          "question",
+          "purpose",
+          "bank"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "decisions_needed": {
+      "minItems": 0,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 200
+      }
+    },
+    "risks": {
+      "minItems": 0,
+      "maxItems": 6,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "risk": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          },
+          "why": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 240
+          }
+        },
+        "required": [
+          "risk",
+          "why"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "meeting_agenda": {
+      "minItems": 2,
+      "maxItems": 8,
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "item",
+          "purpose"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "next_steps": {
+      "minItems": 1,
+      "maxItems": 5,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 240
+      }
+    }
+  },
+  "required": [
+    "language",
+    "client_facts",
+    "assumptions",
+    "missing_information",
+    "business_context",
+    "users",
+    "problem",
+    "goals",
+    "design_blueprint",
+    "screens",
+    "user_flow",
+    "scope_direction",
+    "proposal_direction",
+    "discovery_questions",
+    "decisions_needed",
+    "risks",
+    "meeting_agenda",
+    "next_steps"
+  ],
+  "additionalProperties": false
+}
