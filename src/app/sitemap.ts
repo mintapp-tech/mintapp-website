@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { SUPPORTED_LOCALES } from "@/lib/locales";
 import { SITE_URL, PUBLIC_ROUTE_PATHS } from "@/lib/seo";
 
-// Exactly the 13 real public paths × 2 supported locales = 26 absolute
+// Exactly the 16 real public paths × 2 supported locales = 32 absolute
 // production URLs. No lastModified/changeFrequency/priority — this repo
 // has no reliable per-page content-date source, and fabricating one would
 // misrepresent freshness to crawlers. The origin is the fixed production

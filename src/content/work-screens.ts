@@ -1,15 +1,24 @@
-// Real product screenshots for the four projects that are still shown with
-// drawn compositions (Nazarih, Taskaty, TangleVibe, Kwayes).
+// Real product screens, exported from each project's Figma file, for the
+// projects that don't hand-place their screenshots (Arrentio, Rentop and
+// Jameel do that inside their case-study components).
 //
-// To publish screenshots for a project: put the files under
-// public/work/<slug>/, list them below with English and Arabic alt text and
-// their pixel size, and add a short intro that describes what the screens
-// show. The homepage card then uses `cover` and the case study's "Product
-// screens" section uses `screens`, both in device frames. Until then the
-// existing compositions stay. Only add screens the client has approved for
-// publication, and describe them accurately.
+// To publish screens for a project: put the files under public/work/<slug>/,
+// list them below with English and Arabic alt text and their pixel size, and
+// add a short intro that describes what the screens show. The homepage card
+// then uses `cover` and the case study's "Product screens" section uses
+// `screens`, both in device frames. Until then the drawn compositions stay.
+// Only add screens the client has approved for publication, and describe
+// them accurately.
 
-export type PendingProject = "nazarih" | "taskaty" | "tanglevibe" | "kwayes";
+export type ScreenProject =
+  | "nazarih"
+  | "taskaty"
+  | "tanglevibe"
+  | "kwayes"
+  | "whhr"
+  | "budgetly"
+  | "pmps"
+  | "circuitscraft";
 
 export interface ScreenAsset {
   src: string;
@@ -25,11 +34,102 @@ export interface WorkScreens {
   screens: ScreenAsset[];
 }
 
-export const WORK_SCREENS: Record<PendingProject, WorkScreens> = {
+const phone = (src: string, en: string, ar: string, width = 860, height = 1864): ScreenAsset => ({ src, width, height, alt: { en, ar } });
+const wide = (src: string, en: string, ar: string, width = 1600, height = 900): ScreenAsset => ({ src, width, height, alt: { en, ar } });
+
+const KWAYES = [
+  phone("/work/kwayes/home.webp", "Kwayes home feed with categories and listings", "الصفحة الرئيسية في Kwayes مع الفئات والإعلانات", 750, 1624),
+  phone("/work/kwayes/reel.webp", "Kwayes product video reel", "عرض فيديو لمنتج في Kwayes", 751, 1625),
+  phone("/work/kwayes/product.webp", "Kwayes product details from the seller's store", "تفاصيل منتج من متجر البائع في Kwayes", 751, 1625),
+  phone("/work/kwayes/messages.webp", "Kwayes messages between buyers and sellers", "الرسائل بين المشترين والبائعين في Kwayes", 750, 1624),
+];
+
+const TASKATY = [
+  phone("/work/taskaty/home.webp", "Taskaty day view with activity timer and today's tasks", "عرض اليوم في Taskaty مع مؤقت النشاط ومهام اليوم"),
+  phone("/work/taskaty/rearrange.webp", "Taskaty tasks pulled from Google Calendar and Notion", "مهام Taskaty المستوردة من Google Calendar و Notion"),
+  phone("/work/taskaty/stats.webp", "Taskaty stats with time spent per activity", "إحصاءات Taskaty للوقت المقضي في كل نشاط"),
+  phone("/work/taskaty/settings.webp", "Taskaty settings with targeted times and connections", "إعدادات Taskaty مع الأوقات المستهدفة والربط بالخدمات"),
+];
+
+const WHHR = [
+  phone("/work/whhr/home.webp", "whHR home with check-in, attendance, overtime and gatepasses", "الشاشة الرئيسية في whHR مع تسجيل الحضور والعمل الإضافي وتصاريح الخروج"),
+  phone("/work/whhr/schedule.webp", "whHR schedule with a day-by-day attendance view", "جدول whHR مع عرض الحضور يومًا بيوم"),
+  phone("/work/whhr/analytics.webp", "whHR analytics with on-time rate and days attended", "تحليلات whHR مع نسبة الالتزام بالمواعيد وأيام الحضور"),
+  phone("/work/whhr/attendance.webp", "whHR attendance details with check-in location map", "تفاصيل الحضور في whHR مع خريطة موقع تسجيل الدخول"),
+];
+
+const BUDGETLY = [
+  phone("/work/budgetly/home.webp", "Budgetly home with total spending and latest expenses", "الشاشة الرئيسية في Budgetly مع إجمالي الإنفاق وآخر المصروفات", 786, 1704),
+  phone("/work/budgetly/scan.webp", "Budgetly receipt scanner for adding an expense", "ماسح الإيصالات في Budgetly لإضافة مصروف", 786, 1704),
+  phone("/work/budgetly/accounts.webp", "Budgetly accounts with a linked card and recent expenses", "حسابات Budgetly مع بطاقة مرتبطة وآخر المصروفات", 786, 1704),
+  phone("/work/budgetly/budget.webp", "Budgetly monthly budget against expenses", "الميزانية الشهرية مقابل المصروفات في Budgetly", 786, 1704),
+];
+
+const PMPS = [
+  wide("/work/pmps/home.webp", "PMPS homepage hero and core services", "واجهة الصفحة الرئيسية لموقع PMPS والخدمات الأساسية", 1440, 960),
+  wide("/work/pmps/services.webp", "PMPS services page", "صفحة الخدمات في موقع PMPS", 1440, 960),
+  wide("/work/pmps/project.webp", "PMPS project details page", "صفحة تفاصيل مشروع في موقع PMPS", 1440, 960),
+  wide("/work/pmps/about.webp", "PMPS about page", "صفحة من نحن في موقع PMPS", 1440, 960),
+];
+
+const CIRCUITSCRAFT = [
+  wide("/work/circuitscraft/add-component.webp", "CircuitsCraft component library", "مكتبة المكوّنات في CircuitsCraft"),
+  wide("/work/circuitscraft/breadboard.webp", "CircuitsCraft LED placed on a breadboard", "مصباح LED موضوع على لوحة التجارب في CircuitsCraft"),
+  wide("/work/circuitscraft/code-editor.webp", "CircuitsCraft microcontroller code editor", "محرر كود المتحكم الدقيق في CircuitsCraft"),
+  wide("/work/circuitscraft/trade.webp", "CircuitsCraft trade marketplace for circuits", "سوق تداول الدوائر في CircuitsCraft"),
+];
+
+export const WORK_SCREENS: Record<ScreenProject, WorkScreens> = {
   nazarih: { screens: [] },
-  taskaty: { screens: [] },
   tanglevibe: { screens: [] },
-  kwayes: { screens: [] },
+  taskaty: {
+    intro: {
+      en: "The day view, imported tasks, activity stats and settings, from the Taskaty design.",
+      ar: "عرض اليوم، والمهام المستوردة، وإحصاءات النشاط، والإعدادات، من تصميم Taskaty.",
+    },
+    cover: TASKATY[0],
+    screens: TASKATY,
+  },
+  kwayes: {
+    intro: {
+      en: "The home feed, a product reel, product details and messages, from the Kwayes design.",
+      ar: "الصفحة الرئيسية، وعرض فيديو لمنتج، وتفاصيل المنتج، والرسائل، من تصميم Kwayes.",
+    },
+    cover: KWAYES[0],
+    screens: KWAYES,
+  },
+  whhr: {
+    intro: {
+      en: "Home, schedule, analytics and attendance details, from the whHR employee app.",
+      ar: "الرئيسية، والجدول، والتحليلات، وتفاصيل الحضور، من تطبيق موظفي whHR.",
+    },
+    cover: WHHR[0],
+    screens: WHHR,
+  },
+  budgetly: {
+    intro: {
+      en: "Home, receipt scanning, accounts and the monthly budget, from the Budgetly app.",
+      ar: "الرئيسية، ومسح الإيصالات، والحسابات، والميزانية الشهرية، من تطبيق Budgetly.",
+    },
+    cover: BUDGETLY[0],
+    screens: BUDGETLY,
+  },
+  pmps: {
+    intro: {
+      en: "The homepage, services, a project page and the about page, from the PMPS website.",
+      ar: "الصفحة الرئيسية، والخدمات، وصفحة مشروع، وصفحة من نحن، من موقع PMPS.",
+    },
+    cover: PMPS[0],
+    screens: PMPS,
+  },
+  circuitscraft: {
+    intro: {
+      en: "The component library, the breadboard, the code editor and the trade marketplace, from CircuitsCraft.",
+      ar: "مكتبة المكوّنات، ولوحة التجارب، ومحرر الكود، وسوق التداول، من CircuitsCraft.",
+    },
+    cover: CIRCUITSCRAFT[1],
+    screens: CIRCUITSCRAFT,
+  },
 };
 
-export const hasRealScreens = (slug: PendingProject) => WORK_SCREENS[slug].screens.length > 0;
+export const hasRealScreens = (slug: ScreenProject) => WORK_SCREENS[slug].screens.length > 0;

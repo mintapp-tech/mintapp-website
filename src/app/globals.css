@@ -36,6 +36,18 @@
   --color-tanglevibe: #ff4d8d;
   --color-tanglevibe-2: #ffc1d9;
   --color-tanglevibe-bg: #fff0f5;
+  --color-whhr: #1ed6a0;
+  --color-whhr-2: #15171a;
+  --color-whhr-bg: #ecf8f3;
+  --color-budgetly: #4a1ff2;
+  --color-budgetly-2: #18e0b4;
+  --color-budgetly-bg: #efecff;
+  --color-pmps: #0d2c5a;
+  --color-pmps-2: #f39a1e;
+  --color-pmps-bg: #eef2f8;
+  --color-circuitscraft: #2f6fe4;
+  --color-circuitscraft-2: #ff4b4b;
+  --color-circuitscraft-bg: #eceef2;
 
   --font-manrope: var(--font-manrope-google), system-ui, sans-serif;
   --font-alexandria: var(--font-alexandria-google), system-ui, sans-serif;

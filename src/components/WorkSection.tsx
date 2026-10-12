@@ -8,6 +8,14 @@ import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 import { CardCover } from "./work/ScreenFrames";
 
+// Compact cards under the main grid; Tailwind needs the literal classes.
+const MORE_WORK = [
+  { slug: "whhr", bg: "bg-whhr-bg" },
+  { slug: "budgetly", bg: "bg-budgetly-bg" },
+  { slug: "pmps", bg: "bg-pmps-bg" },
+  { slug: "circuitscraft", bg: "bg-circuitscraft-bg" },
+] as const;
+
 export default function WorkSection() {
   const { t, lang, arrow } = useLanguage();
   const caseStudy = (slug: string) => `/${lang}/work/${slug}`;
@@ -295,6 +303,29 @@ export default function WorkSection() {
             </Link>
           </div>
         </RevealItem>
+      </RevealGroup>
+
+      <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2 lg:grid-cols-4">
+        {MORE_WORK.map(({ slug, bg }) => {
+          const p = t.work.more[slug];
+          return (
+            <RevealItem key={slug} className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
+              <div className={`flex min-h-[220px] items-center justify-center border-b border-ink/[.07] ${bg} p-6`}>
+                <CardCover slug={slug} />
+              </div>
+              <div className="p-6">
+                <div className="flex flex-wrap items-baseline gap-x-2.5">
+                  <h3 className="m-0 text-[22px] font-semibold tracking-[-0.02em]">{p.name}</h3>
+                  <span className="text-[13px] text-ink-soft">{p.category}</span>
+                </div>
+                <p className="mt-2.5 mb-5 text-[14.5px] leading-[1.75] text-ink-soft">{p.desc}</p>
+                <Link href={caseStudy(slug)} className={cardLink}>
+                  {t.work.cta} <span className="block">{arrow}</span>
+                </Link>
+              </div>
+            </RevealItem>
+          );
+        })}
       </RevealGroup>
     </section>
   );

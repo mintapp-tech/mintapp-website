@@ -3,7 +3,7 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import { WORK_SCREENS, type ScreenAsset } from "./work-screens";
 
-// Guards the screenshots that replace the drawn compositions: every listed
+// Guards the real product screens: every listed
 // file must exist, be described in both languages, and come with an intro
 // that replaces the "Compositions from ..." line.
 const assets = (Object.entries(WORK_SCREENS) as [string, (typeof WORK_SCREENS)[keyof typeof WORK_SCREENS]][]).flatMap(([slug, w]) =>
@@ -11,8 +11,8 @@ const assets = (Object.entries(WORK_SCREENS) as [string, (typeof WORK_SCREENS)[k
 );
 
 describe("work screenshots manifest", () => {
-  test("covers exactly the four projects still shown with compositions", () => {
-    expect(Object.keys(WORK_SCREENS).sort()).toEqual(["kwayes", "nazarih", "tanglevibe", "taskaty"]);
+  test("covers every project that doesn't hand-place its screenshots", () => {
+    expect(Object.keys(WORK_SCREENS).sort()).toEqual(["budgetly", "circuitscraft", "kwayes", "nazarih", "pmps", "tanglevibe", "taskaty", "whhr"]);
   });
 
   test("projects with real screens describe them (no leftover composition wording)", () => {

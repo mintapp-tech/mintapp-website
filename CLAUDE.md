@@ -11,7 +11,8 @@ This repo pins `next@16.2.12`, a version with breaking changes vs. training-data
 - `npm run dev` — dev server
 - `npm run build` — production build
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
-- No test suite configured.
+- `npm test` — Vitest unit tests; `npm run test:e2e` — Playwright.
+- Pushing to `mintapp-tech/mintapp-website` requires the `adamcoder2` GitHub account — the other account logged into `gh` (`arrentio`) lacks push access and pushes 403. `gh auth switch -u adamcoder2` if a push fails.
 
 ## Architecture
 
@@ -24,6 +25,10 @@ This repo pins `next@16.2.12`, a version with breaking changes vs. training-data
 - `src/app/internal/` (concept pack) is a hidden, non-locale-prefixed route with its own layout — deliberately excluded from the locale proxy/redirect logic.
 
 **Case studies**: each project under `src/app/[locale]/work/<name>/page.tsx` renders a matching `src/components/case-study/<Name>CaseStudy.tsx`, driven by a `csX` entry in the `HomeContent` i18n type (`csArrentio`, `csJameel`, etc.).
+
+**Case study screenshots**: real product screenshots (not CSS mockups) live in `public/work/<project>/`, rendered through a `PhoneFrame` component defined locally inside each `<Name>CaseStudy.tsx` — it's copy-pasted per file, not a shared import (see `RentopCaseStudy.tsx`, `ArrentioCaseStudy.tsx`, `JameelCaseStudy.tsx`). Jameel is the one case study with locale-aware screenshots: Arabic images live in `public/work/jameel/ar/`, picked via `lang === "ar" ? "/work/jameel/ar" : "/work/jameel"`; Rentop and Arrentio are English-only regardless of site language, so don't assume that pattern applies everywhere. The homepage `WorkSection.tsx` work-card preview reuses the same `public/work/jameel/*.png` files directly via `next/image`, without `PhoneFrame` or locale-awareness.
+
+Every other project (Kwayes, Taskaty, whHR, Budgetly, PMPS, CircuitsCraft; Nazarih/TangleVibe still empty) lists its screens in `src/content/work-screens.ts` (`WORK_SCREENS`), rendered by `src/components/work/ScreenFrames.tsx` (`CardCover`, `HeroScreen`, `ProductScreens`; landscape assets get a browser-style frame and 2-col grid). whHR/Budgetly/PMPS/CircuitsCraft share one component, `ProjectCaseStudy.tsx`, configured from their `page.tsx` (slug, `csKey`, theme classes) — no per-project component. Screens come from the clients' Figma files exported at 2x as `.webp`. Adding a public route also means updating `PUBLIC_ROUTE_PATHS` in `src/lib/seo.ts`, the URL counts in `src/app/sitemap.test.ts` and `tests/e2e/sitemap-robots.spec.ts`, and `CASE_STUDY_KEYS` in `src/lib/i18n/work-copy.test.ts`. Arabic case-study copy must avoid the words the sample-wording test bans (e.g. افتراضي).
 
 **Motion/UX primitives** live in `src/components/motion/` (`Magnetic`, `SplitReveal`, `TiltCard`) and top-level (`Reveal`, `SmoothScroll` using Lenis, `CustomCursor`) — reuse these instead of hand-rolling new scroll/hover effects.
 
