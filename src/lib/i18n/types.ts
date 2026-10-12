@@ -92,6 +92,8 @@ export interface HomeContent {
     p4: { name: string; category: string; desc: string; tags: string[] };
     p5: { name: string; category: string; desc: string; tags: string[] };
     p6: { name: string; category: string; desc: string; tags: string[] };
+    // Compact cards under the main grid, keyed by case-study slug.
+    more: Record<"whhr" | "budgetly" | "pmps" | "circuitscraft", { name: string; category: string; desc: string }>;
   };
   svc: {
     eyebrow: string;
@@ -210,6 +212,10 @@ export interface HomeContent {
   csTangleVibe: CaseStudyContent;
   csRentop: CaseStudyContent;
   csKwayes: CaseStudyContent;
+  csWhhr: CaseStudyContent;
+  csBudgetly: CaseStudyContent;
+  csPmps: CaseStudyContent;
+  csCircuitsCraft: CaseStudyContent;
   svcp: {
     title: string;
     sub: string;
