@@ -85,6 +85,7 @@ export interface HomeContent {
     title: string;
     intro: string;
     cta: string;
+    scrollHint: string;
     featured: { name: string; category: string; desc: string; tags: string[] };
     p1: { name: string; category: string; desc: string; tags: string[] };
     p2: { name: string; category: string; desc: string; tags: string[] };

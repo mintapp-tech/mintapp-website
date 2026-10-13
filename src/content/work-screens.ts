@@ -25,6 +25,10 @@ export interface ScreenAsset {
   width: number;
   height: number;
   alt: { en: string; ar: string };
+  // Phone screens get a phone mockup; websites and desktop apps a browser
+  // window that scrolls through pages taller than it.
+  frame: "phone" | "browser";
+  label?: string; // shown in the browser's address bar
 }
 
 export interface WorkScreens {
@@ -34,8 +38,8 @@ export interface WorkScreens {
   screens: ScreenAsset[];
 }
 
-const phone = (src: string, en: string, ar: string, width = 860, height = 1864): ScreenAsset => ({ src, width, height, alt: { en, ar } });
-const wide = (src: string, en: string, ar: string, width = 1600, height = 900): ScreenAsset => ({ src, width, height, alt: { en, ar } });
+const phone = (src: string, en: string, ar: string, width = 860, height = 1864): ScreenAsset => ({ src, width, height, alt: { en, ar }, frame: "phone" });
+const web = (src: string, en: string, ar: string, label: string, width = 1600, height = 900): ScreenAsset => ({ src, width, height, alt: { en, ar }, frame: "browser", label });
 
 const KWAYES = [
   phone("/work/kwayes/home.webp", "Kwayes home feed with categories and listings", "الصفحة الرئيسية في Kwayes مع الفئات والإعلانات", 750, 1624),
@@ -66,17 +70,17 @@ const BUDGETLY = [
 ];
 
 const PMPS = [
-  wide("/work/pmps/home.webp", "PMPS homepage hero and core services", "واجهة الصفحة الرئيسية لموقع PMPS والخدمات الأساسية", 1440, 960),
-  wide("/work/pmps/services.webp", "PMPS services page", "صفحة الخدمات في موقع PMPS", 1440, 960),
-  wide("/work/pmps/project.webp", "PMPS project details page", "صفحة تفاصيل مشروع في موقع PMPS", 1440, 960),
-  wide("/work/pmps/about.webp", "PMPS about page", "صفحة من نحن في موقع PMPS", 1440, 960),
+  web("/work/pmps/home.webp", "PMPS homepage", "الصفحة الرئيسية لموقع PMPS", "pmpsconsulting.com", 1200, 5918),
+  web("/work/pmps/services.webp", "PMPS services page", "صفحة الخدمات في موقع PMPS", "pmpsconsulting.com", 1200, 3180),
+  web("/work/pmps/project.webp", "PMPS project details page", "صفحة تفاصيل مشروع في موقع PMPS", "pmpsconsulting.com", 1200, 4148),
+  web("/work/pmps/about.webp", "PMPS about page", "صفحة من نحن في موقع PMPS", "pmpsconsulting.com", 1200, 5608),
 ];
 
 const CIRCUITSCRAFT = [
-  wide("/work/circuitscraft/add-component.webp", "CircuitsCraft component library", "مكتبة المكوّنات في CircuitsCraft"),
-  wide("/work/circuitscraft/breadboard.webp", "CircuitsCraft LED placed on a breadboard", "مصباح LED موضوع على لوحة التجارب في CircuitsCraft"),
-  wide("/work/circuitscraft/code-editor.webp", "CircuitsCraft microcontroller code editor", "محرر كود المتحكم الدقيق في CircuitsCraft"),
-  wide("/work/circuitscraft/trade.webp", "CircuitsCraft trade marketplace for circuits", "سوق تداول الدوائر في CircuitsCraft"),
+  web("/work/circuitscraft/add-component.webp", "CircuitsCraft component library", "مكتبة المكوّنات في CircuitsCraft", "CircuitsCraft"),
+  web("/work/circuitscraft/breadboard.webp", "CircuitsCraft LED placed on a breadboard", "مصباح LED موضوع على لوحة التجارب في CircuitsCraft", "CircuitsCraft"),
+  web("/work/circuitscraft/code-editor.webp", "CircuitsCraft microcontroller code editor", "محرر كود المتحكم الدقيق في CircuitsCraft", "CircuitsCraft"),
+  web("/work/circuitscraft/trade.webp", "CircuitsCraft trade marketplace for circuits", "سوق تداول الدوائر في CircuitsCraft", "CircuitsCraft"),
 ];
 
 export const WORK_SCREENS: Record<ScreenProject, WorkScreens> = {
