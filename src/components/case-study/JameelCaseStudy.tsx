@@ -1,25 +1,16 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { PhoneMockup } from "@/components/work/Mockups";
 import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
 
-function PhoneFrame({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) {
-  return (
-    <div
-      className="w-full overflow-hidden rounded-[28px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.55)]"
-      style={{ aspectRatio: "375 / 812" }}
-    >
-      <div className="relative h-full w-full overflow-hidden rounded-[20px]">
-        <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 25vw, 45vw" className="object-cover" priority={priority} />
-      </div>
-    </div>
-  );
+function PhoneFrame(props: { src: string; alt: string; priority?: boolean }) {
+  return <PhoneMockup {...props} width={375} height={812} sizes="(min-width: 1024px) 25vw, 45vw" />;
 }
 
 export default function JameelCaseStudy() {

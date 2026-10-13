@@ -41,6 +41,7 @@ export const en: HomeContent = {
     title: "Selected work",
     intro: "Products we designed and built, from marketplace platforms to mobile apps.",
     cta: "View case study",
+    scrollHint: "Scroll the page",
     featured: { name: "Arrentio", category: "Car rental marketplace & agency platform", desc: "A verified marketplace that moves car rental out of chat threads into a system built on trust — with a branded storefront for every agency.", tags: ["Web Platform", "UI/UX", "Development"] },
     p1: { name: "Rentop", category: "Car rental booking app", desc: "A consumer car rental app for browsing by brand and category, and booking a car in a few taps — ratings, specs and live availability included.", tags: ["Mobile App", "UI/UX", "Development"] },
     p2: { name: "Jameel", category: "Car wash service marketplace", desc: "A four-sided platform connecting car owners with independent wash providers and their crews, plus the dashboard that runs the whole operation.", tags: ["Mobile App", "Admin Dashboard", "Development"] },

@@ -3,21 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { BrowserMockup } from "@/components/work/Mockups";
 import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
-
-function ChromeBar() {
-  return (
-    <div className="flex h-[30px] items-center gap-1.5 bg-arrentio-ink px-3">
-      <span className="block h-1.5 w-1.5 rounded-full bg-white/90" />
-      <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
-      <span className="ms-2 block h-[6px] w-[88px] rounded-full bg-white/25" />
-    </div>
-  );
-}
 
 export default function ArrentioCaseStudy() {
   const { t, lang, arrow, backArrow } = useLanguage();
@@ -76,26 +67,11 @@ export default function ArrentioCaseStudy() {
         <Reveal className="relative overflow-hidden rounded-[24px] bg-arrentio-bg p-[clamp(24px,5vw,60px)]">
           <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-arrentio/[.12]" />
           <div className="relative flex flex-wrap items-center justify-center gap-[clamp(18px,3vw,34px)] py-[clamp(20px,4vw,50px)]">
-            <div className="w-[min(100%,620px)] -rotate-1 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_40px_70px_-30px_rgba(11,20,32,.35)]">
-              <ChromeBar />
-              <Image
-                src="/work/arrentio/home.jpg"
-                alt={localAlt("Arrentio marketplace homepage", lang)}
-                width={1600}
-                height={1084}
-                className="h-auto w-full"
-                priority
-              />
+            <div className="w-[min(100%,620px)] -rotate-1">
+              <BrowserMockup src="/work/arrentio/home.jpg" alt={localAlt("Arrentio marketplace homepage", lang)} width={1600} height={1084} sizes="(min-width: 1024px) 60vw, 95vw" priority />
             </div>
-            <div className="hidden w-[min(52%,250px)] rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_36px_64px_-30px_rgba(11,20,32,.4)] sm:block">
-              <ChromeBar />
-              <Image
-                src="/work/arrentio/car-detail.jpg"
-                alt={localAlt("Arrentio car detail and booking page", lang)}
-                width={1200}
-                height={2000}
-                className="aspect-[3/4] w-full object-cover object-top"
-              />
+            <div className="hidden w-[min(52%,250px)] rotate-2 sm:block">
+              <BrowserMockup src="/work/arrentio/car-detail.jpg" alt={localAlt("Arrentio car detail and booking page", lang)} width={1200} height={2000} sizes="(min-width: 1024px) 60vw, 95vw" viewport={3 / 4} />
             </div>
           </div>
         </Reveal>
@@ -175,50 +151,20 @@ export default function ArrentioCaseStudy() {
         <Reveal delay={0.05} className="mb-[clamp(24px,3vw,36px)] max-w-[60ch] text-[16px] leading-[1.85] text-ink-soft">
           {cs.screensCopy}
         </Reveal>
-        <RevealGroup className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-          <div className="flex flex-col gap-4 lg:col-span-3">
-            <RevealItem className="overflow-hidden rounded-2xl border border-ink/[.08] bg-canvas">
-              <ChromeBar />
-              <Image
-                src="/work/arrentio/home.jpg"
-                alt={localAlt("Arrentio marketplace homepage", lang)}
-                width={1600}
-                height={1084}
-                className="h-auto w-full"
-              />
+        <RevealGroup className="grid grid-cols-1 gap-[clamp(20px,2.4vw,32px)] lg:grid-cols-5">
+          <div className="flex flex-col gap-[clamp(20px,2.4vw,32px)] lg:col-span-3">
+            <RevealItem>
+              <BrowserMockup src="/work/arrentio/home.jpg" alt={localAlt("Arrentio marketplace homepage", lang)} width={1600} height={1084} sizes="(min-width: 1024px) 60vw, 95vw" />
             </RevealItem>
-            <RevealItem className="overflow-hidden rounded-2xl border border-ink/[.08] bg-canvas">
-              <ChromeBar />
-              <Image
-                src="/work/arrentio/explore.jpg"
-                alt={localAlt("Arrentio explore page with filters and live inventory", lang)}
-                width={1600}
-                height={1084}
-                className="h-auto w-full"
-              />
+            <RevealItem>
+              <BrowserMockup src="/work/arrentio/explore.jpg" alt={localAlt("Arrentio explore page with filters and live inventory", lang)} width={1600} height={1084} sizes="(min-width: 1024px) 60vw, 95vw" />
             </RevealItem>
-            <RevealItem className="overflow-hidden rounded-2xl border border-ink/[.08] bg-canvas">
-              <ChromeBar />
-              <Image
-                src="/work/arrentio/list-your-car.jpg"
-                alt={localAlt("Arrentio provider onboarding page", lang)}
-                width={1600}
-                height={1021}
-                className="h-auto w-full"
-              />
+            <RevealItem>
+              <BrowserMockup src="/work/arrentio/list-your-car.jpg" alt={localAlt("Arrentio provider onboarding page", lang)} width={1600} height={1021} sizes="(min-width: 1024px) 60vw, 95vw" />
             </RevealItem>
           </div>
-          <RevealItem className="flex flex-col overflow-hidden rounded-2xl border border-ink/[.08] bg-canvas lg:col-span-2">
-            <ChromeBar />
-            <div className="relative min-h-[340px] flex-1">
-              <Image
-                src="/work/arrentio/car-detail.jpg"
-                alt={localAlt("Arrentio car detail and booking page", lang)}
-                fill
-                sizes="(min-width: 1024px) 40vw, 100vw"
-                className="object-cover object-top"
-              />
-            </div>
+          <RevealItem className="lg:col-span-2">
+            <BrowserMockup src="/work/arrentio/car-detail.jpg" alt={localAlt("Arrentio car detail and booking page", lang)} width={1200} height={2000} sizes="(min-width: 1024px) 60vw, 95vw" viewport={0.62} />
           </RevealItem>
         </RevealGroup>
       </section>

@@ -7,6 +7,7 @@ import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
 import { CardCover } from "./work/ScreenFrames";
+import { BrowserMockup, PhoneMockup } from "./work/Mockups";
 
 // Compact cards under the main grid; Tailwind needs the literal classes.
 const MORE_WORK = [
@@ -64,19 +65,8 @@ export default function WorkSection() {
         </div>
         <div className="relative flex min-h-[300px] items-center justify-center overflow-hidden bg-arrentio-bg p-9 sm:min-h-[420px]">
           <span className="absolute -end-[60px] -top-[60px] block h-[220px] w-[220px] rounded-full bg-arrentio/[.12]" />
-          <div style={{ "--mt-delay": "0.25s" } as React.CSSProperties} className="mt-settle relative w-[min(94%,430px)] -rotate-2 overflow-hidden rounded-[16px] border border-ink/[.08] bg-canvas shadow-[0_30px_50px_-26px_rgba(11,20,32,.4)]">
-            <div className="flex h-[30px] items-center gap-1.5 bg-arrentio-ink px-3">
-              <span className="block h-1.5 w-1.5 rounded-full bg-white/90" />
-              <span className="block h-1.5 w-1.5 rounded-full bg-white/30" />
-              <span className="ms-2 block h-[6px] w-[88px] rounded-full bg-white/25" />
-            </div>
-            <Image
-              src="/work/arrentio/home.jpg"
-              alt={localAlt("Arrentio marketplace homepage", lang)}
-              width={1600}
-              height={1084}
-              className="h-auto w-full"
-            />
+          <div style={{ "--mt-delay": "0.25s" } as React.CSSProperties} className="mt-settle relative w-[min(94%,430px)] -rotate-2">
+            <BrowserMockup src="/work/arrentio/home.jpg" alt={localAlt("Arrentio marketplace homepage", lang)} width={1600} height={1084} sizes="430px" />
           </div>
           <Image
             src="/work/arrentio/logo.png"
@@ -93,10 +83,8 @@ export default function WorkSection() {
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-rentop-bg p-7">
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-rentop/[.16]" />
-            <div className="relative w-[132px] overflow-hidden rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "1290 / 2796" }}>
-              <div className="relative h-full w-full overflow-hidden rounded-[16px]">
-                <Image src="/work/rentop/home.jpg" alt={localAlt("Rentop home screen", lang)} fill sizes="132px" className="object-cover" />
-              </div>
+            <div className="relative w-[132px]">
+              <PhoneMockup src="/work/rentop/home.jpg" alt={localAlt("Rentop home screen", lang)} width={1290} height={2796} sizes="132px" />
             </div>
           </div>
           <div className="p-[clamp(24px,2.6vw,32px)]">
@@ -121,10 +109,8 @@ export default function WorkSection() {
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-jameel-bg p-7">
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-jameel/[.16]" />
-            <div className="relative w-[132px] overflow-hidden rounded-[22px] bg-[#0A0D0C] p-1.5" style={{ aspectRatio: "375 / 812" }}>
-              <div className="relative h-full w-full overflow-hidden rounded-[16px]">
-                <Image src="/work/jameel/home.png" alt={localAlt("Jameel home screen", lang)} fill sizes="132px" className="object-cover" />
-              </div>
+            <div className="relative w-[132px]">
+              <PhoneMockup src="/work/jameel/home.png" alt={localAlt("Jameel home screen", lang)} width={375} height={812} sizes="132px" />
             </div>
           </div>
           <div className="p-[clamp(24px,2.6vw,32px)]">
