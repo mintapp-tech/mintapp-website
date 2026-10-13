@@ -25,9 +25,9 @@ export interface ScreenAsset {
   width: number;
   height: number;
   alt: { en: string; ar: string };
-  // Phone screens get a phone mockup; websites and desktop apps a browser
-  // window that scrolls through pages taller than it.
-  frame: "phone" | "browser";
+  // Phone screens get a phone mockup; websites a browser window that
+  // scrolls through pages taller than it; VR/AR views a headset viewport.
+  frame: "phone" | "browser" | "headset";
   label?: string; // shown in the browser's address bar
 }
 
@@ -39,6 +39,7 @@ export interface WorkScreens {
 }
 
 const phone = (src: string, en: string, ar: string, width = 860, height = 1864): ScreenAsset => ({ src, width, height, alt: { en, ar }, frame: "phone" });
+const headset = (src: string, en: string, ar: string, width = 1600, height = 900): ScreenAsset => ({ src, width, height, alt: { en, ar }, frame: "headset" });
 const web = (src: string, en: string, ar: string, label: string, width = 1600, height = 900): ScreenAsset => ({ src, width, height, alt: { en, ar }, frame: "browser", label });
 
 const KWAYES = [
@@ -77,10 +78,10 @@ const PMPS = [
 ];
 
 const CIRCUITSCRAFT = [
-  web("/work/circuitscraft/add-component.webp", "CircuitsCraft component library", "مكتبة المكوّنات في CircuitsCraft", "CircuitsCraft"),
-  web("/work/circuitscraft/breadboard.webp", "CircuitsCraft LED placed on a breadboard", "مصباح LED موضوع على لوحة التجارب في CircuitsCraft", "CircuitsCraft"),
-  web("/work/circuitscraft/code-editor.webp", "CircuitsCraft microcontroller code editor", "محرر كود المتحكم الدقيق في CircuitsCraft", "CircuitsCraft"),
-  web("/work/circuitscraft/trade.webp", "CircuitsCraft trade marketplace for circuits", "سوق تداول الدوائر في CircuitsCraft", "CircuitsCraft"),
+  headset("/work/circuitscraft/add-component.webp", "CircuitsCraft component library in VR", "مكتبة المكوّنات في CircuitsCraft بالواقع الافتراضي"),
+  headset("/work/circuitscraft/breadboard.webp", "CircuitsCraft LED placed on a breadboard", "مصباح LED موضوع على لوحة التجارب في CircuitsCraft"),
+  headset("/work/circuitscraft/code-editor.webp", "CircuitsCraft microcontroller code editor", "محرر كود المتحكم الدقيق في CircuitsCraft"),
+  headset("/work/circuitscraft/trade.webp", "CircuitsCraft trade marketplace for circuits", "سوق تداول الدوائر في CircuitsCraft"),
 ];
 
 export const WORK_SCREENS: Record<ScreenProject, WorkScreens> = {

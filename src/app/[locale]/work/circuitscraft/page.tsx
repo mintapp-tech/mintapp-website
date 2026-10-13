@@ -9,12 +9,12 @@ const COPY = {
   en: {
     title: "CircuitsCraft — Case Study — Mintapp",
     description:
-      "How Mintapp designed CircuitsCraft: a desktop circuit-building app with a component library, breadboard, microcontroller code editor and a marketplace for circuits.",
+      "How Mintapp designed CircuitsCraft: a VR/AR game for building electronic circuits in 3D space, with a component library, breadboard, microcontroller code editor and a player marketplace.",
   },
   ar: {
     title: "CircuitsCraft — دراسة حالة — Mintapp",
     description:
-      "كيف صممت Mintapp تطبيق CircuitsCraft: تطبيق لبناء الدوائر الإلكترونية على سطح المكتب مع مكتبة مكوّنات ولوحة تجارب ومحرر كود للمتحكم الدقيق وسوق لتداول الدوائر.",
+      "كيف صممت Mintapp لعبة CircuitsCraft: لعبة بالواقع الافتراضي والمعزّز لبناء الدوائر الإلكترونية في فضاء ثلاثي الأبعاد، مع مكتبة مكوّنات ولوحة تجارب ومحرر كود للمتحكم الدقيق وسوق للاعبين.",
   },
 } as const;
 
