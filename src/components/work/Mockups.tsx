@@ -96,3 +96,21 @@ export function BrowserMockup({
     </div>
   );
 }
+
+// A VR/AR headset view: a wide lens-shaped viewport with a soft vignette,
+// showing the whole frame.
+export function HeadsetMockup({ src, alt, width, height, sizes, priority, className = "" }: ShotProps) {
+  return (
+    <div className={`@container w-full ${className}`}>
+      <div className="rounded-[4.2cqw] bg-[linear-gradient(160deg,#3a3d43_0%,#121316_45%,#26292e_100%)] p-[1.1cqw] shadow-[0_50px_80px_-40px_rgba(7,12,10,.6),0_16px_32px_-20px_rgba(7,12,10,.35)]">
+        <div className="relative overflow-hidden rounded-[3.3cqw] bg-black" style={{ aspectRatio: `${width} / ${height}` }}>
+          <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="object-cover" />
+          <span className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(0,0,0,0)_60%,rgba(0,0,0,.4)_100%)]" />
+          <span dir="ltr" className="absolute start-[2.4cqw] top-[2.4cqw] rounded-full bg-white/10 px-[max(8px,1.6cqw)] py-[max(3px,.6cqw)] text-[max(9px,1.4cqw)] font-semibold tracking-[.12em] text-white/85 ring-1 ring-white/15 backdrop-blur">
+            VR · AR
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}

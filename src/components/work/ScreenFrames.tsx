@@ -4,12 +4,14 @@ import type { ReactNode } from "react";
 import { useLanguage } from "@/lib/language-context";
 import { WORK_SCREENS, type ScreenProject, type ScreenAsset } from "@/content/work-screens";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
-import { BrowserMockup, PhoneMockup } from "./Mockups";
+import { BrowserMockup, HeadsetMockup, PhoneMockup } from "./Mockups";
 
 function Shot({ asset, sizes, priority, hint }: { asset: ScreenAsset; sizes: string; priority?: boolean; hint?: boolean }) {
   const { lang } = useLanguage();
   const props = { src: asset.src, alt: asset.alt[lang], width: asset.width, height: asset.height, sizes, priority };
-  return asset.frame === "browser" ? <BrowserMockup {...props} label={asset.label} hint={hint} /> : <PhoneMockup {...props} />;
+  if (asset.frame === "browser") return <BrowserMockup {...props} label={asset.label} hint={hint} />;
+  if (asset.frame === "headset") return <HeadsetMockup {...props} />;
+  return <PhoneMockup {...props} />;
 }
 
 // Homepage card visual: the approved cover screenshot when there is one,
@@ -17,7 +19,7 @@ function Shot({ asset, sizes, priority, hint }: { asset: ScreenAsset; sizes: str
 export function CardCover({ slug, children }: { slug: ScreenProject; children?: ReactNode }) {
   const cover = WORK_SCREENS[slug].cover;
   if (!cover) return <>{children}</>;
-  const browser = cover.frame === "browser";
+  const browser = cover.frame !== "phone";
   return (
     <div className={`relative ${browser ? "w-[min(100%,300px)]" : "w-[132px]"}`}>
       <Shot asset={cover} sizes={browser ? "300px" : "132px"} hint={false} />
@@ -26,12 +28,12 @@ export function CardCover({ slug, children }: { slug: ScreenProject; children?: 
 }
 
 // Case-study hero: phones fan out the cover between two more screens;
-// a website or desktop app gets one large window. Falls back to the
+// a website or VR/AR view gets one large frame. Falls back to the
 // existing composition (children) when there are no screens.
 export function HeroScreen({ slug, children }: { slug: ScreenProject; children?: ReactNode }) {
   const { cover, screens } = WORK_SCREENS[slug];
   if (!cover) return <>{children}</>;
-  if (cover.frame === "browser") {
+  if (cover.frame !== "phone") {
     return (
       <div className="relative w-[min(100%,900px)]">
         <Shot asset={cover} sizes="(min-width: 1024px) 900px, 92vw" priority />
@@ -64,7 +66,7 @@ export function ProductScreens({ slug, title, copy, children }: { slug: ScreenPr
   const { lang } = useLanguage();
   const work = WORK_SCREENS[slug];
   const real = work.screens.length > 0;
-  const browser = real && work.screens[0].frame === "browser";
+  const browser = real && work.screens[0].frame !== "phone";
   return (
     <>
       <Reveal className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{title}</Reveal>
