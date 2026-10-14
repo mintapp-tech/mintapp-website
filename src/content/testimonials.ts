@@ -7,7 +7,7 @@
 
 import type { SupportedLocale as Locale } from "@/lib/locales";
 
-export type ProjectSlug = "arrentio" | "rentop" | "jameel" | "nazarih" | "taskaty" | "tanglevibe" | "kwayes";
+export type ProjectSlug = "arrentio" | "rentop" | "jameel" | "taskaty" | "kwayes";
 
 type Localized = Partial<Record<Locale, string>>;
 

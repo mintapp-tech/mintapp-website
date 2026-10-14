@@ -100,17 +100,6 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     },
   },
   {
-    path: "/work/nazarih",
-    en: {
-      title: "Nazarih — Case Study — Mintapp",
-      description: "How Mintapp built Nazarih: a multi-category classifieds marketplace spanning real estate, vehicles, hardware and everyday goods.",
-    },
-    ar: {
-      title: "Nazarih — دراسة حالة — Mintapp",
-      description: "كيف بنت Mintapp Nazarih: سوق إعلانات مبوّبة متعدد الفئات يشمل العقارات والمركبات والأدوات والسلع اليومية.",
-    },
-  },
-  {
     path: "/work/rentop",
     en: {
       title: "Rentop — Case Study — Mintapp",
@@ -119,17 +108,6 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     ar: {
       title: "Rentop — دراسة حالة — Mintapp",
       description: "كيف بنت Mintapp Rentop: تطبيق تأجير سيارات للمستهلك للتصفّح حسب الماركة والفئة والحجز مباشرة، مصمم لسوق الإمارات.",
-    },
-  },
-  {
-    path: "/work/tanglevibe",
-    en: {
-      title: "TangleVibe — Case Study — Mintapp",
-      description: "How Mintapp built TangleVibe: a dating app designed around intentional matching and conversations that go somewhere.",
-    },
-    ar: {
-      title: "TangleVibe — دراسة حالة — Mintapp",
-      description: "كيف بنت Mintapp TangleVibe: تطبيق تعارف مبني على مطابقة مقصودة ومحادثات تصل فعلاً إلى نتيجة.",
     },
   },
   {

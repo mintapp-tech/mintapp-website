@@ -89,9 +89,7 @@ export interface HomeContent {
     featured: { name: string; category: string; desc: string; tags: string[] };
     p1: { name: string; category: string; desc: string; tags: string[] };
     p2: { name: string; category: string; desc: string; tags: string[] };
-    p3: { name: string; category: string; desc: string; tags: string[] };
     p4: { name: string; category: string; desc: string; tags: string[] };
-    p5: { name: string; category: string; desc: string; tags: string[] };
     p6: { name: string; category: string; desc: string; tags: string[] };
     // Compact cards under the main grid, keyed by case-study slug.
     more: Record<"whhr" | "budgetly" | "pmps" | "circuitscraft", { name: string; category: string; desc: string }>;
@@ -208,9 +206,7 @@ export interface HomeContent {
   };
   csArrentio: CaseStudyContent;
   csJameel: CaseStudyContent;
-  csNazarih: CaseStudyContent;
   csTaskaty: CaseStudyContent;
-  csTangleVibe: CaseStudyContent;
   csRentop: CaseStudyContent;
   csKwayes: CaseStudyContent;
   csWhhr: CaseStudyContent;

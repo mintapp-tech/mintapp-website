@@ -45,9 +45,7 @@ export const en: HomeContent = {
     featured: { name: "Arrentio", category: "Car rental marketplace & agency platform", desc: "A verified marketplace that moves car rental out of chat threads into a system built on trust — with a branded storefront for every agency.", tags: ["Web Platform", "UI/UX", "Development"] },
     p1: { name: "Rentop", category: "Car rental booking app", desc: "A consumer car rental app for browsing by brand and category, and booking a car in a few taps — ratings, specs and live availability included.", tags: ["Mobile App", "UI/UX", "Development"] },
     p2: { name: "Jameel", category: "Car wash service marketplace", desc: "A four-sided platform connecting car owners with independent wash providers and their crews, plus the dashboard that runs the whole operation.", tags: ["Mobile App", "Admin Dashboard", "Development"] },
-    p3: { name: "Nazarih", category: "Multi-category classifieds marketplace", desc: "A marketplace where people list and find cars, real estate, hardware and everyday goods in one app.", tags: ["Mobile App", "Marketplace", "UI/UX"] },
     p4: { name: "Taskaty", category: "Daily planner & time tracking app", desc: "A personal planner that pulls tasks from Google Calendar and Notion into one daily path and tracks where the hours actually go.", tags: ["Mobile App", "Productivity", "Development"] },
-    p5: { name: "TangleVibe", category: "Dating & connection app", desc: "A dating app built around intentional matching and conversations that actually go somewhere.", tags: ["Mobile App", "UI/UX", "Development"] },
     p6: { name: "Kwayes", category: "Classifieds & resale marketplace app", desc: "A social marketplace for selling secondhand goods — post an ad with photos or video, message buyers directly and track it all from one profile.", tags: ["Mobile App", "Marketplace", "Development"] },
     more: {
       whhr: { name: "whHR", category: "Employee attendance & HR app", desc: "Check-in, attendance, overtime and gatepasses in one employee app." },
@@ -333,46 +331,6 @@ export const en: HomeContent = {
     relatedTitle: "Related project",
     back: "Back",
   },
-  csNazarih: {
-    eyebrow: "Case study",
-    name: "Nazarih",
-    category: "Multi-category classifieds marketplace",
-    title: "One marketplace for cars, homes and everything between",
-    sub: "A classifieds app where people list and search across categories as different as real estate, vehicles and hardware, without the listing flow breaking down for any of them.",
-    meta: [
-      { k: "Field", v: "Classifieds marketplace" },
-      { k: "Scope", v: "Strategy · Design · Development" },
-      { k: "Platform", v: "iOS & Android" },
-      { k: "Categories", v: "Real estate · Vehicles · Hardware · Goods" },
-    ],
-    challengeTitle: "The challenge",
-    challengeCopy:
-      "A single listing form can't serve a car, an apartment and a used drill equally well — each category needs different fields, filters and photos, but users still expect one simple app, not four.",
-    approachTitle: "Our approach",
-    approachCopy:
-      "We designed one flexible listing and search system that adapts its fields and filters to the category selected, instead of forcing every item through the same generic form.",
-    approachPoints: [
-      { t: "Category-aware listings", d: "The fields a seller fills in change with what they're selling — a car asks for mileage, a flat asks for bedrooms." },
-      { t: "Filters that match the category", d: "Search narrows by the attributes that actually matter for that kind of listing." },
-      { t: "One app, many markets", d: "Real estate, vehicles and goods share the same navigation and trust patterns throughout." },
-    ],
-    uxTitle: "Experience direction",
-    uxPoints: [
-      { t: "Browse by category first", d: "The home screen sorts by what people are shopping for, not a single undifferentiated feed." },
-      { t: "Photos that carry the listing", d: "A gallery-first layout, since a classifieds ad lives or dies on its images." },
-      { t: "Contact without friction", d: "Direct messaging and calling from the listing, with no extra steps to reach a seller." },
-    ],
-    screensTitle: "Product screens",
-    screensCopy: "Compositions from the browse, listing detail and seller posting flows.",
-    dsTitle: "Design system",
-    dsCopy: "A warm amber accent on a neutral base, built to let listing photos — not chrome — carry the visual weight of the screen.",
-    outcomeTitle: "Outcome",
-    outcomeCopy:
-      "The team shipped a single codebase that handles four very different listing categories without feeling generic in any of them — a foundation that can take on new categories without a redesign.",
-    outcomePoints: ["One flexible listing system across four categories", "Category-specific search and filtering", "Built to extend to new categories without a rebuild"],
-    relatedTitle: "Related project",
-    back: "Back",
-  },
   csTaskaty: {
     eyebrow: "Case study",
     name: "Taskaty",
@@ -410,46 +368,6 @@ export const en: HomeContent = {
     outcomeCopy:
       "Taskaty gives one picture of the day: tasks from every tool on a single path, time tracked against personal targets, and stats that show where the hours went.",
     outcomePoints: ["Google Calendar, Notion and Apple Health in one place", "Time tracked against daily targets", "A single path through today's tasks"],
-    relatedTitle: "Related project",
-    back: "Back",
-  },
-  csTangleVibe: {
-    eyebrow: "Case study",
-    name: "TangleVibe",
-    category: "Dating & connection app",
-    title: "Dating, built around conversations that go somewhere",
-    sub: "A dating app designed around intentional matching and conversation, rather than an endless swipe queue with no destination.",
-    meta: [
-      { k: "Field", v: "Social & dating" },
-      { k: "Scope", v: "Strategy · Design · Development" },
-      { k: "Platform", v: "iOS & Android" },
-      { k: "Focus", v: "Matching, messaging & profiles" },
-    ],
-    challengeTitle: "The challenge",
-    challengeCopy:
-      "Swipe-first dating apps optimise for volume: more profiles, more swipes, more matches that go nowhere. The actual bottleneck for most users isn't finding a match — it's the conversation after.",
-    approachTitle: "Our approach",
-    approachCopy:
-      "We treated the conversation, not the swipe, as the core product moment — designing the matching flow to lead somewhere instead of ending at a match notification.",
-    approachPoints: [
-      { t: "Profiles built to start a conversation", d: "Structured prompts instead of a blank bio, giving both people something to respond to." },
-      { t: "Matching with intent", d: "Fewer, more deliberate signals instead of a pure volume swipe mechanic." },
-      { t: "Messaging as the destination", d: "The chat experience is the most polished part of the app, not an afterthought past the match screen." },
-    ],
-    uxTitle: "Experience direction",
-    uxPoints: [
-      { t: "A profile you can read in seconds", d: "Photos and prompts laid out for a quick, honest first impression." },
-      { t: "Matches that lead to chat", d: "A direct path from match to conversation, with no dead-end screens." },
-      { t: "Safety built into the flow", d: "Reporting and blocking are one tap away at every stage, not buried in settings." },
-    ],
-    screensTitle: "Product screens",
-    screensCopy: "Compositions from the discovery feed, match moment and messaging screen.",
-    dsTitle: "Design system",
-    dsCopy: "A warm rose against a soft neutral base — expressive enough for a social app, restrained enough to stay legible.",
-    outcomeTitle: "Outcome",
-    outcomeCopy:
-      "The result is a dating app structured around what happens after the match: prompt-driven profiles, a deliberate matching flow, and a messaging experience built as the product's centre of gravity, not its afterthought.",
-    outcomePoints: ["Prompt-driven profiles for a faster first impression", "A matching flow designed to lead into conversation", "Safety controls built into every screen"],
     relatedTitle: "Related project",
     back: "Back",
   },
