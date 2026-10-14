@@ -13,15 +13,13 @@ const PUBLIC_PATHS = [
   "/work/circuitscraft",
   "/work/jameel",
   "/work/kwayes",
-  "/work/nazarih",
   "/work/pmps",
   "/work/rentop",
-  "/work/tanglevibe",
   "/work/taskaty",
   "/work/whhr",
 ];
 
-test.describe("all 32 valid localized URLs succeed and render with the correct lang/dir", () => {
+test.describe("all 28 valid localized URLs succeed and render with the correct lang/dir", () => {
   for (const path of PUBLIC_PATHS) {
     for (const locale of ["en", "ar"] as const) {
       test(`/${locale}${path}`, async ({ page }) => {
@@ -96,15 +94,15 @@ test.describe("locale-like-but-unsupported prefixes redirect to a real supported
 });
 
 test.describe("/sitemap.xml", () => {
-  test("returns real XML containing exactly the 32 intended public URLs", async ({ page }) => {
+  test("returns real XML containing exactly the 28 intended public URLs", async ({ page }) => {
     const response = await page.goto("/sitemap.xml");
     expect(response?.status()).toBe(200);
     expect(response?.headers()["content-type"]).toContain("xml");
 
     const body = await response!.text();
     const locations = [...body.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
-    expect(locations.length).toBe(32);
-    expect(new Set(locations).size).toBe(32);
+    expect(locations.length).toBe(28);
+    expect(new Set(locations).size).toBe(28);
 
     for (const loc of locations) {
       expect(loc.startsWith(SITE_URL)).toBe(true);
@@ -127,7 +125,7 @@ test.describe("/robots.txt", () => {
 });
 
 test.describe("/internal/concept-pack stays excluded and noindex, unaffected by this milestone", () => {
-  test("is not one of the sitemap's 32 URLs", async ({ page }) => {
+  test("is not one of the sitemap's 28 URLs", async ({ page }) => {
     const response = await page.goto("/sitemap.xml");
     const body = await response!.text();
     expect(body).not.toContain("/internal");

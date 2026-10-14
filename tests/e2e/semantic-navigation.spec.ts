@@ -35,7 +35,7 @@ const COPY = {
   },
 } as const;
 
-const CASE_STUDIES = ["arrentio", "rentop", "jameel", "nazarih", "taskaty", "tanglevibe", "kwayes"];
+const CASE_STUDIES = ["arrentio", "rentop", "jameel", "taskaty", "kwayes"];
 const LOCALES = ["en", "ar"] as const;
 
 function exact(name: string) {

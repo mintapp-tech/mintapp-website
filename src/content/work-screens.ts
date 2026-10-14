@@ -11,9 +11,7 @@
 // them accurately.
 
 export type ScreenProject =
-  | "nazarih"
   | "taskaty"
-  | "tanglevibe"
   | "kwayes"
   | "whhr"
   | "budgetly"
@@ -85,8 +83,6 @@ const CIRCUITSCRAFT = [
 ];
 
 export const WORK_SCREENS: Record<ScreenProject, WorkScreens> = {
-  nazarih: { screens: [] },
-  tanglevibe: { screens: [] },
   taskaty: {
     intro: {
       en: "The day view, imported tasks, activity stats and settings, from the Taskaty design.",
