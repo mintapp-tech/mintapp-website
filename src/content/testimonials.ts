@@ -7,7 +7,7 @@
 
 import type { SupportedLocale as Locale } from "@/lib/locales";
 
-export type ProjectSlug = "arrentio" | "rentop" | "jameel" | "taskaty" | "kwayes";
+export type ProjectSlug = "arrentio" | "rentop" | "jameel" | "taskaty" | "kwayes" | "otj";
 
 type Localized = Partial<Record<Locale, string>>;
 
@@ -60,6 +60,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
       // OTJ's own logo from onetimejob.co, unaltered.
       logo: { src: "/testimonials/otj-logo.png", width: 233, height: 70 },
     },
+    project: "otj",
     approval: { approvedBy: "Nour Makram, Founder of OTJ (relayed by Omar)", approvedOn: "2026-10-05", quote: true, name: true, company: true, photo: false, logo: true, translation: false },
   },
   {
