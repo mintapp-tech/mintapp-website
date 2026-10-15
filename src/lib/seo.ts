@@ -24,6 +24,7 @@ export const PUBLIC_ROUTE_PATHS: readonly string[] = [
   "/work/circuitscraft",
   "/work/jameel",
   "/work/kwayes",
+  "/work/otj",
   "/work/pmps",
   "/work/rentop",
   "/work/taskaty",

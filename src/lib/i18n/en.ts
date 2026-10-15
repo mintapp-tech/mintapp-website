@@ -48,6 +48,7 @@ export const en: HomeContent = {
     p4: { name: "Taskaty", category: "Daily planner & time tracking app", desc: "A personal planner that pulls tasks from Google Calendar and Notion into one daily path and tracks where the hours actually go.", tags: ["Mobile App", "Productivity", "Development"] },
     p6: { name: "Kwayes", category: "Classifieds & resale marketplace app", desc: "A social marketplace for selling secondhand goods — post an ad with photos or video, message buyers directly and track it all from one profile.", tags: ["Mobile App", "Marketplace", "Development"] },
     more: {
+      otj: { name: "OTJ", category: "Creative freelance marketplace", desc: "Find a creative, send a brief and run the project, from proposal to payment, in one place." },
       whhr: { name: "whHR", category: "Employee attendance & HR app", desc: "Check-in, attendance, overtime and gatepasses in one employee app." },
       budgetly: { name: "Budgetly", category: "Personal budgeting app", desc: "Receipt scanning and category budgets that keep tracking going." },
       pmps: { name: "PMPS", category: "Construction consulting website", desc: "A consultancy site built around services, industries and projects." },
@@ -608,6 +609,46 @@ export const en: HomeContent = {
     outcomeCopy:
       "The design turns circuit building into a game a beginner can start right away: pick parts visually, place them on a breadboard, program the microcontroller, and share or sell the result.",
     outcomePoints: ["Circuits built in VR and AR space", "Built-in microcontroller and hex editors", "Fixed-price and auction listings"],
+    relatedTitle: "Related project",
+    back: "Back",
+  },
+  csOtj: {
+    eyebrow: "Case study",
+    name: "OTJ",
+    category: "Creative freelance marketplace",
+    title: "One structured flow from the brief to the final file",
+    sub: "OTJ (One Time Job) connects creatives — photographers, videographers, designers and more — with clients for one-off projects, and runs the whole job inside the platform: the brief, the proposal, the payments and every phase of the work.",
+    meta: [
+      { k: "Field", v: "Creative services marketplace" },
+      { k: "Scope", v: "Platform development" },
+      { k: "Platform", v: "Web app (PWA), admin & API" },
+      { k: "Market", v: "Egypt" },
+    ],
+    challengeTitle: "The challenge",
+    challengeCopy:
+      "Creative jobs usually live in DMs: a brief in one chat, a quote in another, payments on trust and deliverables lost in threads. OTJ needed one place where a client can find the right creative, book them, and follow the project to completion — with both sides protected.",
+    approachTitle: "Our approach",
+    approachCopy:
+      "We built the platform around the life of a single job, so every step between the first message and the final file has a clear owner and a clear state.",
+    approachPoints: [
+      { t: "Briefs, not chats", d: "Clients send a structured brief with dates, location and budget; creatives accept, decline or send a counter-offer." },
+      { t: "Proposals in phases", d: "Creatives turn a brief into a proposal with phases and payment splits, and the client reviews it before any work starts." },
+      { t: "Payments tied to progress", d: "A deposit starts the project, each phase is confirmed by the client, and payment proofs are uploaded and verified." },
+    ],
+    uxTitle: "Experience direction",
+    uxPoints: [
+      { t: "Discovery by field", d: "Explore groups creatives by profession, with filters for experience and city and a search across names and skills." },
+      { t: "Profiles that sell", d: "Each creative has a shareable profile with selected works, packages and reviews, and a Book Now button always in reach." },
+      { t: "Installable on any phone", d: "The web app works as a PWA with push notifications, so new briefs and payments reach users like a native app." },
+    ],
+    screensTitle: "Product screens",
+    screensCopy: "Explore, a creative's profile, their packages and the booking brief.",
+    dsTitle: "Design system",
+    dsCopy: "A monochrome base — near-black actions on a warm off-white — so creatives' own work provides the colour, with blue reserved for progress and status.",
+    outcomeTitle: "Outcome",
+    outcomeCopy:
+      "OTJ is live with creatives across photography, video, design, marketing and more, and a single flow that takes a job from brief to proposal, deposit, delivery and review.",
+    outcomePoints: ["Brief, proposal and phase workflow", "Deposits and payment verification", "Two-way reviews after every project"],
     relatedTitle: "Related project",
     back: "Back",
   },

@@ -11,6 +11,7 @@ import { BrowserMockup, PhoneMockup } from "./work/Mockups";
 
 // Compact cards under the main grid; Tailwind needs the literal classes.
 const MORE_WORK = [
+  { slug: "otj", bg: "bg-otj-bg" },
   { slug: "whhr", bg: "bg-whhr-bg" },
   { slug: "budgetly", bg: "bg-budgetly-bg" },
   { slug: "pmps", bg: "bg-pmps-bg" },
@@ -212,7 +213,7 @@ export default function WorkSection() {
         </RevealItem>
       </RevealGroup>
 
-      <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2 lg:grid-cols-4">
+      <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2 lg:grid-cols-5">
         {MORE_WORK.map(({ slug, bg }) => {
           const p = t.work.more[slug];
           return (

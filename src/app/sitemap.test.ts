@@ -6,8 +6,8 @@ import { SUPPORTED_LOCALES } from "@/lib/locales";
 describe("sitemap", () => {
   const entries = sitemap();
 
-  test("contains exactly 28 URLs", () => {
-    expect(entries.length).toBe(28);
+  test("contains exactly 30 URLs", () => {
+    expect(entries.length).toBe(30);
   });
 
   test("every URL is absolute, using the fixed production origin — never derived from a request host", () => {
@@ -28,6 +28,7 @@ describe("sitemap", () => {
       "/work/circuitscraft",
       "/work/jameel",
       "/work/kwayes",
+      "/work/otj",
       "/work/pmps",
       "/work/rentop",
       "/work/taskaty",

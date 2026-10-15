@@ -42,6 +42,9 @@
   --color-circuitscraft: #2f6fe4;
   --color-circuitscraft-2: #ff4b4b;
   --color-circuitscraft-bg: #eceef2;
+  --color-otj: #141414;
+  --color-otj-2: #2563eb;
+  --color-otj-bg: #f2f1ee;
 
   --font-manrope: var(--font-manrope-google), system-ui, sans-serif;
   --font-alexandria: var(--font-alexandria-google), system-ui, sans-serif;
