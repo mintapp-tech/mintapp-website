@@ -91,8 +91,9 @@ export interface HomeContent {
     p2: { name: string; category: string; desc: string; tags: string[] };
     p4: { name: string; category: string; desc: string; tags: string[] };
     p6: { name: string; category: string; desc: string; tags: string[] };
+    otj: { name: string; category: string; desc: string; tags: string[] };
     // Compact cards under the main grid, keyed by case-study slug.
-    more: Record<"otj" | "whhr" | "budgetly" | "pmps" | "circuitscraft", { name: string; category: string; desc: string }>;
+    more: Record<"whhr" | "budgetly" | "pmps" | "circuitscraft", { name: string; category: string; desc: string }>;
   };
   svc: {
     eyebrow: string;
