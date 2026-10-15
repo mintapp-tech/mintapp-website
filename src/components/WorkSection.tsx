@@ -11,7 +11,6 @@ import { BrowserMockup, PhoneMockup } from "./work/Mockups";
 
 // Compact cards under the main grid; Tailwind needs the literal classes.
 const MORE_WORK = [
-  { slug: "otj", bg: "bg-otj-bg" },
   { slug: "whhr", bg: "bg-whhr-bg" },
   { slug: "budgetly", bg: "bg-budgetly-bg" },
   { slug: "pmps", bg: "bg-pmps-bg" },
@@ -81,6 +80,31 @@ export default function WorkSection() {
       </Reveal>
 
       <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2">
+        {/* OTJ spans the row so the four cards after it stay in pairs. */}
+        <RevealItem className="grid grid-cols-1 overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)] sm:col-span-2 lg:grid-cols-2">
+          <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-otj-bg p-7 lg:order-last lg:border-b-0 lg:border-s">
+            <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-otj-2/[.12]" />
+            <CardCover slug="otj" />
+          </div>
+          <div className="flex flex-col justify-center p-[clamp(24px,2.6vw,32px)]">
+            <div className="flex items-baseline gap-2.5">
+              <h3 className="m-0 text-[26px] font-semibold tracking-[-0.02em]">{t.work.otj.name}</h3>
+              <span className="text-[13.5px] text-ink-soft">{t.work.otj.category}</span>
+            </div>
+            <p className="mt-3 max-w-[48ch] text-[15.5px] leading-[1.8] text-ink-soft">{t.work.otj.desc}</p>
+            <div className="my-5 flex flex-wrap gap-1.5">
+              {t.work.otj.tags.map((tag) => (
+                <span key={tag} className="rounded-full border border-ink/[.15] px-3 py-1 text-xs text-ink">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <Link href={caseStudy("otj")} className={cardLink}>
+              {t.work.cta} <span className="block">{arrow}</span>
+            </Link>
+          </div>
+        </RevealItem>
+
         <RevealItem className="overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
           <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-rentop-bg p-7">
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-rentop/[.16]" />
@@ -213,7 +237,7 @@ export default function WorkSection() {
         </RevealItem>
       </RevealGroup>
 
-      <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2 lg:grid-cols-5">
+      <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2 lg:grid-cols-4">
         {MORE_WORK.map(({ slug, bg }) => {
           const p = t.work.more[slug];
           return (
