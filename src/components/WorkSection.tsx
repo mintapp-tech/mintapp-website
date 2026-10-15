@@ -6,7 +6,7 @@ import { useLanguage } from "@/lib/language-context";
 import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
-import { CardCover } from "./work/ScreenFrames";
+import { CardCover, HeroScreen } from "./work/ScreenFrames";
 import { BrowserMockup, PhoneMockup } from "./work/Mockups";
 
 // Compact cards under the main grid; Tailwind needs the literal classes.
@@ -82,9 +82,9 @@ export default function WorkSection() {
       <RevealGroup className="mt-[clamp(18px,2.4vw,28px)] grid grid-cols-1 gap-[clamp(18px,2.4vw,28px)] sm:grid-cols-2">
         {/* OTJ spans the row so the four cards after it stay in pairs. */}
         <RevealItem className="grid grid-cols-1 overflow-hidden rounded-[20px] border border-ink/[.09] bg-canvas transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)] sm:col-span-2 lg:grid-cols-2">
-          <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-otj-bg p-7 lg:order-last lg:border-b-0 lg:border-s">
+          <div className="relative flex min-h-[250px] items-center justify-center overflow-hidden border-b border-ink/[.07] bg-otj-bg px-6 py-9 lg:order-last lg:border-b-0 lg:border-s">
             <span className="absolute -end-10 -top-10 block h-[150px] w-[150px] rounded-full bg-otj-2/[.12]" />
-            <CardCover slug="otj" />
+            <HeroScreen slug="otj" />
           </div>
           <div className="flex flex-col justify-center p-[clamp(24px,2.6vw,32px)]">
             <div className="flex items-baseline gap-2.5">
