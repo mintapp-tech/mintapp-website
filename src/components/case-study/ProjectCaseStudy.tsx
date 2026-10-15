@@ -18,7 +18,7 @@ export interface ProjectTheme {
 
 // Shared layout for case studies whose visuals are all real screens from
 // WORK_SCREENS — no hand-drawn compositions to keep per project.
-export type ProjectCaseStudyKey = "csWhhr" | "csBudgetly" | "csPmps" | "csCircuitsCraft";
+export type ProjectCaseStudyKey = "csWhhr" | "csBudgetly" | "csPmps" | "csCircuitsCraft" | "csOtj";
 
 export default function ProjectCaseStudy({ slug, csKey, theme }: { slug: ScreenProject; csKey: ProjectCaseStudyKey; theme: ProjectTheme }) {
   const { t, lang, arrow, backArrow } = useLanguage();

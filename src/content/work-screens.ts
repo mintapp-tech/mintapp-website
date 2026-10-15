@@ -16,7 +16,8 @@ export type ScreenProject =
   | "whhr"
   | "budgetly"
   | "pmps"
-  | "circuitscraft";
+  | "circuitscraft"
+  | "otj";
 
 export interface ScreenAsset {
   src: string;
@@ -82,6 +83,13 @@ const CIRCUITSCRAFT = [
   headset("/work/circuitscraft/trade.webp", "CircuitsCraft trade marketplace for circuits", "سوق تداول الدوائر في CircuitsCraft"),
 ];
 
+const OTJ = [
+  phone("/work/otj/explore.webp", "OTJ explore page with creatives grouped by field", "صفحة الاستكشاف في OTJ مع المبدعين مصنّفين حسب المجال"),
+  phone("/work/otj/profile.webp", "A creative's public profile on OTJ with selected works", "الملف العام لمبدع على OTJ مع أعمال مختارة"),
+  phone("/work/otj/packages.webp", "Packages a creative offers on their OTJ profile", "الباقات التي يقدّمها المبدع في ملفه على OTJ"),
+  phone("/work/otj/brief.webp", "OTJ booking brief with project dates, location and budget", "نموذج طلب الحجز في OTJ مع تواريخ المشروع والموقع والميزانية"),
+];
+
 export const WORK_SCREENS: Record<ScreenProject, WorkScreens> = {
   taskaty: {
     intro: {
@@ -130,6 +138,14 @@ export const WORK_SCREENS: Record<ScreenProject, WorkScreens> = {
     },
     cover: CIRCUITSCRAFT[1],
     screens: CIRCUITSCRAFT,
+  },
+  otj: {
+    intro: {
+      en: "Explore, a creative's profile, their packages and the booking brief, from the live OTJ platform.",
+      ar: "الاستكشاف، وملف المبدع، وباقاته، ونموذج طلب الحجز، من منصة OTJ الفعلية.",
+    },
+    cover: OTJ[0],
+    screens: OTJ,
   },
 };
 

@@ -12,7 +12,7 @@ const assets = (Object.entries(WORK_SCREENS) as [string, (typeof WORK_SCREENS)[k
 
 describe("work screenshots manifest", () => {
   test("covers every project that doesn't hand-place its screenshots", () => {
-    expect(Object.keys(WORK_SCREENS).sort()).toEqual(["budgetly", "circuitscraft", "kwayes", "pmps", "taskaty", "whhr"]);
+    expect(Object.keys(WORK_SCREENS).sort()).toEqual(["budgetly", "circuitscraft", "kwayes", "otj", "pmps", "taskaty", "whhr"]);
   });
 
   test("projects with real screens describe them (no leftover composition wording)", () => {
