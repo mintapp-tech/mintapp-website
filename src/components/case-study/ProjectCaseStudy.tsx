@@ -8,6 +8,8 @@ import { SplitReveal } from "@/components/motion/SplitReveal";
 import { HeroScreen, ProductScreens } from "@/components/work/ScreenFrames";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
+import { TestimonialCard } from "@/components/TestimonialsSection";
+import { publishableTestimonials, testimonialForLocale } from "@/content/testimonials";
 
 // Tailwind needs literal class names, so each project passes its own.
 export interface ProjectTheme {
@@ -23,6 +25,7 @@ export type ProjectCaseStudyKey = "csWhhr" | "csBudgetly" | "csPmps" | "csCircui
 export default function ProjectCaseStudy({ slug, csKey, theme }: { slug: ScreenProject; csKey: ProjectCaseStudyKey; theme: ProjectTheme }) {
   const { t, lang, arrow, backArrow } = useLanguage();
   const cs = t[csKey];
+  const quotes = publishableTestimonials().filter((q) => q.project === slug);
 
   return (
     <>
@@ -145,6 +148,19 @@ export default function ProjectCaseStudy({ slug, csKey, theme }: { slug: ScreenP
           ))}
         </RevealGroup>
       </section>
+
+      {quotes.length > 0 && (
+        <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
+          <Reveal className="mb-4 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{t.testimonials.eyebrow}</Reveal>
+          <RevealGroup className="grid max-w-[860px] grid-cols-1 gap-[clamp(18px,2.4vw,26px)]">
+            {quotes.map((q, i) => (
+              <RevealItem key={q.id}>
+                <TestimonialCard card={testimonialForLocale(q, lang)} index={i} />
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </section>
+      )}
 
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
         <Reveal className="mb-4 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.relatedTitle}</Reveal>
