@@ -47,8 +47,8 @@ export const en: HomeContent = {
     p2: { name: "Jameel", category: "Car wash service marketplace", desc: "A four-sided platform connecting car owners with independent wash providers and their crews, plus the dashboard that runs the whole operation.", tags: ["Mobile App", "Admin Dashboard", "Development"] },
     p4: { name: "Taskaty", category: "Daily planner & time tracking app", desc: "A personal planner that pulls tasks from Google Calendar and Notion into one daily path and tracks where the hours actually go.", tags: ["Mobile App", "Productivity", "Development"] },
     p6: { name: "Kwayes", category: "Classifieds & resale marketplace app", desc: "A social marketplace for selling secondhand goods — post an ad with photos or video, message buyers directly and track it all from one profile.", tags: ["Mobile App", "Marketplace", "Development"] },
-    otj: { name: "OTJ", category: "Creative freelance marketplace", desc: "A marketplace where clients book photographers, videographers and designers, then run the job from brief to proposal, payment and delivery in one place.", tags: ["Web Platform", "PWA", "Development"] },
     more: {
+      otj: { name: "OTJ", category: "Creative freelance marketplace", desc: "Find a creative, send a brief and run the project, from proposal to payment, in one place." },
       whhr: { name: "whHR", category: "Employee attendance & HR app", desc: "Check-in, attendance, overtime and gatepasses in one employee app." },
       budgetly: { name: "Budgetly", category: "Personal budgeting app", desc: "Receipt scanning and category budgets that keep tracking going." },
       pmps: { name: "PMPS", category: "Construction consulting website", desc: "A consultancy site built around services, industries and projects." },
