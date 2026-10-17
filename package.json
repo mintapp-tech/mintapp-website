@@ -19,6 +19,7 @@
     "pack:rules": "node scripts/pack-rules.mjs",
     "pack:check": "node scripts/pack-check.mjs",
     "pack:workspace": "node scripts/new-client-workspace.mjs",
+    "review:clean": "node --env-file=.env.review.local scripts/review-clean.mjs",
     "review:seed": "node scripts/review-seed.mjs",
     "check:commits": "node scripts/check-commits.mjs",
     "email:preview": "node scripts/email-previews.mjs"
