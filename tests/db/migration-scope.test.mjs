@@ -19,9 +19,9 @@ test("no remote migration contains the review marker or synthetic seed", () => {
 });
 
 test("the review-only cleanup and seed stay out of the migrations and refuse any other database", () => {
-  for (const [file, body] of sql("migrations")) assert.doesNotMatch(body, /review_purge|review_delete|review-seed\.invalid|review-run\.invalid/i, file);
+  for (const [file, body] of sql("migrations")) assert.doesNotMatch(body, /review_purge|review_delete|review_clean|review-seed\.invalid|review-run\.invalid/i, file);
   const review = sql("review");
-  assert.deepEqual(review.map(([f]) => f).sort(), ["review_tools.sql", "seed_curated.sql"]);
+  assert.deepEqual(review.map(([f]) => f).sort(), ["review_clean.sql", "review_tools.sql", "seed_curated.sql"]);
   for (const [file, body] of review) {
     assert.match(body, /^-- SYNTHETIC REVIEW DATABASE ONLY/, file);
     assert.match(body, /review_environment\(\)/, file);

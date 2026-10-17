@@ -9,7 +9,10 @@
 // local values, so it cannot reach the real Supabase project or send mail.
 // Ctrl+C stops everything and deletes the cluster.
 //
-//   node scripts/admin-local.mjs [--port 3200] [--live] [--seed review]
+//   node scripts/admin-local.mjs [--port 3200] [--live] [--seed review|none]
+//
+//   --seed none    loads nothing: an empty database, as the review project is after
+//                  `npm run review:clean`, to see the empty states.
 //
 //   --seed review  loads the curated review dataset (supabase/review/: the review marker,
 //                  the review tools and seed_curated.sql) instead of the small synthetic
@@ -83,10 +86,11 @@ if (live) {
     db.applyFile(join(process.cwd(), "tests", "fixtures", "review-marker.sql"));
     db.applyFile(join(process.cwd(), "supabase", "review", "review_tools.sql"));
     db.applyFile(join(process.cwd(), "supabase", "review", "seed_curated.sql"));
-  } else {
+  } else if (arg("--seed") !== "none") {
     // SYNTHETIC inquiries: a test fixture, not product data.
     db.applyFile(join(process.cwd(), "tests", "fixtures", "synthetic-inquiries.sql"));
   }
+  // --seed none: every migration and nothing else, the state of the review project after `npm run review:clean`.
   fakeAuth = await startFakeAuth({ port: Number(arg("--auth-port")) || 0, users: [...team.map((m) => m.email), outsider].map((email) => ({ email, password })) });
   env = {
     ...process.env,
