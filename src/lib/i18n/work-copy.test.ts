@@ -2,12 +2,13 @@ import { describe, expect, test } from "vitest";
 import { ar } from "./ar";
 import { en } from "./en";
 
-// All seven projects are real, completed and approved for public presentation, so no
+// All ten projects are real, completed and approved for public presentation, so no
 // public copy may classify them as samples, concepts or demos.
 const EN_SAMPLE_WORDING = /\b(sample|samples|concept|demo|mock-?up|hypothetical)\b/i;
-const AR_SAMPLE_WORDING = /(تعريفية|تجريبي|افتراضي|نموذج تخيلي)/;
+// "الواقع الافتراضي" is the standard term for virtual reality, not "hypothetical".
+const AR_SAMPLE_WORDING = /(تعريفية|تجريبي|(?<!الواقع ال)افتراضي|نموذج تخيلي)/;
 
-const CASE_STUDY_KEYS = ["csArrentio", "csJameel", "csNazarih", "csTaskaty", "csTangleVibe", "csRentop", "csKwayes"] as const;
+const CASE_STUDY_KEYS = ["csArrentio", "csJameel", "csTaskaty", "csRentop", "csKwayes", "csWhhr", "csBudgetly", "csPmps", "csCircuitsCraft", "csOtj"] as const;
 
 describe("completed projects are presented as selected work, never as samples", () => {
   test("the Work section copy has no sample/concept classification", () => {

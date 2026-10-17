@@ -2,7 +2,7 @@ import { test, expect } from "@playwright/test";
 
 // Locale-aware metadata coverage for every real page pair (derived from the
 // actual route inventory — see docs/deployments.md-style verification: `find
-// src/app -name page.tsx` — 12 locale-routed pages, 24 URLs total). No
+// src/app -name page.tsx` — 15 locale-routed pages, 30 URLs total). No
 // sitemap/OG/JSON-LD/404/analytics assertions here — that's later milestones.
 
 const ROUTES: { path: string; en: { title: string; description: string }; ar: { title: string; description: string } }[] = [
@@ -102,17 +102,6 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     },
   },
   {
-    path: "/work/nazarih",
-    en: {
-      title: "Nazarih — Case Study — Mintapp",
-      description: "How Mintapp built Nazarih: a multi-category classifieds marketplace spanning real estate, vehicles, hardware and everyday goods.",
-    },
-    ar: {
-      title: "Nazarih — دراسة حالة — Mintapp",
-      description: "كيف بنت Mintapp Nazarih: سوق إعلانات مبوّبة متعدد الفئات يشمل العقارات والمركبات والأدوات والسلع اليومية.",
-    },
-  },
-  {
     path: "/work/rentop",
     en: {
       title: "Rentop — Case Study — Mintapp",
@@ -121,17 +110,6 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     ar: {
       title: "Rentop — دراسة حالة — Mintapp",
       description: "كيف بنت Mintapp Rentop: تطبيق تأجير سيارات للمستهلك للتصفّح حسب الماركة والفئة والحجز مباشرة، مصمم لسوق الإمارات.",
-    },
-  },
-  {
-    path: "/work/tanglevibe",
-    en: {
-      title: "TangleVibe — Case Study — Mintapp",
-      description: "How Mintapp built TangleVibe: a dating app designed around intentional matching and conversations that go somewhere.",
-    },
-    ar: {
-      title: "TangleVibe — دراسة حالة — Mintapp",
-      description: "كيف بنت Mintapp TangleVibe: تطبيق تعارف مبني على مطابقة مقصودة ومحادثات تصل فعلاً إلى نتيجة.",
     },
   },
   {
@@ -145,9 +123,74 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
       description: "كيف بنت Mintapp Taskaty: تطبيق إدارة مهام مركّز يمنح الفرق الصغيرة رؤية واحدة مشتركة لما هو مُسنَد ومستحق ومنجز.",
     },
   },
+  {
+    path: "/work/budgetly",
+    en: {
+      title: "Budgetly — Case Study — Mintapp",
+      description:
+        "How Mintapp designed Budgetly: a personal budgeting app with receipt scanning, linked accounts and monthly budgets by category.",
+    },
+    ar: {
+      title: "Budgetly — دراسة حالة — Mintapp",
+      description:
+        "كيف صممت Mintapp تطبيق Budgetly: تطبيق لإدارة الميزانية الشخصية مع مسح الإيصالات وربط الحسابات وميزانيات شهرية حسب الفئة.",
+    },
+  },
+  {
+    path: "/work/circuitscraft",
+    en: {
+      title: "CircuitsCraft — Case Study — Mintapp",
+      description:
+        "How Mintapp designed CircuitsCraft: a VR/AR game for building electronic circuits in 3D space, with a component library, breadboard, microcontroller code editor and a player marketplace.",
+    },
+    ar: {
+      title: "CircuitsCraft — دراسة حالة — Mintapp",
+      description:
+        "كيف صممت Mintapp لعبة CircuitsCraft: لعبة بالواقع الافتراضي والمعزّز لبناء الدوائر الإلكترونية في فضاء ثلاثي الأبعاد، مع مكتبة مكوّنات ولوحة تجارب ومحرر كود للمتحكم الدقيق وسوق للاعبين.",
+    },
+  },
+  {
+    path: "/work/otj",
+    en: {
+      title: "OTJ — Case Study — Mintapp",
+      description:
+        "How Mintapp built OTJ: a marketplace where clients book creatives for one-off projects and run them from brief to proposal, payment and delivery.",
+    },
+    ar: {
+      title: "OTJ — دراسة حالة — Mintapp",
+      description:
+        "كيف بنت Mintapp منصة OTJ: سوق يحجز فيه العملاء المبدعين لمشاريع لمرة واحدة ويديرونها من الطلب إلى العرض والدفع والتسليم.",
+    },
+  },
+  {
+    path: "/work/pmps",
+    en: {
+      title: "PMPS — Case Study — Mintapp",
+      description:
+        "How Mintapp designed the PMPS website: a construction and project management consultancy site covering services, industries and project case pages.",
+    },
+    ar: {
+      title: "PMPS — دراسة حالة — Mintapp",
+      description:
+        "كيف صممت Mintapp موقع PMPS: موقع لشركة استشارات في إدارة الإنشاءات والمشاريع يعرض الخدمات والقطاعات وصفحات المشاريع.",
+    },
+  },
+  {
+    path: "/work/whhr",
+    en: {
+      title: "whHR — Case Study — Mintapp",
+      description:
+        "How Mintapp designed whHR: an employee app for checking in, tracking attendance, overtime and gatepasses, and viewing HR records.",
+    },
+    ar: {
+      title: "whHR — دراسة حالة — Mintapp",
+      description:
+        "كيف صممت Mintapp تطبيق whHR: تطبيق للموظفين لتسجيل الحضور ومتابعة الدوام والعمل الإضافي وتصاريح الخروج والاطلاع على بيانات الموارد البشرية.",
+    },
+  },
 ];
 
-test.describe("locale-aware SEO metadata — all 12 route pairs / 24 URLs", () => {
+test.describe("locale-aware SEO metadata — all 15 route pairs / 30 URLs", () => {
   for (const route of ROUTES) {
     for (const locale of ["en", "ar"] as const) {
       const copy = route[locale];
@@ -180,7 +223,7 @@ test.describe("locale-aware SEO metadata — all 12 route pairs / 24 URLs", () =
     }
   }
 
-  test("the route inventory itself has exactly 12 pairs / 24 URLs — guards against silently adding/removing a page without updating this suite", () => {
-    expect(ROUTES.length).toBe(12);
+  test("the route inventory itself has exactly 15 pairs / 30 URLs — guards against silently adding/removing a page without updating this suite", () => {
+    expect(ROUTES.length).toBe(15);
   });
 });

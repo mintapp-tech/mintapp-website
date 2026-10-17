@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
-import { ProductScreens } from "@/components/work/ScreenFrames";
+import { HeroScreen, ProductScreens } from "@/components/work/ScreenFrames";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
 
@@ -58,6 +58,7 @@ export default function TaskatyCaseStudy() {
         <Reveal className="relative overflow-hidden rounded-[24px] bg-taskaty-bg p-[clamp(24px,5vw,60px)]">
           <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-taskaty/[.16]" />
           <div className="relative flex items-center justify-center py-[clamp(20px,4vw,50px)]">
+            <HeroScreen slug="taskaty">
             <div
               className="w-[min(46%,260px)] rounded-[34px] bg-[#0A0D0C] p-2.5 shadow-[0_46px_80px_-30px_rgba(0,0,0,.6)]"
               style={{ aspectRatio: "9 / 18.6" }}
@@ -86,6 +87,7 @@ export default function TaskatyCaseStudy() {
                 </div>
               </div>
             </div>
+            </HeroScreen>
           </div>
         </Reveal>
       </section>
@@ -203,15 +205,15 @@ export default function TaskatyCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <Link
-            href={`/${lang}/work/tanglevibe`}
+            href={`/${lang}/work/whhr`}
             className="flex w-full flex-col gap-3 rounded-2xl text-ink border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
-                <span className="text-[20px] font-semibold">{t.work.p5.name}</span>
-                <span className="text-[14px] text-ink-soft">{t.work.p5.category}</span>
+                <span className="text-[20px] font-semibold">{t.work.more.whhr.name}</span>
+                <span className="text-[14px] text-ink-soft">{t.work.more.whhr.category}</span>
               </div>
-              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p5.desc}</p>
+              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.more.whhr.desc}</p>
             </div>
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>

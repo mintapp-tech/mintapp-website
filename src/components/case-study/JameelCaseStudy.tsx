@@ -1,25 +1,16 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import { PhoneMockup } from "@/components/work/Mockups";
 import { localAlt } from "@/content/work-alt";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
 
-function PhoneFrame({ src, alt, priority }: { src: string; alt: string; priority?: boolean }) {
-  return (
-    <div
-      className="w-full overflow-hidden rounded-[28px] bg-[#0A0D0C] p-2 shadow-[0_40px_70px_-30px_rgba(0,0,0,.55)]"
-      style={{ aspectRatio: "375 / 812" }}
-    >
-      <div className="relative h-full w-full overflow-hidden rounded-[20px]">
-        <Image src={src} alt={alt} fill sizes="(min-width: 1024px) 25vw, 45vw" className="object-cover" priority={priority} />
-      </div>
-    </div>
-  );
+function PhoneFrame(props: { src: string; alt: string; priority?: boolean }) {
+  return <PhoneMockup {...props} width={375} height={812} sizes="(min-width: 1024px) 25vw, 45vw" />;
 }
 
 export default function JameelCaseStudy() {
@@ -194,15 +185,15 @@ export default function JameelCaseStudy() {
         </Reveal>
         <Reveal delay={0.05}>
           <Link
-            href={`/${lang}/work/nazarih`}
+            href={`/${lang}/work/rentop`}
             className="flex w-full flex-col gap-3 rounded-2xl text-ink border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
-                <span className="text-[20px] font-semibold">{t.work.p3.name}</span>
-                <span className="text-[14px] text-ink-soft">{t.work.p3.category}</span>
+                <span className="text-[20px] font-semibold">{t.work.p1.name}</span>
+                <span className="text-[14px] text-ink-soft">{t.work.p1.category}</span>
               </div>
-              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p3.desc}</p>
+              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p1.desc}</p>
             </div>
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>

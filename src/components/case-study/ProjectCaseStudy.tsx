@@ -2,15 +2,30 @@
 
 import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
+import type { ScreenProject } from "@/content/work-screens";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
-import { ProductScreens } from "@/components/work/ScreenFrames";
+import { HeroScreen, ProductScreens } from "@/components/work/ScreenFrames";
 import { Magnetic } from "@/components/motion/Magnetic";
 import { SectionLink } from "@/components/nav/links";
+import { TestimonialCard } from "@/components/TestimonialsSection";
+import { publishableTestimonials, testimonialForLocale } from "@/content/testimonials";
 
-export default function TangleVibeCaseStudy() {
+// Tailwind needs literal class names, so each project passes its own.
+export interface ProjectTheme {
+  bg: string; // hero background, e.g. "bg-whhr-bg"
+  blob: string; // hero decoration, e.g. "bg-whhr/[.16]"
+  swatches: string[]; // design-system colour chips
+}
+
+// Shared layout for case studies whose visuals are all real screens from
+// WORK_SCREENS — no hand-drawn compositions to keep per project.
+export type ProjectCaseStudyKey = "csWhhr" | "csBudgetly" | "csPmps" | "csCircuitsCraft" | "csOtj";
+
+export default function ProjectCaseStudy({ slug, csKey, theme }: { slug: ScreenProject; csKey: ProjectCaseStudyKey; theme: ProjectTheme }) {
   const { t, lang, arrow, backArrow } = useLanguage();
-  const cs = t.csTangleVibe;
+  const cs = t[csKey];
+  const quotes = publishableTestimonials().filter((q) => q.project === slug);
 
   return (
     <>
@@ -23,9 +38,7 @@ export default function TangleVibeCaseStudy() {
         </SectionLink>
 
         <Reveal className="mb-4 flex items-center gap-3">
-          <span className="font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-            {cs.eyebrow}
-          </span>
+          <span className="font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.eyebrow}</span>
         </Reveal>
 
         <SplitReveal
@@ -45,9 +58,7 @@ export default function TangleVibeCaseStudy() {
         <RevealGroup className="mt-[clamp(32px,4.4vw,52px)] grid grid-cols-2 gap-x-6 gap-y-6 border-t border-ink/[.09] pt-[clamp(24px,3vw,34px)] sm:grid-cols-4">
           {cs.meta.map((m) => (
             <RevealItem key={m.k}>
-              <div className="mb-1.5 font-manrope text-[11.5px] font-bold tracking-[.12em] text-ink-faint uppercase">
-                {m.k}
-              </div>
+              <div className="mb-1.5 font-manrope text-[11.5px] font-bold tracking-[.12em] text-ink-faint uppercase">{m.k}</div>
               <div className="text-[15.5px] font-medium text-ink">{m.v}</div>
             </RevealItem>
           ))}
@@ -55,31 +66,10 @@ export default function TangleVibeCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(50px,7vw,90px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="relative overflow-hidden rounded-[24px] bg-tanglevibe-bg p-[clamp(24px,5vw,60px)]">
-          <span className="absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full bg-tanglevibe/[.18]" />
+        <Reveal className={`relative overflow-hidden rounded-[24px] ${theme.bg} p-[clamp(24px,5vw,60px)]`}>
+          <span className={`absolute -end-[70px] -top-[70px] block h-[260px] w-[260px] rounded-full ${theme.blob}`} />
           <div className="relative flex items-center justify-center py-[clamp(20px,4vw,50px)]">
-            <div
-              className="absolute w-[min(38%,220px)] translate-x-6 rotate-6 rounded-[30px] bg-[#0A0D0C] p-2 opacity-70 shadow-[0_30px_60px_-30px_rgba(0,0,0,.5)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="h-full rounded-[22px] bg-tanglevibe-2" />
-            </div>
-            <div
-              className="relative w-[min(42%,240px)] -rotate-3 rounded-[30px] bg-[#0A0D0C] p-2 shadow-[0_44px_80px_-30px_rgba(0,0,0,.6)]"
-              style={{ aspectRatio: "9 / 18.6" }}
-            >
-              <div className="flex h-full flex-col overflow-hidden rounded-[22px] bg-canvas">
-                <div className="relative flex-1 bg-tanglevibe">
-                  <span className="absolute bottom-3 start-3 block h-2.5 w-[50%] rounded bg-white/90" />
-                  <span className="absolute bottom-8 start-3 block h-1.5 w-[35%] rounded bg-white/50" />
-                </div>
-                <div className="flex items-center justify-center gap-4 p-3.5">
-                  <span className="block h-9 w-9 rounded-full border border-ink/[.14] bg-surface" />
-                  <span className="block h-11 w-11 rounded-full bg-tanglevibe" />
-                  <span className="block h-9 w-9 rounded-full border border-ink/[.14] bg-surface" />
-                </div>
-              </div>
-            </div>
+            <HeroScreen slug={slug} />
           </div>
         </Reveal>
       </section>
@@ -87,15 +77,11 @@ export default function TangleVibeCaseStudy() {
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
         <div className="grid grid-cols-1 gap-[clamp(30px,4vw,56px)] lg:grid-cols-2">
           <Reveal as="div">
-            <div className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-              {cs.challengeTitle}
-            </div>
+            <div className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.challengeTitle}</div>
             <p className="m-0 text-[17px] leading-[1.9] text-ink-soft">{cs.challengeCopy}</p>
           </Reveal>
           <Reveal as="div" delay={0.1}>
-            <div className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-              {cs.approachTitle}
-            </div>
+            <div className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.approachTitle}</div>
             <p className="m-0 text-[17px] leading-[1.9] text-ink-soft">{cs.approachCopy}</p>
           </Reveal>
         </div>
@@ -127,42 +113,19 @@ export default function TangleVibeCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
-        <ProductScreens slug="tanglevibe" title={cs.screensTitle} copy={cs.screensCopy}>
-          <RevealGroup className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { bg: "bg-tanglevibe-bg", accent: "bg-tanglevibe" },
-              { bg: "bg-canvas", accent: "bg-dark" },
-              { bg: "bg-tanglevibe-bg", accent: "bg-tanglevibe-2" },
-              { bg: "bg-canvas", accent: "bg-tanglevibe" },
-            ].map((screen, i) => (
-              <RevealItem
-                key={i}
-                className={`flex aspect-[3/4] items-center justify-center rounded-2xl border border-ink/[.08] ${screen.bg} p-6`}
-              >
-                <div className="flex w-full flex-col gap-2.5">
-                  <span className="block h-2 w-[50%] rounded bg-dark/80" />
-                  <div className={`h-16 rounded-lg ${screen.accent}`} />
-                  <span className="block h-1.5 w-[70%] rounded bg-ink/[.14]" />
-                  <span className="block h-1.5 w-[40%] rounded bg-ink/[.14]" />
-                </div>
-              </RevealItem>
-            ))}
-          </RevealGroup>
-        </ProductScreens>
+        <ProductScreens slug={slug} title={cs.screensTitle} copy={cs.screensCopy} />
       </section>
 
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
         <Reveal className="grid grid-cols-1 items-center gap-[clamp(28px,4vw,50px)] rounded-[24px] border border-ink/[.08] bg-surface p-[clamp(26px,4vw,50px)] lg:grid-cols-2">
           <div>
-            <div className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-              {cs.dsTitle}
-            </div>
+            <div className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.dsTitle}</div>
             <p className="m-0 max-w-[46ch] text-[16px] leading-[1.85] text-ink-soft">{cs.dsCopy}</p>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <span className="block h-14 w-14 rounded-2xl bg-tanglevibe" />
-            <span className="block h-14 w-14 rounded-2xl bg-tanglevibe-2" />
-            <span className="block h-14 w-14 rounded-2xl bg-dark" />
+            {theme.swatches.map((swatch) => (
+              <span key={swatch} className={`block h-14 w-14 rounded-2xl border border-ink/[.06] ${swatch}`} />
+            ))}
             <div className="flex flex-1 flex-col gap-2">
               <span className="block h-3 w-[70%] rounded bg-dark" />
               <span className="block h-2 w-[50%] rounded bg-ink/[.14]" />
@@ -173,39 +136,45 @@ export default function TangleVibeCaseStudy() {
       </section>
 
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-          {cs.outcomeTitle}
-        </Reveal>
+        <Reveal className="mb-3 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.outcomeTitle}</Reveal>
         <Reveal delay={0.05} className="max-w-[60ch] text-[17px] leading-[1.9] text-ink-soft">
           {cs.outcomeCopy}
         </Reveal>
         <RevealGroup className="mt-[clamp(20px,2.6vw,28px)] flex flex-wrap gap-3">
           {cs.outcomePoints.map((point) => (
-            <RevealItem
-              key={point}
-              className="rounded-full border border-ink/[.12] bg-canvas px-5 py-3 text-[14.5px] font-medium text-ink"
-            >
+            <RevealItem key={point} className="rounded-full border border-ink/[.12] bg-canvas px-5 py-3 text-[14.5px] font-medium text-ink">
               {point}
             </RevealItem>
           ))}
         </RevealGroup>
       </section>
 
+      {quotes.length > 0 && (
+        <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
+          <Reveal className="mb-4 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{t.testimonials.eyebrow}</Reveal>
+          <RevealGroup className="grid max-w-[860px] grid-cols-1 gap-[clamp(18px,2.4vw,26px)]">
+            {quotes.map((q, i) => (
+              <RevealItem key={q.id}>
+                <TestimonialCard card={testimonialForLocale(q, lang)} index={i} />
+              </RevealItem>
+            ))}
+          </RevealGroup>
+        </section>
+      )}
+
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 sm:px-6">
-        <Reveal className="mb-4 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">
-          {cs.relatedTitle}
-        </Reveal>
+        <Reveal className="mb-4 font-manrope text-[12.5px] font-bold tracking-[.14em] text-mint-deep uppercase">{cs.relatedTitle}</Reveal>
         <Reveal delay={0.05}>
           <Link
-            href={`/${lang}/work/kwayes`}
-            className="flex w-full flex-col gap-3 rounded-2xl text-ink border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
+            href={`/${lang}/work/arrentio`}
+            className="flex w-full flex-col gap-3 rounded-2xl border border-ink/[.09] bg-canvas p-[clamp(24px,3vw,34px)] text-start text-ink transition-all duration-500 hover:-translate-y-1 hover:border-ink/20 sm:flex-row sm:items-center sm:justify-between"
           >
             <div>
               <div className="flex items-baseline gap-3">
-                <span className="text-[20px] font-semibold">{t.work.p6.name}</span>
-                <span className="text-[14px] text-ink-soft">{t.work.p6.category}</span>
+                <span className="text-[20px] font-semibold">{t.work.featured.name}</span>
+                <span className="text-[14px] text-ink-soft">{t.work.featured.category}</span>
               </div>
-              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.p6.desc}</p>
+              <p className="mt-2 max-w-[50ch] text-[15px] leading-[1.8] text-ink-soft">{t.work.featured.desc}</p>
             </div>
             <span className="flex items-center gap-2 text-[14.5px] font-semibold text-dark">
               {t.work.cta} <span className="block">{arrow}</span>
@@ -217,9 +186,7 @@ export default function TangleVibeCaseStudy() {
       <section className="mx-auto mt-[clamp(56px,8vw,110px)] max-w-[1280px] px-5 pb-[clamp(60px,8vw,100px)] sm:px-6">
         <Reveal className="relative overflow-hidden rounded-[24px] bg-dark p-[clamp(32px,6vw,70px)] text-center text-canvas">
           <span className="absolute -end-[80px] -top-[80px] block h-[260px] w-[260px] rounded-full bg-mint/10" />
-          <h2 className="relative m-0 text-[clamp(26px,3.4vw,42px)] font-semibold tracking-[-0.02em] text-balance">
-            {t.final.title}
-          </h2>
+          <h2 className="relative m-0 text-[clamp(26px,3.4vw,42px)] font-semibold tracking-[-0.02em] text-balance">{t.final.title}</h2>
           <div className="relative mt-6 flex justify-center">
             <Magnetic className="inline-block">
               <Link

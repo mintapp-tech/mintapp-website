@@ -20,12 +20,15 @@ export const PUBLIC_ROUTE_PATHS: readonly string[] = [
   "/start",
   "/privacy",
   "/work/arrentio",
+  "/work/budgetly",
+  "/work/circuitscraft",
   "/work/jameel",
   "/work/kwayes",
-  "/work/nazarih",
+  "/work/otj",
+  "/work/pmps",
   "/work/rentop",
-  "/work/tanglevibe",
   "/work/taskaty",
+  "/work/whhr",
 ];
 
 interface PageSeoInput {
