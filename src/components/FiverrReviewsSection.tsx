@@ -56,7 +56,7 @@ function ReviewCard({ review, country }: { review: FiverrReview; country: string
   const long = review.quote.length > LONG_QUOTE;
   return (
     <figure className="m-0 flex w-[min(82vw,330px)] flex-none snap-start flex-col rounded-[18px] border border-ink/[.09] bg-surface p-[clamp(18px,2vw,22px)]">
-      <span className="flex items-center gap-1.5 text-[14px] font-bold text-mint-deep" aria-label={`${review.rating.toFixed(1)} ${t.fiverrReviews.ratingLabel}`}>
+      <span role="img" className="flex items-center gap-1.5 text-[14px] font-bold text-mint-deep" aria-label={`${review.rating.toFixed(1)} ${t.fiverrReviews.ratingLabel}`}>
         <span aria-hidden>★</span>
         <span aria-hidden>{review.rating.toFixed(1)}</span>
       </span>
