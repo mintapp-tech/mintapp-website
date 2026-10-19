@@ -6,6 +6,7 @@ import WorkSection from "@/components/WorkSection";
 import ServicesSection from "@/components/ServicesSection";
 import TestimonialsSection from "@/components/TestimonialsSection";
 import { publishableTestimonials } from "@/content/testimonials";
+import FiverrReviewsSection from "@/components/FiverrReviewsSection";
 import ProcessSection from "@/components/ProcessSection";
 import FinalCta from "@/components/FinalCta";
 import Footer from "@/components/Footer";
@@ -42,6 +43,7 @@ export default function Home() {
         <WorkSection />
         {/* Only approved testimonials; with none, the section is not rendered. */}
         <TestimonialsSection items={publishableTestimonials()} />
+        <FiverrReviewsSection />
         <ServicesSection />
         <FinalCta />
       </main>
