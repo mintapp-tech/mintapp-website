@@ -81,15 +81,17 @@ export interface HomeContent {
     // Shown only with labelled sample content on a review Preview.
   };
   fiverrReviews: {
-    eyebrow: string;
     title: string;
     // Says whose reviews these are and where they come from.
     source: string;
     // "4.4 ★ · 20 reviews": the profile's totals, shown beside the quotes.
     reviews: string;
-    showAll: string;
     link: string;
     ratingLabel: string;
+    // Accessible name of the sideways-scrolling row of reviews.
+    rowLabel: string;
+    readMore: string;
+    readLess: string;
   };
   work: {
     eyebrow: string;
