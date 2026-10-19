@@ -36,6 +36,16 @@ export const ar: HomeContent = {
     title: "ماذا يقول عملاؤنا",
     quotedIn: { en: "مقتبس بالإنجليزية", ar: "مقتبس بالعربية" },
   },
+  fiverrReviews: {
+    title: "تقييمات Adam على Fiverr",
+    source: "تقييمات علنية لـ Adam Eba، المطوّر الرئيسي لدينا، منقولة كما كُتبت في ملفه على Fiverr.",
+    reviews: "تقييمًا",
+    link: "اقرأ كل التقييمات على Fiverr",
+    ratingLabel: "من 5 نجوم",
+    rowLabel: "تقييمات Fiverr، مرّر أفقيًا للمزيد",
+    readMore: "اقرأ المزيد",
+    readLess: "عرض أقل",
+  },
   work: {
     eyebrow: "أعمالنا",
     title: "أعمال مختارة",
