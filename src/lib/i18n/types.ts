@@ -80,6 +80,19 @@ export interface HomeContent {
     quotedIn: { en: string; ar: string };
     // Shown only with labelled sample content on a review Preview.
   };
+  fiverrReviews: {
+    title: string;
+    // Says whose reviews these are and where they come from.
+    source: string;
+    // "4.4 ★ · 20 reviews": the profile's totals, shown beside the quotes.
+    reviews: string;
+    link: string;
+    ratingLabel: string;
+    // Accessible name of the sideways-scrolling row of reviews.
+    rowLabel: string;
+    readMore: string;
+    readLess: string;
+  };
   work: {
     eyebrow: string;
     title: string;

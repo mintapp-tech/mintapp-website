@@ -36,6 +36,16 @@ export const en: HomeContent = {
     title: "What our clients say",
     quotedIn: { en: "Quoted in English", ar: "Quoted in Arabic" },
   },
+  fiverrReviews: {
+    title: "Adam's reviews on Fiverr",
+    source: "Public reviews of Adam Eba, our lead developer, quoted as written on his Fiverr profile.",
+    reviews: "reviews",
+    link: "Read every review on Fiverr",
+    ratingLabel: "out of 5 stars",
+    rowLabel: "Fiverr reviews, scroll sideways for more",
+    readMore: "Read more",
+    readLess: "Show less",
+  },
   work: {
     eyebrow: "Our work",
     title: "Selected work",
