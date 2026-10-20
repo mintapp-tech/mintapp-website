@@ -8,6 +8,7 @@
 // overall score and review count are always shown beside them.
 
 import type { SupportedLocale as Locale } from "@/lib/locales";
+import type { ProjectSlug } from "./testimonials";
 
 export const FIVERR_PROFILE_URL = "https://www.fiverr.com/abdelrahmanayme";
 
@@ -27,6 +28,8 @@ export interface FiverrReview {
   rating: number;
   quote: string;
   quoteLanguage: Locale;
+  // The case study for the project this review was left on, when we know it.
+  project?: ProjectSlug;
 }
 
 // The most detailed reviews first.
@@ -55,11 +58,11 @@ export const FIVERR_REVIEWS: readonly FiverrReview[] = [
   { user: "user78126607", country: "SA", rating: 4.3, quoteLanguage: "en", quote: "All is good\nCommunication is a strength\nTiming could be better" },
   { user: "arbeitauslagern", country: "DE", rating: 5, quoteLanguage: "en", quote: "excellent job again. big thanks for these app. saved my life" },
   { user: "arbeitauslagern", country: "DE", rating: 5, quoteLanguage: "en", quote: "excellent new app. happy about professional looking result." },
-  { user: "jameelksa", country: "SA", rating: 5, quoteLanguage: "ar", quote: "شكرا على اهتمامك و حسن تعاملك صراحة هذا الرجل له عمل جبار." },
+  { user: "jameelksa", country: "SA", rating: 5, quoteLanguage: "ar", project: "kwayes", quote: "شكرا على اهتمامك و حسن تعاملك صراحة هذا الرجل له عمل جبار." },
   { user: "heleneodonnelll", country: "AU", rating: 5, quoteLanguage: "en", quote: "Excellent patient seller! Will definitely use him again" },
   { user: "johnwebb553", country: "US", rating: 5, quoteLanguage: "en", quote: "Very professional and timely! Highly recommend!" },
   { user: "arabianguests", country: "SA", rating: 5, quoteLanguage: "en", quote: "Great seller very professional in his business" },
-  { user: "jameelksa", country: "SA", rating: 5, quoteLanguage: "en", quote: "Excellent developer thank you very much!!!" },
+  { user: "jameelksa", country: "SA", rating: 5, quoteLanguage: "en", project: "jameel", quote: "Excellent developer thank you very much!!!" },
   { user: "vijaygupta562", country: "IN", rating: 5, quoteLanguage: "en", quote: "very supportive all the best" },
   { user: "johnwebb553", country: "US", rating: 5, quoteLanguage: "en", quote: "Thank you for your hard work" },
   { user: "jameelksa", country: "SA", rating: 5, quoteLanguage: "ar", quote: "ممتاز جدا 😉" },

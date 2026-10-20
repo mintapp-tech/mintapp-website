@@ -20,6 +20,13 @@ describe("Fiverr reviews", () => {
     for (const r of FIVERR_REVIEWS) expect(names.of(r.country), r.user).not.toBe(r.country);
   });
 
+  test("reviews linked to their case studies", () => {
+    expect(FIVERR_REVIEWS.filter((r) => r.project).map((r) => [r.quote.slice(0, 12), r.project])).toEqual([
+      ["شكرا على اهت", "kwayes"],
+      ["Excellent de", "jameel"],
+    ]);
+  });
+
   test("Palestine is named Palestine", () => {
     expect(FIVERR_REVIEWS.find((r) => r.user === "yazenothman")?.country).toBe("PS");
     expect(COUNTRY_NAMES.PS).toEqual({ en: "Palestine", ar: "فلسطين" });
