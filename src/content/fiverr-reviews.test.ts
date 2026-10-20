@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { FIVERR_PROFILE_URL, FIVERR_REVIEWS, FIVERR_SUMMARY } from "./fiverr-reviews";
+import { COUNTRY_NAMES, FIVERR_PROFILE_URL, FIVERR_REVIEWS, FIVERR_SUMMARY } from "./fiverr-reviews";
 
 describe("Fiverr reviews", () => {
   test("only reviews of 4 stars or more are shown, and never more than the profile has", () => {
@@ -18,6 +18,11 @@ describe("Fiverr reviews", () => {
   test("every country code is a real region", () => {
     const names = new Intl.DisplayNames(["en"], { type: "region" });
     for (const r of FIVERR_REVIEWS) expect(names.of(r.country), r.user).not.toBe(r.country);
+  });
+
+  test("Palestine is named Palestine", () => {
+    expect(FIVERR_REVIEWS.find((r) => r.user === "yazenothman")?.country).toBe("PS");
+    expect(COUNTRY_NAMES.PS).toEqual({ en: "Palestine", ar: "فلسطين" });
   });
 
   test("the section links to the public profile", () => {

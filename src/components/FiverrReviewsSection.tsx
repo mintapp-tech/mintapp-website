@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useLanguage } from "@/lib/language-context";
-import { FIVERR_PROFILE_URL, FIVERR_REVIEWS, FIVERR_SUMMARY, type FiverrReview } from "@/content/fiverr-reviews";
+import { COUNTRY_NAMES, FIVERR_PROFILE_URL, FIVERR_REVIEWS, FIVERR_SUMMARY, type FiverrReview } from "@/content/fiverr-reviews";
 import { Reveal } from "./Reveal";
 
 // ponytail: length heuristic instead of measuring overflow; about five lines at the card's width.
@@ -43,7 +43,7 @@ export default function FiverrReviewsSection() {
         className="-mx-5 flex snap-x snap-mandatory items-start gap-[clamp(14px,1.6vw,18px)] overflow-x-auto scroll-px-5 px-5 pb-4 outline-none focus-visible:ring-2 focus-visible:ring-mint sm:-mx-6 sm:scroll-px-6 sm:px-6 [mask-image:linear-gradient(to_right,#000_88%,transparent)] rtl:[mask-image:linear-gradient(to_left,#000_88%,transparent)]"
       >
         {FIVERR_REVIEWS.map((r, i) => (
-          <ReviewCard key={i} review={r} country={countries.of(r.country) ?? r.country} />
+          <ReviewCard key={i} review={r} country={COUNTRY_NAMES[r.country]?.[lang] ?? countries.of(r.country) ?? r.country} />
         ))}
       </div>
     </section>
