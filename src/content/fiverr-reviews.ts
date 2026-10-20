@@ -14,9 +14,15 @@ export const FIVERR_PROFILE_URL = "https://www.fiverr.com/abdelrahmanayme";
 // The profile's own totals, including the reviews not shown here.
 export const FIVERR_SUMMARY = { rating: 4.4, count: 20 } as const;
 
+// Our own names for regions whose Intl.DisplayNames label we don't use.
+export const COUNTRY_NAMES: Partial<Record<string, Record<Locale, string>>> = {
+  PS: { en: "Palestine", ar: "فلسطين" },
+};
+
 export interface FiverrReview {
   user: string;
-  // ISO 3166-1 alpha-2, rendered in the page's language with Intl.DisplayNames.
+  // ISO 3166-1 alpha-2, rendered in the page's language with Intl.DisplayNames
+  // (or COUNTRY_NAMES below, where we name a place differently).
   country: string;
   rating: number;
   quote: string;
@@ -45,7 +51,7 @@ export const FIVERR_REVIEWS: readonly FiverrReview[] = [
   { user: "arabic4u", country: "EG", rating: 5, quoteLanguage: "en", quote: "Abd Elrahman is born to be a programmer.\nIt was nice having him working in one app, and I already hired him again to do my second app." },
   { user: "arbeitauslagern", country: "DE", rating: 5, quoteLanguage: "en", quote: "Excellent work. Highly recommended. This guy is professional and experienced. I Will order again with my next app" },
   { user: "johnwebb553", country: "US", rating: 5, quoteLanguage: "en", quote: "Abe communicates very well and has exceptional talents for building aps. Highly recommended!" },
-  { user: "yazenothman", country: "IL", rating: 5, quoteLanguage: "en", quote: "highly recommend and very patient he did for me more than what i expect wooow" },
+  { user: "yazenothman", country: "PS", rating: 5, quoteLanguage: "en", quote: "highly recommend and very patient he did for me more than what i expect wooow" },
   { user: "user78126607", country: "SA", rating: 4.3, quoteLanguage: "en", quote: "All is good\nCommunication is a strength\nTiming could be better" },
   { user: "arbeitauslagern", country: "DE", rating: 5, quoteLanguage: "en", quote: "excellent job again. big thanks for these app. saved my life" },
   { user: "arbeitauslagern", country: "DE", rating: 5, quoteLanguage: "en", quote: "excellent new app. happy about professional looking result." },
