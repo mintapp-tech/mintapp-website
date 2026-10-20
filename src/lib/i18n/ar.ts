@@ -36,9 +36,14 @@ export const ar: HomeContent = {
     title: "ماذا يقول عملاؤنا",
     quotedIn: { en: "مقتبس بالإنجليزية", ar: "مقتبس بالعربية" },
   },
+  team: {
+    eyebrow: "فريق العمل",
+    title: "مَن يقف وراء Mintapp",
+    sub: "فريق صغير: من يدرس مشروعك هو نفسه من يبنيه.",
+  },
   fiverrReviews: {
     title: "تقييمات Adam على Fiverr",
-    source: "تقييمات علنية لـ Adam Eba، المطوّر الرئيسي لدينا، منقولة كما كُتبت في ملفه على Fiverr.",
+    source: "تقييمات علنية لـ Adam Eba، مؤسس Mintapp، منقولة كما كُتبت في ملفه على Fiverr.",
     reviews: "تقييمًا",
     link: "اقرأ كل التقييمات على Fiverr",
     ratingLabel: "من 5 نجوم",

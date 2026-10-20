@@ -36,9 +36,14 @@ export const en: HomeContent = {
     title: "What our clients say",
     quotedIn: { en: "Quoted in English", ar: "Quoted in Arabic" },
   },
+  team: {
+    eyebrow: "Built by",
+    title: "The people behind Mintapp",
+    sub: "A small team: the people who study your project are the ones who build it.",
+  },
   fiverrReviews: {
     title: "Adam's reviews on Fiverr",
-    source: "Public reviews of Adam Eba, our lead developer, quoted as written on his Fiverr profile.",
+    source: "Public reviews of Adam Eba, Mintapp's founder, quoted as written on his Fiverr profile.",
     reviews: "reviews",
     link: "Read every review on Fiverr",
     ratingLabel: "out of 5 stars",

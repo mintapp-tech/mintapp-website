@@ -80,6 +80,11 @@ export interface HomeContent {
     quotedIn: { en: string; ar: string };
     // Shown only with labelled sample content on a review Preview.
   };
+  team: {
+    eyebrow: string;
+    title: string;
+    sub: string;
+  };
   fiverrReviews: {
     title: string;
     // Says whose reviews these are and where they come from.
