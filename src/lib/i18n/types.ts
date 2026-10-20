@@ -100,6 +100,8 @@ export interface HomeContent {
   };
   work: {
     eyebrow: string;
+    // Badge on cards of products Mintapp owns rather than built for a client.
+    inHouse: string;
     title: string;
     intro: string;
     cta: string;
