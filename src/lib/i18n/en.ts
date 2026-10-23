@@ -36,9 +36,14 @@ export const en: HomeContent = {
     title: "What our clients say",
     quotedIn: { en: "Quoted in English", ar: "Quoted in Arabic" },
   },
+  team: {
+    eyebrow: "Built by",
+    title: "The people behind Mintapp",
+    sub: "A small team: the people who study your project are the ones who build it.",
+  },
   fiverrReviews: {
     title: "Adam's reviews on Fiverr",
-    source: "Public reviews of Adam Eba, our lead developer, quoted as written on his Fiverr profile.",
+    source: "Public reviews of Adam Eba, Mintapp's founder, quoted as written on his Fiverr profile.",
     reviews: "reviews",
     link: "Read every review on Fiverr",
     ratingLabel: "out of 5 stars",
@@ -48,6 +53,7 @@ export const en: HomeContent = {
   },
   work: {
     eyebrow: "Our work",
+    inHouse: "In-house product",
     title: "Selected work",
     intro: "Products we designed and built, from marketplace platforms to mobile apps.",
     cta: "View case study",
@@ -227,6 +233,7 @@ export const en: HomeContent = {
     sub: "A verified marketplace and operating platform that gives independent rental agencies searchable inventory, a trust layer and a storefront of their own.",
     meta: [
       { k: "Field", v: "Mobility marketplace" },
+      { k: "Type", v: "In-house product, built and owned by Mintapp" },
       { k: "Scope", v: "Strategy · Design · Development" },
       { k: "Platform", v: "Web · Marketplace, provider & admin" },
       { k: "Markets", v: "Indonesia & the Gulf" },
@@ -510,6 +517,7 @@ export const en: HomeContent = {
     sub: "A personal finance app that turns receipts and card activity into a monthly budget — every ringgit assigned to a category, with spending tracked against it.",
     meta: [
       { k: "Field", v: "Personal finance" },
+      { k: "Type", v: "In-house product, built and owned by Mintapp" },
       { k: "Scope", v: "UX/UI design" },
       { k: "Platform", v: "Mobile app" },
       { k: "Currency", v: "Malaysian ringgit (RM)" },
@@ -590,6 +598,7 @@ export const en: HomeContent = {
     sub: "A VR and AR game where players build real circuits in 3D space — picking components, placing them on a breadboard, programming the microcontroller that runs them, and trading finished circuits with other players.",
     meta: [
       { k: "Field", v: "Games & STEM learning" },
+      { k: "Type", v: "In-house product, built and owned by Mintapp" },
       { k: "Scope", v: "UX/UI design" },
       { k: "Platform", v: "VR & AR" },
       { k: "Players", v: "Students & makers" },

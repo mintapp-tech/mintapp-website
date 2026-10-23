@@ -80,6 +80,11 @@ export interface HomeContent {
     quotedIn: { en: string; ar: string };
     // Shown only with labelled sample content on a review Preview.
   };
+  team: {
+    eyebrow: string;
+    title: string;
+    sub: string;
+  };
   fiverrReviews: {
     title: string;
     // Says whose reviews these are and where they come from.
@@ -95,6 +100,8 @@ export interface HomeContent {
   };
   work: {
     eyebrow: string;
+    // Badge on cards of products Mintapp owns rather than built for a client.
+    inHouse: string;
     title: string;
     intro: string;
     cta: string;
