@@ -17,9 +17,13 @@ const MORE_WORK = [
   { slug: "circuitscraft", bg: "bg-circuitscraft-bg" },
 ] as const;
 
+// Products Mintapp owns, rather than built for a client.
+const IN_HOUSE: readonly string[] = ["arrentio", "budgetly", "circuitscraft"];
+
 export default function WorkSection() {
   const { t, lang, arrow } = useLanguage();
   const caseStudy = (slug: string) => `/${lang}/work/${slug}`;
+  const inHouseBadge = <span className="rounded-full bg-mint-soft px-[11px] py-1 text-[12px] font-bold text-mint-deep">{t.work.inHouse}</span>;
   const cardLink =
     "flex w-fit items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15.5px] font-semibold text-dark transition-all hover:gap-3.5";
 
@@ -49,7 +53,8 @@ export default function WorkSection() {
             <span className="text-sm text-ink-soft">{t.work.featured.category}</span>
           </div>
           <p className="mt-4 max-w-[42ch] text-[16.5px] leading-[1.85] text-ink-soft">{t.work.featured.desc}</p>
-          <div className="my-6 flex flex-wrap gap-2">
+          <div className="my-6 flex flex-wrap items-center gap-2">
+            {inHouseBadge /* Arrentio is ours */}
             {t.work.featured.tags.map((tag) => (
               <span
                 key={tag}
@@ -250,6 +255,7 @@ export default function WorkSection() {
                   <h3 className="m-0 text-[22px] font-semibold tracking-[-0.02em]">{p.name}</h3>
                   <span className="text-[13px] text-ink-soft">{p.category}</span>
                 </div>
+                {IN_HOUSE.includes(slug) && <div className="mt-2.5">{inHouseBadge}</div>}
                 <p className="mt-2.5 mb-5 text-[14.5px] leading-[1.75] text-ink-soft">{p.desc}</p>
                 <Link href={caseStudy(slug)} className={cardLink}>
                   {t.work.cta} <span className="block">{arrow}</span>
