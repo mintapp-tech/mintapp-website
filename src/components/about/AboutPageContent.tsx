@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
+import TeamSection from "@/components/TeamSection";
 
 export default function AboutPageContent() {
   const { t, lang } = useLanguage();
@@ -79,6 +80,8 @@ export default function AboutPageContent() {
           </div>
         </Reveal>
       </section>
+
+      <TeamSection className="mt-[clamp(56px,7vw,96px)]" />
 
       <section className="mx-auto mt-[clamp(56px,7vw,96px)] max-w-[1280px] px-5 sm:px-6">
         <Reveal className="grid grid-cols-1 items-center gap-[clamp(24px,3vw,40px)] rounded-[24px] bg-canvas p-[clamp(26px,4vw,50px)] lg:grid-cols-[1.2fr_1fr]">
