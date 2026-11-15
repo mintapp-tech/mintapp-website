@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Not stock Next.js
 
-This repo pins `next@16.2.12`, a version with breaking changes vs. training-data Next.js — conventions and APIs may differ. Before touching routing, middleware, caching, or config, check `node_modules/next/dist/docs/` (mirrors nextjs.org docs for this exact version). One confirmed deviation: **middleware is `src/proxy.ts` exporting `proxy()`**, not `middleware.ts`/`export function middleware()`.
+This repo's Next.js version (see `package.json`) has breaking changes vs. training-data Next.js — conventions and APIs may differ. Before touching routing, middleware, caching, or config, check `node_modules/next/dist/docs/` (mirrors nextjs.org docs for this exact version). One confirmed deviation: **middleware is `src/proxy.ts` exporting `proxy()`**, not `middleware.ts`/`export function middleware()`.
 
 ## Commands
 
@@ -12,7 +12,13 @@ This repo pins `next@16.2.12`, a version with breaking changes vs. training-data
 - `npm run build` — production build
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
 - `npm test` — Vitest unit tests; `npm run test:e2e` — Playwright.
-- Pushing to `mintapp-tech/mintapp-website` requires the `adamcoder2` GitHub account — the other account logged into `gh` (`arrentio`) lacks push access and pushes 403. `gh auth switch -u adamcoder2` if a push fails.
+
+## Working rules
+
+- Actions are performed by the actual authorized user: Omar through `omarmeneam`, Adam through `adamcoder2`. Omar's commits use `omarmeneam` and his configured email.
+- Never add Claude, AI or Co-authored-by attribution to commits, pull requests or comments.
+- Meaningful work needs a GitHub issue. Branches and pull requests link their issue.
+- Production needs explicit approval: a merge into `main` deploys it.
 
 ## Architecture
 
