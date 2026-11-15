@@ -66,8 +66,8 @@ for (const locale of ["en", "ar"] as const) {
   test(`${locale}: sections in the approved order, with no extra contact channels`, async ({ page }) => {
     await page.goto(`/${locale}`);
     const ids = await page.locator("main > section").evaluateAll((sections) => sections.map((s) => s.id || "(none)"));
-    // Client testimonials follow Selected work.
-    expect(ids).toEqual(["(none)", "process", "work", "testimonials", "services", "(none)"]);
+    // Client testimonials follow Selected work; the Fiverr reviews and the founders ("Built by") follow them.
+    expect(ids).toEqual(["(none)", "process", "work", "testimonials", "fiverr-reviews", "team", "services", "(none)"]);
     await expect(page.locator("main form")).toHaveCount(0);
     await expect(page.locator('a[href^="tel:"], a[href*="wa.me"], a[href*="whatsapp"]')).toHaveCount(0);
     await expect(page.locator("main iframe")).toHaveCount(0);
