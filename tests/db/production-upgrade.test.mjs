@@ -92,7 +92,8 @@ before(async () => {
   insertRow(NOT_SURE, { type: "not_sure" });
   insertRow(DELETED, { type: "website", deleted: true });
   insertRow(ARABIC, { name: "عميل قائم", lang: "ar", desc: "مشروع قديم قبل اللوحة." });
-  svc(`select public.apply_booking_created(${lit(BOOKED)}, 'prod-booking-a', '2026-10-20 09:00:00+00', 'Africa/Cairo', '2026-10-07 10:00:00+00')`);
+  // Meeting times are relative to now() on purpose: the workflow step below needs booked meetings that are still ahead, which fixed dates stop being.
+  svc(`select public.apply_booking_created(${lit(BOOKED)}, 'prod-booking-a', now() + interval '30 days', 'Africa/Cairo', '2026-10-07 10:00:00+00')`);
   svc(`select public.apply_booking_created(${lit(CANCELLED)}, 'prod-booking-b', '2026-10-21 09:00:00+00', 'Africa/Cairo', '2026-10-07 10:00:00+00')`);
   svc(`select public.apply_booking_cancelled(${lit(CANCELLED)}, 'prod-booking-b', '2026-10-21 09:00:00+00', 'Africa/Cairo', '2026-10-07 10:05:00+00')`);
   before_ = { inquiries: inquiryFingerprint(), schema: schemaFingerprint(), rows: count("select count(*) from public.project_inquiries") };
@@ -189,13 +190,13 @@ describe("applying the two CRM migrations, file by file, in order", () => {
     const prep = (rowId) => db.psql(`select status || '|' || attempts from public.inquiry_preparations where inquiry_id = ${lit(rowId)}`);
     const beforePrep = [prep(BOOKED), prep(CANCELLED), prep(NEW_INQUIRY)];
     // New inquiry: created, rescheduled, cancelled, rebooked.
-    assert.equal(svc(`select public.apply_booking_created(${lit(NEW_INQUIRY)}, 'new-1', '2026-10-25 09:00:00+00', 'Africa/Cairo', '2026-10-08 10:00:00+00')`), NEW_INQUIRY);
-    assert.equal(svc(`select public.apply_booking_rescheduled(${lit(NEW_INQUIRY)}, 'new-1', 'new-2', '2026-10-26 09:00:00+00', 'Africa/Cairo', '2026-10-08 10:05:00+00')`), NEW_INQUIRY);
+    assert.equal(svc(`select public.apply_booking_created(${lit(NEW_INQUIRY)}, 'new-1', now() + interval '35 days', 'Africa/Cairo', '2026-10-08 10:00:00+00')`), NEW_INQUIRY);
+    assert.equal(svc(`select public.apply_booking_rescheduled(${lit(NEW_INQUIRY)}, 'new-1', 'new-2', now() + interval '36 days', 'Africa/Cairo', '2026-10-08 10:05:00+00')`), NEW_INQUIRY);
     assert.equal(svc(`select public.apply_booking_cancelled(${lit(NEW_INQUIRY)}, 'new-2', '2026-10-26 09:00:00+00', 'Africa/Cairo', '2026-10-08 10:10:00+00')`), NEW_INQUIRY);
-    assert.equal(svc(`select public.apply_booking_created(${lit(NEW_INQUIRY)}, 'new-3', '2026-10-27 09:00:00+00', 'Africa/Cairo', '2026-10-08 10:15:00+00')`), NEW_INQUIRY);
+    assert.equal(svc(`select public.apply_booking_created(${lit(NEW_INQUIRY)}, 'new-3', now() + interval '37 days', 'Africa/Cairo', '2026-10-08 10:15:00+00')`), NEW_INQUIRY);
     // Existing inquiries: a booked one is rescheduled; a cancelled one is rebooked (the 20261007 migration's case).
-    assert.equal(svc(`select public.apply_booking_rescheduled(${lit(BOOKED)}, 'prod-booking-a', 'prod-booking-a2', '2026-10-22 09:00:00+00', 'Africa/Cairo', '2026-10-08 11:00:00+00')`), BOOKED);
-    assert.equal(svc(`select public.apply_booking_created(${lit(CANCELLED)}, 'prod-booking-c', '2026-10-23 09:00:00+00', 'Africa/Cairo', '2026-10-08 11:05:00+00')`), CANCELLED);
+    assert.equal(svc(`select public.apply_booking_rescheduled(${lit(BOOKED)}, 'prod-booking-a', 'prod-booking-a2', now() + interval '32 days', 'Africa/Cairo', '2026-10-08 11:00:00+00')`), BOOKED);
+    assert.equal(svc(`select public.apply_booking_created(${lit(CANCELLED)}, 'prod-booking-c', now() + interval '33 days', 'Africa/Cairo', '2026-10-08 11:05:00+00')`), CANCELLED);
     assert.equal(db.psql(`select booking_status || '|' || cal_booking_id from public.project_inquiries where id = ${lit(CANCELLED)}`), "booked|prod-booking-c");
     assert.deepEqual([prep(BOOKED), prep(CANCELLED), prep(NEW_INQUIRY)], beforePrep);
   });
