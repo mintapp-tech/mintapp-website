@@ -4,7 +4,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // tests/e2e/*.unit.ts: unit tests of the browser suite's own helpers. They
+    // are not named .test.ts or .spec.ts because Playwright would load those
+    // from that folder as browser tests.
+    include: ["src/**/*.test.ts", "tests/e2e/**/*.unit.ts"],
     // Vitest already sets NODE_ENV=test by default when unset; asserted
     // explicitly here because the real-email fail-safe (email-sending-mode.ts)
     // and the Turnstile dummy-key relaxation both key safety-critical
