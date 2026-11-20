@@ -4,14 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Not stock Next.js
 
-This repo pins `next@16.2.12`, a version with breaking changes vs. training-data Next.js — conventions and APIs may differ. Before touching routing, middleware, caching, or config, check `node_modules/next/dist/docs/` (mirrors nextjs.org docs for this exact version). One confirmed deviation: **middleware is `src/proxy.ts` exporting `proxy()`**, not `middleware.ts`/`export function middleware()`.
+This repo pins `next@16.4.3`, a version with breaking changes vs. training-data Next.js — conventions and APIs may differ. Before touching routing, middleware, caching, or config, check `node_modules/next/dist/docs/` (mirrors nextjs.org docs for this exact version). One confirmed deviation: **middleware is `src/proxy.ts` exporting `proxy()`**, not `middleware.ts`/`export function middleware()`.
 
 ## Commands
 
 - `npm run dev` — dev server
 - `npm run build` — production build
 - `npm run lint` — ESLint (flat config, `eslint-config-next` core-web-vitals + typescript)
-- `npm test` — Vitest unit tests; `npm run test:e2e` — Playwright.
+- `npm test` — Vitest unit tests; `npm run test:e2e` — Playwright (first run on a machine needs `npx playwright install chromium`). Run at least `tests/e2e/homepage.spec.ts` and `tests/e2e/accessibility-scan.spec.ts` before opening a PR that touches the homepage — unit tests alone let axe violations and section-order breaks reach `main` before.
+- Merging into `main` triggers a Production deploy of mintapp.tech; PRs get a Vercel Preview only.
 - Pushing to `mintapp-tech/mintapp-website` requires the `adamcoder2` GitHub account — the other account logged into `gh` (`arrentio`) lacks push access and pushes 403. `gh auth switch -u adamcoder2` if a push fails.
 
 ## Architecture
@@ -29,6 +30,12 @@ This repo pins `next@16.2.12`, a version with breaking changes vs. training-data
 **Case study screenshots**: real product screenshots (not CSS mockups) live in `public/work/<project>/`, always shown whole inside the shared mockups in `src/components/work/Mockups.tsx`: `PhoneMockup` (frame sized in `cqw`, screen takes the image's exact aspect) and `BrowserMockup` (pages much taller than the window scroll on hover/focus, or by swiping on touch / reduced motion — never crop with `object-cover`). Rentop/Jameel keep a thin local `PhoneFrame` wrapper around `PhoneMockup`. Jameel is the one case study with locale-aware screenshots: Arabic images live in `public/work/jameel/ar/`, picked via `lang === "ar" ? "/work/jameel/ar" : "/work/jameel"`; Rentop and Arrentio are English-only regardless of site language, so don't assume that pattern applies everywhere. The homepage `WorkSection.tsx` work-card preview reuses the same `public/work/jameel/*.png` files directly via `next/image`, without `PhoneFrame` or locale-awareness.
 
 Every other project (Kwayes, Taskaty, whHR, Budgetly, PMPS, OTJ, CircuitsCraft — a VR/AR game, shown in a headset frame) lists its screens in `src/content/work-screens.ts` (`WORK_SCREENS`), rendered by `src/components/work/ScreenFrames.tsx` (`CardCover`, `HeroScreen`, `ProductScreens`; each asset's `frame: "phone" | "browser" | "headset"` picks the mockup). whHR/Budgetly/PMPS/CircuitsCraft/OTJ share one component, `ProjectCaseStudy.tsx`, configured from their `page.tsx` (slug, `csKey`, theme classes) — no per-project component. Screens come from the clients' Figma files exported at 2x as `.webp` (website pages at full length, 1200px wide); OTJ's are instead 2x Playwright captures of the live public site (theotj.com, logged out, 430×932 mobile viewport). Adding a public route also means updating `PUBLIC_ROUTE_PATHS` in `src/lib/seo.ts`, the URL counts in `src/app/sitemap.test.ts` and `tests/e2e/sitemap-robots.spec.ts`, and `CASE_STUDY_KEYS` in `src/lib/i18n/work-copy.test.ts`. Arabic case-study copy must avoid the words the sample-wording test bans (e.g. افتراضي, except in "الواقع الافتراضي" = virtual reality).
+
+**Social proof and team (homepage order: `work` → `testimonials` → `fiverr-reviews` → `team` → `services`, asserted in `tests/e2e/homepage.spec.ts` — update it when adding a homepage section).**
+- `src/content/testimonials.ts` — client quotes; each needs a recorded approval (`publicationProblems`), never sample text.
+- `src/content/fiverr-reviews.ts` → `FiverrReviewsSection.tsx` — *public* Fiverr reviews of Adam Eba (founder), not approved testimonials, so they stay out of `testimonials.ts`. Quotes are verbatim (spelling kept, never Fiverr's truncated "See more" text). Only ≥4★ reviews are listed, at the owner's request, so the profile's real totals (`FIVERR_SUMMARY`) must always show beside them and link to the profile. Countries are ISO codes rendered with `Intl.DisplayNames`, except `COUNTRY_NAMES` overrides (`PS` → "Palestine"/"فلسطين"). An optional `project` slug adds a "View case study" link.
+- `src/content/team.ts` → `TeamSection.tsx` — "Built by": Adam Eba (Founder & Senior Software Engineer) and Omar Abdelaziz (Co-founder), photos in `public/team/` with empty alt (the name is the heading). Rendered on the homepage and the About page. Personal details are published only with that person's approval.
+- In-house products (Arrentio, Budgetly, CircuitsCraft — Mintapp's own, not client work): `IN_HOUSE` in `WorkSection.tsx` adds the card badge, and each `csX.meta` has a "Type: In-house product" row. Never attach self-written reviews to them; only real user quotes (via `testimonials.ts`), store ratings or verifiable usage numbers.
 
 **Motion/UX primitives** live in `src/components/motion/` (`Magnetic`, `SplitReveal`, `TiltCard`) and top-level (`Reveal`, `SmoothScroll` using Lenis, `CustomCursor`) — reuse these instead of hand-rolling new scroll/hover effects.
 
