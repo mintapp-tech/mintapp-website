@@ -254,8 +254,8 @@ export interface HomeContent {
       deliv: string[];
       caps: string[];
       proc: string[];
-      relatedName: string;
-      relatedCat: string;
+      // A published case study that shows this kind of work; omitted when there is none.
+      related?: { slug: string; name: string; category: string };
     }[];
     note: string;
   };
