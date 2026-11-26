@@ -85,6 +85,8 @@ export interface HomeContent {
     eyebrow: string;
     title: string;
     sub: string;
+    // Accessible name of a profile link; "{name}" is replaced.
+    linkedinLabel: string;
   };
   fiverrReviews: {
     title: string;

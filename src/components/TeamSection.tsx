@@ -29,10 +29,21 @@ export default function TeamSection({ className = "pt-[clamp(56px,8vw,116px)]" }
               <Image src={m.photo} alt="" width={112} height={112} className="h-[104px] w-[104px] flex-none rounded-[18px] object-cover" />
               <div className="min-w-0">
                 <h3 className="m-0 text-[clamp(19px,1.6vw,22px)] font-semibold text-ink">
-                  <bdi>{m.name}</bdi>
+                  <bdi>{m.displayName?.[lang] ?? m.name}</bdi>
                 </h3>
                 <p className="m-0 mt-1 text-[15px] font-semibold text-mint-deep">{m.role[lang]}</p>
                 <p className="m-0 mt-3 text-[15.5px] leading-[1.7] text-ink-soft text-pretty">{m.bio[lang]}</p>
+                {m.linkedin && (
+                  <a
+                    href={m.linkedin}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={t.team.linkedinLabel.replace("{name}", m.displayName?.[lang] ?? m.name)}
+                    className="mt-3.5 inline-flex min-h-6 items-center gap-1.5 border-0 border-b-[1.5px] border-mint pb-0.5 text-[14.5px] font-semibold text-dark transition-colors hover:text-mint-deep"
+                  >
+                    LinkedIn <span aria-hidden>↗</span>
+                  </a>
+                )}
               </div>
             </article>
           </RevealItem>

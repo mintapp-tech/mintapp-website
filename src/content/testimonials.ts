@@ -31,6 +31,10 @@ export interface Testimonial {
   };
   // Optional link to the related case study.
   project?: ProjectSlug;
+  // Optional description of the kind of work, in our own words (not part of the
+  // quote). Must be true of the project and must not identify more than the
+  // approved attribution does.
+  projectType?: Record<Locale, string>;
   approval: {
     // Who gave the approval and when (ISO date), for our records.
     approvedBy: string;
@@ -74,6 +78,7 @@ export const TESTIMONIALS: readonly Testimonial[] = [
       role: { en: "Academy Supervisor" },
       company: { en: "Al Wakrah" },
     },
+    projectType: { en: "Internal system", ar: "نظام داخلي" },
     approval: { approvedBy: "Academy Supervisor, Al Wakrah (relayed by Omar)", approvedOn: "2026-10-05", quote: true, name: false, company: true, photo: false, logo: false, translation: false },
   },
 ];
@@ -126,6 +131,7 @@ export function testimonialForLocale(t: Testimonial, locale: Locale) {
     photo: t.author.photo,
     logo: t.author.logo,
     project: t.project,
+    projectType: t.projectType?.[locale],
   };
 }
 

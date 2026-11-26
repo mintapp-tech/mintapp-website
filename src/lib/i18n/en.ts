@@ -39,8 +39,9 @@ export const en: HomeContent = {
   },
   team: {
     eyebrow: "Built by",
-    title: "The people behind Mintapp",
-    sub: "A small team: the people who study your project are the ones who build it.",
+    title: "Founding team",
+    sub: "Mintapp is led by its founding team and supported by designers, engineers and specialists selected around each project.",
+    linkedinLabel: "{name} on LinkedIn (opens in a new tab)",
   },
   fiverrReviews: {
     title: "Adam's reviews on Fiverr",
@@ -739,7 +740,7 @@ export const en: HomeContent = {
     ],
     modelTitle: "Our working model",
     model: [
-      { t: "A small accountable team", d: "The people who study your project are the ones who build it." },
+      { t: "An accountable team", d: "The founding team stays close to your project, with designers, engineers and specialists selected around what it needs." },
       { t: "A clear rhythm", d: "Regular reviews and something tangible at every stage." },
       { t: "Partnership after launch", d: "Ongoing support and development as the product needs it." },
     ],

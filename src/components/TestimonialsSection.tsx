@@ -51,7 +51,11 @@ export default function TestimonialsSection({ items }: { items: readonly Testimo
 // One quote card; also shown on the case study it links to (without the link).
 export function TestimonialCard({ card, index = 0, showProjectLink = false }: { card: TestimonialCardData; index?: number; showProjectLink?: boolean }) {
   const { t, lang, arrow } = useLanguage();
-  const attribution = [card.role, card.company].filter(Boolean).join(" · ");
+  // Two lines on every card: who is speaking, then where. Without a personal
+  // name the role takes the first line and the organization the second.
+  const heading = card.name ?? card.role;
+  const detail = (card.name ? [card.role, card.company] : [card.company]).filter(Boolean).join(" · ");
+  const link = showProjectLink && card.project ? card.project : null;
   return (
     <figure className="m-0 flex h-full flex-col rounded-[20px] border border-ink/[.09] bg-surface p-[clamp(24px,2.6vw,34px)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]">
       <span
@@ -71,7 +75,12 @@ export function TestimonialCard({ card, index = 0, showProjectLink = false }: { 
         style={card.quoteLanguage !== lang ? { fontFamily: card.quoteLanguage === "ar" ? "var(--font-alexandria)" : "var(--font-manrope)" } : undefined}
       >
         <p className="m-0 text-[clamp(16.5px,1.35vw,18.5px)] leading-[1.8] text-ink text-pretty">{card.quote}</p>
-        {card.quoteLanguage !== lang && <p className="m-0 mt-3 text-[13px] text-ink-faint">{t.testimonials.quotedIn[card.quoteLanguage]}</p>}
+        {card.quoteLanguage !== lang && (
+          // Written in the page's language, inside a quote marked with another one.
+          <p lang={lang} className="m-0 mt-3 text-[13px] text-ink-faint" style={{ fontFamily: lang === "ar" ? "var(--font-alexandria)" : "var(--font-manrope)" }}>
+            {t.testimonials.quotedIn[card.quoteLanguage]}
+          </p>
+        )}
       </blockquote>
       <figcaption className="mt-6 flex items-center gap-3 border-t border-ink/[.08] pt-5">
         {card.logo ? (
@@ -88,26 +97,35 @@ export function TestimonialCard({ card, index = 0, showProjectLink = false }: { 
           </span>
         ) : null}
         <span className="min-w-0">
-          {card.name && (
-            <span className="block text-[15.5px] font-semibold text-ink">
-              <bdi>{card.name}</bdi>
+          {heading && (
+            <span className="block text-[15.5px] leading-[1.5] font-semibold text-ink" data-attribution-heading>
+              <bdi>{heading}</bdi>
             </span>
           )}
-          {attribution && (
-            // Without a personal name, the role and organization are the main attribution.
-            <span className={card.name ? "block text-[14px] leading-[1.5] text-ink-soft" : "block text-[15.5px] leading-[1.5] font-semibold text-ink"} data-attribution>
-              <bdi>{attribution}</bdi>
+          {detail && (
+            <span className="block text-[14px] leading-[1.5] text-ink-soft" data-attribution>
+              <bdi>{detail}</bdi>
             </span>
           )}
         </span>
       </figcaption>
-      {showProjectLink && card.project && (
-        <Link
-          href={`/${lang}/work/${card.project}`}
-          className="mt-5 flex w-fit items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15px] font-semibold text-dark transition-all hover:gap-3.5"
-        >
-          {t.work.cta} <span className="block">{arrow}</span>
-        </Link>
+      {(link || card.projectType) && (
+        // The same row on every card: the case study link, or what kind of work it was.
+        <div className="mt-5 flex min-h-8 flex-wrap items-center gap-x-4 gap-y-2" data-card-footer>
+          {link && (
+            <Link
+              href={`/${lang}/work/${link}`}
+              className="flex w-fit items-center gap-2 border-0 border-b-[1.5px] border-mint bg-transparent pb-1 text-[15px] font-semibold text-dark transition-all hover:gap-3.5"
+            >
+              {t.work.cta} <span className="block">{arrow}</span>
+            </Link>
+          )}
+          {card.projectType && (
+            <span className="rounded-full bg-mint-soft px-3.5 py-1 text-[13.5px] font-semibold text-mint-deep" data-project-type>
+              {card.projectType}
+            </span>
+          )}
+        </div>
       )}
     </figure>
   );
