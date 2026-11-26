@@ -60,6 +60,7 @@ export interface HomeContent {
     sub: string;
     cta1: string;
     cta2: string;
+    freeMeeting: string;
     fit: string;
     // Visual only (aria-hidden): an unclear idea resolving into a first-call direction.
     board: {

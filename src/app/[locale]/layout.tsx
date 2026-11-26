@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "Mintapp — Software that feels easy",
   description:
-    "Mintapp is a digital product studio helping startups and growing businesses across Egypt and the MENA region turn ideas into thoughtful, launch-ready websites and mobile apps.",
+    "Mintapp is a digital product studio helping startups and growing businesses across Egypt and the MENA region turn ideas and operational needs into thoughtful, launch-ready digital products.",
 };
 
 export default async function RootLayout({

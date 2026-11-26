@@ -7,18 +7,19 @@ export const en: HomeContent = {
     nav: "Contact",
     title: "Where would you like to start?",
     startTitle: "Start a project",
-    startDesc: "For a website, web application or mobile application. Share your idea and we'll review it before we meet.",
+    startDesc: "For a website, application, product design or internal system. Share your idea and we'll review it before we meet.",
     generalTitle: "General inquiry",
     generalDesc: "For questions or anything else, email us directly.",
     reply: "We reply within one business day.",
     close: "Close contact options",
   },
   hero: {
-    eyebrow: "Digital product studio · Web & mobile",
+    eyebrow: "Digital product studio",
     title: "Your first meeting starts with direction, not a blank page.",
     sub: "Share your idea. If we're the right fit, we review it before the call and arrive with context, questions and a clear next step.",
     cta1: "Start a project",
     cta2: "View selected work",
+    freeMeeting: "Free first discovery meeting · No commitment",
     fit: "Mintapp works best with founders and teams ready to turn a real business need into a focused digital product.",
     board: {
       idea: "Your idea",
@@ -110,7 +111,7 @@ export const en: HomeContent = {
         desc: "If we're the right fit, we study your inquiry before the call:",
         points: ["Review what you shared", "Understand the business and product context", "Identify assumptions and useful questions", "Form a clear next step"],
       },
-      { n: "03", title: "Meet with direction", desc: "A 30-minute call that starts from your context, our questions and a proposed next step, not a blank page." },
+      { n: "03", title: "Meet with direction", desc: "A free discovery meeting that starts from your context, our questions and a proposed next step—not a blank page." },
       { n: "04", title: "Build together", desc: "If we move forward, we design and build with you in clear stages, from first release to launch." },
     ],
     note: "We don't send a proposal, design or estimate before we've spoken.",
@@ -122,7 +123,7 @@ export const en: HomeContent = {
     emailLabel: "General inquiries",
   },
   footer: {
-    pitch: "A digital product studio helping businesses turn ideas into launch-ready websites and applications.",
+    pitch: "A digital product studio helping businesses turn ideas and operational needs into clear, launch-ready digital products.",
     explore: "Explore",
     contact: "Contact",
     region: "Egypt · MENA",
@@ -182,7 +183,7 @@ export const en: HomeContent = {
     sidePoints: [
       { t: "We read your idea", d: "We go through what you sent and note what needs clarifying." },
       { t: "We prepare", d: "We put together an initial direction to anchor the conversation." },
-      { t: "You book the call", d: "Right after you send, you can pick an available time for a 30-minute discovery call." },
+      { t: "You book the call", d: "Right after you send, you can pick an available time for a discovery call." },
     ],
     prepClarify: "We review every idea internally first, and may sketch an initial direction before we speak — that stays with our team until then, where we'll walk you through it.",
     sideNote: "We won't send a proposal or pricing before we've spoken.",
@@ -191,8 +192,8 @@ export const en: HomeContent = {
     metaTitle: "Choose a call time",
     scheduleNote: "Choose any available time. It will be linked to the inquiry you already sent.",
     bookedTitle: "Your call is already scheduled",
-    bookedBody: "Your 30-minute discovery call is booked for {when}. Cal.com has emailed you the details.",
-    bookedBodyNoTime: "Your 30-minute discovery call is already booked. Cal.com has emailed you the details.",
+    bookedBody: "Your discovery call is booked for {when}. Cal.com has emailed you the details.",
+    bookedBodyNoTime: "Your discovery call is already booked. Cal.com has emailed you the details.",
     manage: "Reschedule or cancel on Cal.com",
     closedTitle: "We already have a call for this inquiry",
     closedBody: "If you need another conversation, write to us and we will help.",
@@ -209,7 +210,7 @@ export const en: HomeContent = {
     copy: "Our team will review what you sent and follow up with next steps.",
     scheduling: {
       title: "Schedule your discovery call",
-      intro: "Choose a convenient time for a 30-minute conversation. We'll review your idea together and discuss the clearest next step.",
+      intro: "Choose a convenient time for our conversation. We'll review your idea together and discuss the clearest next step.",
       unavailable: "Online scheduling is unavailable right now. We'll contact you directly to arrange a suitable time, or you can email us at hello@mintapp.tech.",
       errorTitle: "We couldn't load the scheduler",
       errorBody: "Try loading it again, or email us and we'll arrange a suitable time directly.",
@@ -754,7 +755,7 @@ export const en: HomeContent = {
     sections: [
       {
         title: "Who we are",
-        body: "Mintapp is a digital product studio based in Egypt, building websites and mobile apps for founders and growing businesses across the MENA region. This policy covers the personal information we collect through the Start a Project form on this website, and how we handle it.",
+        body: "Mintapp is a digital product studio based in Egypt, designing and building digital products for founders and growing businesses across the MENA region. This policy covers the personal information we collect through the Start a Project form on this website, and how we handle it.",
       },
       {
         title: "What we collect",
