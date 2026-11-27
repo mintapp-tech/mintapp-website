@@ -45,7 +45,7 @@ export const ar: HomeContent = {
   },
   fiverrReviews: {
     title: "تقييمات Adam على Fiverr",
-    source: "تقييمات علنية لـ Adam Eba، مؤسس Mintapp، منقولة كما كُتبت في ملفه على Fiverr.",
+    source: "تقييمات علنية لـ Adam Eba، الشريك المؤسس في Mintapp، منقولة كما كُتبت في ملفه على Fiverr.",
     reviews: "تقييمًا",
     link: "اقرأ كل التقييمات على Fiverr",
     ratingLabel: "من 5 نجوم",

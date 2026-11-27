@@ -45,7 +45,7 @@ export const en: HomeContent = {
   },
   fiverrReviews: {
     title: "Adam's reviews on Fiverr",
-    source: "Public reviews of Adam Eba, Mintapp's founder, quoted as written on his Fiverr profile.",
+    source: "Public reviews of Adam Eba, Co-Founder of Mintapp, quoted as written on his Fiverr profile.",
     reviews: "reviews",
     link: "Read every review on Fiverr",
     ratingLabel: "out of 5 stars",

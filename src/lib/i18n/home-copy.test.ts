@@ -130,6 +130,11 @@ describe("homepage positioning copy", () => {
     }
   });
 
+  test("the Fiverr caption names Adam as Co-Founder", () => {
+    expect(en.fiverrReviews.source).toBe("Public reviews of Adam Eba, Co-Founder of Mintapp, quoted as written on his Fiverr profile.");
+    expect(ar.fiverrReviews.source).toBe("تقييمات علنية لـ Adam Eba، الشريك المؤسس في Mintapp، منقولة كما كُتبت في ملفه على Fiverr.");
+  });
+
   test("step three says the discovery meeting is free", () => {
     expect(en.proc.steps[2].desc).toBe("A free discovery meeting that starts from your context, our questions and a proposed next step—not a blank page.");
     expect(ar.proc.steps[2].desc).toMatch(/^اجتماع استكشافي مجاني/);

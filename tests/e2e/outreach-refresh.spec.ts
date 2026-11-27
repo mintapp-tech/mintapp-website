@@ -114,6 +114,11 @@ for (const locale of ["en", "ar"] as const) {
     expect(new Set(names).size).toBe(3);
   });
 
+  test(`${locale}: the Fiverr caption names Adam as Co-Founder`, async ({ page }) => {
+    await page.goto(`/${locale}`, { waitUntil: "networkidle" });
+    await expect(page.locator("#fiverr-reviews")).toContainText(locale === "en" ? "Adam Eba, Co-Founder of Mintapp" : "Adam Eba، الشريك المؤسس في Mintapp");
+  });
+
   test(`${locale}: the founding team lists Omar first with an accessible, safe LinkedIn link`, async ({ page }) => {
     await page.goto(`/${locale}`, { waitUntil: "networkidle" });
     const team = page.locator("#team");
