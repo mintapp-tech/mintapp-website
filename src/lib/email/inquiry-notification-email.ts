@@ -1,4 +1,5 @@
 import { isProjectType, PROJECT_TYPE_LABELS_EN } from "../project-types";
+import { budgetLabel, timelineLabel } from "../form-options";
 import { EMAIL_COLORS as C, button, escapeHtml, heading, paragraph, renderLayout, type RenderedEmail } from "./layout";
 
 // Internal notification to the Mintapp team for a new Start Project inquiry.
@@ -13,6 +14,12 @@ export interface InquiryNotificationEmailInput {
   company?: string;
   /** The client's explicit choice on the form; anything else means "not provided". */
   projectType?: string | null;
+  /** Stored budget, its currency and timeline (codes, or an older cached form's label). */
+  budget?: string | null;
+  budgetCurrency?: string | null;
+  timeline?: string | null;
+  /** The normalized link to an existing website or app, if one was given. */
+  existingUrl?: string | null;
   lang: string;
   desc: string;
   submittedAt: Date;
@@ -43,6 +50,8 @@ export function buildInquiryNotificationEmail(input: InquiryNotificationEmailInp
   const submitted = formatSubmitted(input.submittedAt);
   const mailto = `mailto:${input.email}`;
   const projectType = projectTypeLabel(input.projectType);
+  const budget = budgetLabel(input.budget, input.budgetCurrency, "en") ?? "Not provided";
+  const timeline = timelineLabel(input.timeline, "en") ?? "Not provided";
 
   const details = [
     row("Name", `<bdi>${escapeHtml(input.name)}</bdi>`),
@@ -50,6 +59,10 @@ export function buildInquiryNotificationEmail(input: InquiryNotificationEmailInp
     input.phone ? row("Phone", `<span dir="ltr">${escapeHtml(input.phone)}</span>`) : "",
     input.company ? row("Company", `<bdi>${escapeHtml(input.company)}</bdi>`) : "",
     row("Project type", escapeHtml(projectType)),
+    row("Budget", escapeHtml(budget)),
+    row("Timeline", escapeHtml(timeline)),
+    // Plain text on purpose: a visitor-supplied address is never made clickable.
+    input.existingUrl ? row("Existing link", `<span dir="ltr">${escapeHtml(input.existingUrl)}</span>`) : "",
     row("Language", escapeHtml(language)),
     row("Submitted", escapeHtml(submitted)),
     row("Inquiry ID", `<span style="font-family:Consolas,Menlo,monospace;font-size:13px;color:${C.inkSoft};">${escapeHtml(input.inquiryId)}</span>`),
@@ -83,6 +96,9 @@ ${details}
     input.phone ? `Phone: ${input.phone}` : null,
     input.company ? `Company: ${input.company}` : null,
     `Project type: ${projectType}`,
+    `Budget: ${budget}`,
+    `Timeline: ${timeline}`,
+    input.existingUrl ? `Existing link: ${input.existingUrl}` : null,
     `Preferred language: ${language}`,
     `Submitted: ${submitted}`,
     "",

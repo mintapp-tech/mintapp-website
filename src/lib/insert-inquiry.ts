@@ -29,6 +29,12 @@ export async function insertInquiry(supabase: SupabaseClient, body: InquiryInput
       utm_source: body.utmSource || null,
       utm_medium: body.utmMedium || null,
       utm_campaign: body.utmCampaign || null,
+      // Columns present since the table was created; only sent when answered.
+      // The currency has no column of its own yet: the range code names its scale
+      // (the two scales share only "not_sure"), and the team email states it.
+      ...(body.budget ? { budget_range: body.budget } : {}),
+      ...(body.timeline ? { timeline: body.timeline } : {}),
+      ...(body.existingUrl ? { company_url: body.existingUrl } : {}),
       // Only an explicit choice on the form is stored; a missing value stays
       // null ("not provided") and is never inferred from the brief.
       ...(body.projectType ? { project_type: body.projectType } : {}),

@@ -2,6 +2,9 @@ import "server-only";
 import { z } from "zod";
 import { INQUIRY_LIMITS } from "./inquiry-limits";
 import { PROJECT_TYPES } from "./project-types";
+import { BUDGET_ACCEPTED, TIMELINE_ACCEPTED, storedBudget, storedTimeline } from "./form-options";
+import type { BudgetCurrency } from "./budget-currency";
+import { EXISTING_LINK_MAX, normalizeExistingLink } from "./existing-link";
 
 // Server-side source of truth. This schema only validates *shape* — the
 // honeypot deliberately accepts any string here rather than enforcing
@@ -16,7 +19,7 @@ import { PROJECT_TYPES } from "./project-types";
 // parsed, typed result below — raw input is never spread into it — so a
 // stray/extra field from a lagging client can never reach the database
 // either way. Stripping just avoids a hard 400 for something harmless.
-export const inquirySchema = z.object({
+const inquiryFields = z.object({
   name: z.string().trim().min(INQUIRY_LIMITS.nameMin).max(INQUIRY_LIMITS.nameMax),
   email: z.string().trim().toLowerCase().max(INQUIRY_LIMITS.emailMax).email(),
   desc: z.string().trim().min(INQUIRY_LIMITS.descMin).max(INQUIRY_LIMITS.descMax),
@@ -38,6 +41,47 @@ export const inquirySchema = z.object({
   utmSource: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   utmMedium: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
   utmCampaign: z.string().trim().max(INQUIRY_LIMITS.utmMax).optional(),
+  // Budget, timeline and the existing link: the current form always sends the
+  // first two; all three stay optional so an older cached form still gets through.
+  // Today's codes and the labels older review builds sent are both accepted, and
+  // become what is stored (a code whenever the meaning is exact: form-options.ts).
+  // The budget's currency is never taken from the client: a "budgetCurrency" field
+  // (sent by an earlier review build) is stripped like any unknown field, and the
+  // range is checked below against the currency the server derived.
+  budget: z.enum(BUDGET_ACCEPTED).optional(),
+  timeline: z.enum(TIMELINE_ACCEPTED).transform((v) => storedTimeline(v)!).optional(),
+  // Stored normalized (https://..., no fragment); unsafe or unusable links are refused.
+  existingUrl: z
+    .string()
+    .trim()
+    .max(EXISTING_LINK_MAX)
+    .optional()
+    .transform((v, ctx) => {
+      if (!v) return undefined;
+      const normalized = normalizeExistingLink(v);
+      if (!normalized) {
+        ctx.addIssue({ code: "custom", message: "invalid_url" });
+        return z.NEVER;
+      }
+      return normalized;
+    }),
 });
 
-export type InquiryInput = z.infer<typeof inquirySchema>;
+// The schema for one request. `currency` is what the server derived for that
+// request (budget-currency.ts): a range from the other scale is refused with
+// "budget_reload" (the visitor's page no longer matches what the server shows; a
+// reload shows the right options). The result carries what is stored: the range
+// code (or an older label kept as sent) and the derived currency.
+export function inquirySchemaFor(currency: BudgetCurrency) {
+  return inquiryFields.transform((v, ctx) => {
+    if (v.budget === undefined) return { ...v, budgetCurrency: undefined };
+    const stored = storedBudget(v.budget, currency);
+    if (!stored) {
+      ctx.addIssue({ code: "custom", path: ["budget"], message: "budget_reload" });
+      return z.NEVER;
+    }
+    return { ...v, budget: stored.range, budgetCurrency: stored.currency };
+  });
+}
+
+export type InquiryInput = z.output<ReturnType<typeof inquirySchemaFor>>;

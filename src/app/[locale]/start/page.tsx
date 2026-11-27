@@ -1,9 +1,17 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import StartExperience from "@/components/start/StartExperience";
 import { resolveLocale } from "@/lib/locales";
 import { buildPageMetadata } from "@/lib/seo";
+import { budgetCurrencyFor } from "@/lib/budget-currency";
+
+// Rendered for each request, never from a shared cache: the budget question shows
+// the scale the server derives from the request (Egypt: Egyptian pounds; elsewhere
+// or unknown: US dollars), from the two-letter country the host adds only. No IP
+// address is read or kept, and the visitor is not offered the other scale.
+export const dynamic = "force-dynamic";
 
 const COPY = {
   en: {
@@ -22,12 +30,13 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return buildPageMetadata({ locale, path: "/start", ...COPY[locale] });
 }
 
-export default function StartPage() {
+export default async function StartPage() {
+  const currency = budgetCurrencyFor(await headers());
   return (
     <>
       <Header />
       <main id="main-content" tabIndex={-1} className="outline-none">
-        <StartExperience />
+        <StartExperience budgetCurrency={currency} />
       </main>
       <Footer />
     </>
