@@ -32,11 +32,11 @@ describe("team", () => {
     });
   });
 
-  test("Adam's profile is unchanged", () => {
+  test("Adam's profile: Co-Founder role, everything else unchanged", () => {
     expect(TEAM[1]).toEqual({
       id: "adam-eba",
       name: "Abdelrahman (Adam) Eba",
-      role: { en: "Founder & Senior Software Engineer", ar: "المؤسس ومهندس برمجيات أول" },
+      role: { en: "Co-Founder & Senior Software Engineer", ar: "الشريك المؤسس ومهندس برمجيات أول" },
       bio: {
         en: "Specialized in mobile app development. Has spoken at Google developer community events around the world and worked with international companies.",
         ar: "متخصص في تطوير تطبيقات الموبايل. تحدّث في فعاليات مجتمعات Google للمطوّرين حول العالم، وعمل مع شركات دولية.",

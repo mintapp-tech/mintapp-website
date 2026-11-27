@@ -14,6 +14,7 @@ const COPY = {
     teamIntro: "supported by designers, engineers and specialists selected around each project",
     names: ["Omar Abdelaziz", "Abdelrahman (Adam) Eba"],
     role: "Founder",
+    adamRole: "Co-Founder & Senior Software Engineer",
     linkedin: "Omar Abdelaziz on LinkedIn (opens in a new tab)",
   },
   ar: {
@@ -25,6 +26,7 @@ const COPY = {
     teamIntro: "مصممون ومهندسون ومتخصصون يتم اختيارهم",
     names: ["عمر عبد العزيز", "Abdelrahman (Adam) Eba"],
     role: "المؤسس",
+    adamRole: "الشريك المؤسس ومهندس برمجيات أول",
     linkedin: "عمر عبد العزيز على LinkedIn (يفتح في علامة تبويب جديدة)",
   },
 } as const;
@@ -132,6 +134,7 @@ for (const locale of ["en", "ar"] as const) {
     await expect(link).toHaveAttribute("target", "_blank");
     await expect(link).toHaveAttribute("rel", "noopener noreferrer");
     await expect(team.locator("article").nth(1).getByRole("link")).toHaveCount(0);
+    await expect(team.locator("article").nth(1).getByText(c.adamRole, { exact: true })).toBeVisible();
     // The photo is decorative, so the name is announced once.
     const photo = omar.locator("img");
     await expect(photo).toHaveAttribute("alt", "");
