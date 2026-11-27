@@ -145,7 +145,7 @@ describe("insertInquiry: project type", () => {
     for (const p of payloads) expect(Object.keys(p).filter((k) => /^(ip|ip_address|remote_ip|country|visitor_country|geo)$/i.test(k))).toEqual([]);
   });
 
-  test("every column written exists in the migrations on this branch, so no new migration is needed", async () => {
+  test("every column written is declared by the migrations in this repository", async () => {
     const { payloads, client } = recordingSupabase([{ error: null }]);
     await insertInquiry(client, { ...inquiryBody, phone: "+20 100", company: "Acme", projectType: "web_app", utmSource: "s", utmMedium: "m", utmCampaign: "c", budget: "not_sure", budgetCurrency: "EGP", timeline: "asap", existingUrl: "https://acme.example.com/" });
     const dir = join(process.cwd(), "supabase", "migrations");

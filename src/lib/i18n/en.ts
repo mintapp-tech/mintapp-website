@@ -760,7 +760,7 @@ export const en: HomeContent = {
   privacy: {
     title: "Privacy Policy",
     sub: "How Mintapp collects, uses and protects the information you share with us through this website.",
-    updated: "Effective August 15, 2026. Last updated: November 26, 2026",
+    updated: "Effective and last updated: August 15, 2026",
     sections: [
       {
         title: "Who we are",
@@ -774,11 +774,11 @@ export const en: HomeContent = {
           "Company name, phone or WhatsApp — optional",
           "Project type, estimated budget range and expected timeline — asked on the form",
           "A link to your existing website or app — optional",
-          "The country your request comes from, used only to choose the currency of the budget ranges. The country itself isn't saved with your inquiry",
           "Your project description — required",
           "Your preferred meeting date and time — required to book a meeting",
           "How you heard about us, and basic technical details like which page you submitted from — collected automatically and used only in aggregate to understand what's working",
         ],
+        note: "Our hosting provider supplies a country code inferred from your connection. Mintapp uses it only to select the budget currency and does not store the country code or your IP address with your inquiry.",
       },
       {
         title: "Why we collect it",

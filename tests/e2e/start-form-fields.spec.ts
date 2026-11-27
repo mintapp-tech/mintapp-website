@@ -21,6 +21,19 @@ async function fillRequired(page: Page) {
   await page.locator('input[type="checkbox"]').check();
 }
 
+for (const locale of ["en", "ar"] as const) {
+  for (const width of [360, 1280]) {
+    test(`${locale} ${width}px: the privacy policy explains the country lookup, readably`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/${locale}/privacy`);
+      const note = page.getByText(locale === "en" ? "Our hosting provider supplies a country code" : "يزوّدنا مزود الاستضافة برمز الدولة");
+      await note.scrollIntoViewIfNeeded();
+      await expect(note).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    });
+  }
+}
+
 for (const viewport of [
   { name: "phone", width: 390, height: 844 },
   { name: "desktop", width: 1280, height: 900 },
