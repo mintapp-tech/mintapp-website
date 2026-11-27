@@ -60,6 +60,7 @@ export interface HomeContent {
     sub: string;
     cta1: string;
     cta2: string;
+    freeMeeting: string;
     fit: string;
     // Visual only (aria-hidden): an unclear idea resolving into a first-call direction.
     board: {
@@ -84,6 +85,8 @@ export interface HomeContent {
     eyebrow: string;
     title: string;
     sub: string;
+    // Accessible name of a profile link; "{name}" is replaced.
+    linkedinLabel: string;
   };
   fiverrReviews: {
     title: string;
@@ -251,8 +254,8 @@ export interface HomeContent {
       deliv: string[];
       caps: string[];
       proc: string[];
-      relatedName: string;
-      relatedCat: string;
+      // A published case study that shows this kind of work; omitted when there is none.
+      related?: { slug: string; name: string; category: string };
     }[];
     note: string;
   };

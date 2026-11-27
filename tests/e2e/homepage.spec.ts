@@ -6,7 +6,7 @@ const COPY = {
     start: "Start a project",
     work: "View selected work",
     fit: "Mintapp works best with founders",
-    eyebrow: "Digital product studio · Web & mobile",
+    eyebrow: "Digital product studio",
     based: "Based in Egypt. Working with teams across MENA and beyond.",
   },
   ar: {
@@ -14,7 +14,7 @@ const COPY = {
     start: "ابدأ مشروعك",
     work: "تصفّح أعمالنا المختارة",
     fit: "نعمل بأفضل شكل مع المؤسسين",
-    eyebrow: "استوديو منتجات رقمية · للويب والموبايل",
+    eyebrow: "استوديو منتجات رقمية",
     based: "مقرّنا في مصر، ونعمل مع فرق في المنطقة العربية وخارجها.",
   },
 } as const;
@@ -66,7 +66,7 @@ for (const locale of ["en", "ar"] as const) {
   test(`${locale}: sections in the approved order, with no extra contact channels`, async ({ page }) => {
     await page.goto(`/${locale}`);
     const ids = await page.locator("main > section").evaluateAll((sections) => sections.map((s) => s.id || "(none)"));
-    // Client testimonials follow Selected work; the Fiverr reviews and the founders ("Built by") follow them.
+    // Client testimonials follow Selected work; the Fiverr reviews and the founding team follow them.
     expect(ids).toEqual(["(none)", "process", "work", "testimonials", "fiverr-reviews", "team", "services", "(none)"]);
     await expect(page.locator("main form")).toHaveCount(0);
     await expect(page.locator('a[href^="tel:"], a[href*="wa.me"], a[href*="whatsapp"]')).toHaveCount(0);

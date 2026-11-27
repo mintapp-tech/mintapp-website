@@ -5,13 +5,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 import { Magnetic } from "@/components/motion/Magnetic";
-
-const iconIndex = [
-  <span key="a" className="block h-[14px] w-[18px] rounded-[3px] border-2 border-mint" />,
-  <span key="b" className="block h-[19px] w-3 rounded-[4px] border-2 border-mint" />,
-];
-
-const relatedSlugs = ["arrentio", "rentop"];
+import { SERVICE_ICONS } from "./service-icons";
 
 function ListBlock({ title, items }: { title: string; items: string[] }) {
   return (
@@ -57,7 +51,7 @@ export default function ServicesPageContent() {
             <div className="flex flex-wrap items-start justify-between gap-6 border-b border-ink/[.08] pb-[clamp(24px,3vw,34px)]">
               <div className="flex items-start gap-4">
                 <span className="flex h-11 w-11 flex-none items-center justify-center rounded-[13px] bg-dark">
-                  {iconIndex[i % 2]}
+                  {SERVICE_ICONS[i % SERVICE_ICONS.length]}
                 </span>
                 <div>
                   <h2 className="m-0 text-[clamp(24px,2.6vw,34px)] font-semibold tracking-[-0.01em]">{cat.name}</h2>
@@ -103,25 +97,28 @@ export default function ServicesPageContent() {
               </RevealItem>
             </RevealGroup>
 
-            <Reveal
-              delay={0.1}
-              className="mt-[clamp(24px,3vw,34px)] flex items-center justify-between gap-4 rounded-2xl bg-canvas px-5 py-4"
-            >
-              <div>
-                <div className="mb-1 font-manrope text-[11px] font-bold tracking-[.1em] text-ink-faint uppercase">
-                  {svcp.relatedLabel}
-                </div>
-                <div className="text-[15px] font-medium">
-                  {cat.relatedName} <span className="text-ink-soft">— {cat.relatedCat}</span>
-                </div>
-              </div>
-              <Link
-                href={`/${lang}/work/${relatedSlugs[i]}`}
-                className="flex-none cursor-pointer text-[14px] font-semibold text-dark underline decoration-mint decoration-[1.5px] underline-offset-4"
+            {cat.related && (
+              <Reveal
+                delay={0.1}
+                className="mt-[clamp(24px,3vw,34px)] flex items-center justify-between gap-4 rounded-2xl bg-canvas px-5 py-4"
               >
-                {t.work.cta}
-              </Link>
-            </Reveal>
+                <div>
+                  <div className="mb-1 font-manrope text-[11px] font-bold tracking-[.1em] text-ink-faint uppercase">
+                    {svcp.relatedLabel}
+                  </div>
+                  <div className="text-[15px] font-medium">
+                    <bdi>{cat.related.name}</bdi> <span className="text-ink-soft">— {cat.related.category}</span>
+                  </div>
+                </div>
+                <Link
+                  href={`/${lang}/work/${cat.related.slug}`}
+                  aria-label={`${t.work.cta}: ${cat.related.name}`}
+                  className="flex-none cursor-pointer text-[14px] font-semibold text-dark underline decoration-mint decoration-[1.5px] underline-offset-4"
+                >
+                  {t.work.cta}
+                </Link>
+              </Reveal>
+            )}
           </Reveal>
         </section>
       ))}

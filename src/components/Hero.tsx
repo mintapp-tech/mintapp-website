@@ -208,6 +208,15 @@ export default function Hero() {
           </SectionLink>
         </div>
 
+        <p
+          data-free-meeting
+          style={enterDelay(0.28)}
+          className="mt-enter m-0 mt-4 flex items-start gap-2 text-[13.5px] font-medium leading-[1.6] text-mint-deep"
+        >
+          <span aria-hidden className="mt-[8px] block h-[6px] w-[6px] flex-none rounded-full bg-mint" />
+          {t.hero.freeMeeting}
+        </p>
+
         <div
           style={enterDelay(0.32)}
           className="mt-enter mt-[clamp(28px,3.6vw,46px)] max-w-[52ch] border-t border-ink/[.09] pt-[clamp(18px,2.4vw,24px)]"

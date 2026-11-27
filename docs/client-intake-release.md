@@ -51,7 +51,7 @@ client who already booked on the page simply ignores it.
 
 ### The technical fallback (not a second kind of email)
 
-The version that says "We will contact you to arrange a time for a 30-minute
+The version that says "We will contact you to arrange a time for a
 discovery call" has no button and is used **only** when a safe booking link
 cannot be made:
 

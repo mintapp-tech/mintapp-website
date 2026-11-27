@@ -9,12 +9,12 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     en: {
       title: "Mintapp — Software that feels easy",
       description:
-        "Mintapp designs and builds websites, web apps and mobile apps for founders and teams in Egypt, MENA and beyond. We review your idea before the first call.",
+        "Mintapp designs and builds websites, apps and internal systems for founders and teams in Egypt, MENA and beyond. The first discovery meeting is free.",
     },
     ar: {
       title: "Mintapp — برمجيات تُصنع بسهولة",
       description:
-        "تصمّم Mintapp وتطوّر مواقع وتطبيقات ويب وموبايل للمؤسسين والفرق في مصر والمنطقة العربية وخارجها. نراجع فكرتك قبل المكالمة الأولى.",
+        "تصمّم Mintapp وتطوّر المواقع والتطبيقات والأنظمة الداخلية للمؤسسين والفرق في مصر والمنطقة العربية وخارجها. الاجتماع الاستكشافي الأول مجاني.",
     },
   },
   {
@@ -35,12 +35,12 @@ const ROUTES: { path: string; en: { title: string; description: string }; ar: { 
     en: {
       title: "Services — Mintapp",
       description:
-        "Mintapp builds websites, web apps and mobile apps — one complete process from product strategy through design, development, testing and launch.",
+        "Websites, web and mobile applications, product design and UI/UX, internal systems and automation: one process from product strategy to launch.",
     },
     ar: {
       title: "خدماتنا — Mintapp",
       description:
-        "Mintapp تبني مواقع وتطبيقات ويب وموبايل — عملية واحدة متكاملة من استراتيجية المنتج إلى التصميم والتطوير والاختبار والإطلاق.",
+        "مواقع إلكترونية وتطبيقات ويب وموبايل، وتصميم منتجات وواجهات، وأنظمة داخلية وأتمتة: عملية واحدة من استراتيجية المنتج حتى الإطلاق.",
     },
   },
   {

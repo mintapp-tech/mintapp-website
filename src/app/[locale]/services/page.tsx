@@ -9,12 +9,12 @@ const COPY = {
   en: {
     title: "Services — Mintapp",
     description:
-      "Mintapp builds websites, web apps and mobile apps — one complete process from product strategy through design, development, testing and launch.",
+      "Websites, web and mobile applications, product design and UI/UX, internal systems and automation: one process from product strategy to launch.",
   },
   ar: {
     title: "خدماتنا — Mintapp",
     description:
-      "Mintapp تبني مواقع وتطبيقات ويب وموبايل — عملية واحدة متكاملة من استراتيجية المنتج إلى التصميم والتطوير والاختبار والإطلاق.",
+      "مواقع إلكترونية وتطبيقات ويب وموبايل، وتصميم منتجات وواجهات، وأنظمة داخلية وأتمتة: عملية واحدة من استراتيجية المنتج حتى الإطلاق.",
   },
 } as const;
 

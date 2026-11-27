@@ -30,6 +30,15 @@ describe("published testimonials", () => {
     expect(wakrah.author.name).toBeUndefined();
   });
 
+  test("Al Wakrah carries a localized project descriptor, with no case study link", () => {
+    const wakrah = TESTIMONIALS[1];
+    expect(testimonialForLocale(wakrah, "en").projectType).toBe("Internal system");
+    expect(testimonialForLocale(wakrah, "ar").projectType).toBe("نظام داخلي");
+    expect(wakrah.project).toBeUndefined();
+    expect(wakrah.author.logo).toBeUndefined();
+    expect(testimonialForLocale(TESTIMONIALS[0], "en").projectType).toBeUndefined();
+  });
+
   test("Arabic pages keep the approved English words, marked as English; no translation is presented as a quote", () => {
     for (const t of TESTIMONIALS) {
       expect(t.translation).toBeUndefined();

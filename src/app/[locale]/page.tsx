@@ -18,12 +18,12 @@ const COPY = {
   en: {
     title: "Mintapp — Software that feels easy",
     description:
-      "Mintapp designs and builds websites, web apps and mobile apps for founders and teams in Egypt, MENA and beyond. We review your idea before the first call.",
+      "Mintapp designs and builds websites, apps and internal systems for founders and teams in Egypt, MENA and beyond. The first discovery meeting is free.",
   },
   ar: {
     title: "Mintapp — برمجيات تُصنع بسهولة",
     description:
-      "تصمّم Mintapp وتطوّر مواقع وتطبيقات ويب وموبايل للمؤسسين والفرق في مصر والمنطقة العربية وخارجها. نراجع فكرتك قبل المكالمة الأولى.",
+      "تصمّم Mintapp وتطوّر المواقع والتطبيقات والأنظمة الداخلية للمؤسسين والفرق في مصر والمنطقة العربية وخارجها. الاجتماع الاستكشافي الأول مجاني.",
   },
 } as const;
 

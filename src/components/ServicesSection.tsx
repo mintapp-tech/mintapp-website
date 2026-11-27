@@ -4,15 +4,12 @@ import Link from "next/link";
 import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "./Reveal";
 import { SplitReveal } from "./motion/SplitReveal";
+import { SERVICE_ICONS } from "./services/service-icons";
 
-// One glyph per service area, drawn from the same simple shapes the site already uses.
-const ICONS = [
-  <span key="web" className="block h-[13px] w-[19px] rounded-[3px] border-2 border-mint" />,
-  <span key="app" className="relative block h-[15px] w-[19px] rounded-[3px] border-2 border-mint">
-    <span className="absolute inset-y-0 start-[5px] block w-[2px] bg-mint" />
-  </span>,
-  <span key="mobile" className="block h-[19px] w-3 rounded-[4px] border-2 border-mint" />,
-];
+// Five cards: three across and then two wider ones on large screens; pairs on
+// tablets with the last card spanning the row, so no card is ever left orphaned.
+const cardSpan = (index: number, count: number) =>
+  `${index < 3 ? "lg:col-span-2" : "lg:col-span-3"} ${index === count - 1 && count % 2 === 1 ? "md:col-span-2" : ""}`;
 
 export default function ServicesSection() {
   const { t, lang, arrow } = useLanguage();
@@ -29,13 +26,13 @@ export default function ServicesSection() {
         className="mb-[clamp(30px,4vw,52px)] max-w-[24ch] text-[clamp(29px,3.7vw,50px)] leading-[1.2] font-semibold tracking-[-0.02em] text-balance"
       />
 
-      <RevealGroup className="grid grid-cols-1 gap-[clamp(18px,2.4vw,24px)] md:grid-cols-3">
+      <RevealGroup className="grid grid-cols-1 gap-[clamp(18px,2.4vw,24px)] md:grid-cols-2 lg:grid-cols-6">
         {t.svc.items.map((item, i) => (
           <RevealItem
             key={item.title}
-            className="flex flex-col gap-4 rounded-[20px] border border-ink/[.09] bg-surface p-[clamp(24px,2.6vw,34px)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)]"
+            className={`flex flex-col gap-4 rounded-[20px] border border-ink/[.09] bg-surface p-[clamp(24px,2.6vw,34px)] transition-all duration-500 hover:-translate-y-1 hover:shadow-[0_30px_60px_-46px_rgba(7,27,22,.5)] ${cardSpan(i, t.svc.items.length)}`}
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-dark">{ICONS[i % ICONS.length]}</span>
+            <span className="flex h-11 w-11 items-center justify-center rounded-[13px] bg-dark">{SERVICE_ICONS[i % SERVICE_ICONS.length]}</span>
             <h3 className="m-0 text-[clamp(21px,2vw,26px)] font-semibold tracking-[-0.01em]">{item.title}</h3>
             <div className="border-s-2 border-mint ps-3.5">
               <div className="font-manrope text-[11.5px] font-bold tracking-[.1em] text-ink-faint uppercase rtl:text-[13px]">{t.svc.needLabel}</div>

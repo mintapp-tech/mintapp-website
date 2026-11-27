@@ -28,15 +28,32 @@ for (const locale of ["en", "ar"] as const) {
 
     const wakrah = figures.nth(1);
     await expect(wakrah.locator("blockquote")).toContainText(WAKRAH);
-    await expect(wakrah.locator("[data-attribution]")).toHaveText("Academy Supervisor · Al Wakrah");
+    // Same two-line hierarchy as OTJ: the approved role, then the organization.
+    await expect(wakrah.locator("[data-attribution-heading]")).toHaveText("Academy Supervisor");
+    await expect(wakrah.locator("[data-attribution]")).toHaveText("Al Wakrah");
+    await expect(otj.locator("[data-attribution-heading]")).toHaveText("Nour Makram");
     // No person named, so no avatar or mark of any kind: only the approved attribution.
     await expect(wakrah.locator("img")).toHaveCount(0);
-    await expect(wakrah.locator("figcaption")).toHaveText("Academy Supervisor · Al Wakrah");
+    await expect(wakrah.locator("figcaption")).toHaveText("Academy SupervisorAl Wakrah");
+    // The descriptor sits where the other card has its case study link, and is not a link.
+    await expect(wakrah.locator("[data-project-type]")).toHaveText(locale === "en" ? "Internal system" : "نظام داخلي");
+    await expect(wakrah.getByRole("link")).toHaveCount(0);
+    await expect(otj.locator("[data-card-footer]").getByRole("link")).toHaveAttribute("href", `/${locale}/work/otj`);
+    // Equal structure: both cards have a quote, a two-line attribution and a footer row at the same heights.
+    for (const part of ["figcaption", "[data-attribution-heading]", "[data-attribution]", "[data-card-footer]"]) {
+      await section.scrollIntoViewIfNeeded();
+      await expect
+        .poll(async () => {
+          const [a, b] = await Promise.all([otj, wakrah].map((f) => f.locator(part).evaluate((e) => Math.round(e.getBoundingClientRect().height))));
+          return Math.abs(a - b);
+        }, { message: part })
+        .toBeLessThanOrEqual(1);
+    }
 
     for (const figure of [otj, wakrah]) {
       await expect(figure.locator("blockquote")).toHaveAttribute("lang", "en");
       // Arabic pages label the original English wording; English pages need no label.
-      if (locale === "ar") await expect(figure.locator("blockquote")).toContainText("مقتبس بالإنجليزية");
+      if (locale === "ar") await expect(figure.locator('blockquote [lang="ar"]')).toHaveText("مقتبس بالإنجليزية");
       else await expect(figure.locator("blockquote")).not.toContainText("Quoted in");
     }
 
