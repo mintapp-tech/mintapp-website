@@ -600,7 +600,7 @@ export default function StartExperience({ budgetCurrency = "USD" }: { budgetCurr
                     )}
                   </label>
 
-                  <aside id="sensitive-note" aria-labelledby="sensitive-note-title" data-sensitive-note className="rounded-[14px] border border-amber-300/70 bg-amber-50/70 px-4 py-3.5">
+                  <aside id="sensitive-note" aria-labelledby="sensitive-note-title" data-sensitive-note className="rounded-[14px] border border-[#f3dc9b] bg-[#fffcf0] px-4 py-3.5">
                     <h2 id="sensitive-note-title" className="m-0 mb-1.5 flex items-center gap-2 text-[13.5px] font-semibold text-ink">
                       <svg aria-hidden viewBox="0 0 20 20" className="size-4 flex-none text-amber-700" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <rect x="4" y="9" width="12" height="8" rx="2" />
