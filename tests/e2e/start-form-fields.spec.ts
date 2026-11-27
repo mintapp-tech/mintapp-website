@@ -29,6 +29,11 @@ for (const locale of ["en", "ar"] as const) {
       const note = page.getByText(locale === "en" ? "Our hosting provider supplies a country code" : "يزوّدنا مزود الاستضافة برمز الدولة");
       await note.scrollIntoViewIfNeeded();
       await expect(note).toBeVisible();
+      const turnstile = page.getByText(locale === "en" ? "including your IP address and browser information" : "بما في ذلك عنوان IP ومعلومات المتصفح");
+      await turnstile.scrollIntoViewIfNeeded();
+      await expect(turnstile).toBeVisible();
+      // The link to Cloudflare's own notice stays with it.
+      await expect(turnstile.getByRole("link")).toHaveAttribute("href", "https://www.cloudflare.com/turnstile-privacy-policy/");
       expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     });
   }

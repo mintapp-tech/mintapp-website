@@ -833,7 +833,7 @@ export const en: HomeContent = {
       { name: "Vercel", role: "Hosts this website" },
       { name: "Cloudflare Turnstile", role: "Helps prevent automated abuse of this form" },
     ],
-    processorsNote: "Cloudflare Turnstile (listed above) processes limited browser and security signals to help confirm a submission isn't automated — it does not read what you write in the form. More detail is available in",
+    processorsNote: "Cloudflare Turnstile processes limited technical and security signals, including your IP address and browser information, to detect automated abuse. It does not read what you enter in the form. More detail is available in",
     turnstileLinkText: "Cloudflare's Turnstile Privacy Notice",
     contactTitle: "Questions about your information?",
     contactCopy: "Write to us and we'll respond directly.",

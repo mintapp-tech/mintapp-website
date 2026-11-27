@@ -8,6 +8,11 @@ describe("privacy policy: the budget currency's country lookup", () => {
     expect(ar.privacy.sections.map((s) => s.note).filter(Boolean)).toEqual(["يزوّدنا مزود الاستضافة برمز الدولة المستنتج من اتصالك. تستخدمه Mintapp فقط لاختيار عملة نطاقات الميزانية، ولا تحفظ رمز الدولة أو عنوان IP ضمن طلبك."]);
   });
 
+  test("the Turnstile disclosure names the IP address, in the approved words", () => {
+    expect(en.privacy.processorsNote).toBe("Cloudflare Turnstile processes limited technical and security signals, including your IP address and browser information, to detect automated abuse. It does not read what you enter in the form. More detail is available in");
+    expect(ar.privacy.processorsNote).toBe("تعالج خدمة Cloudflare Turnstile إشارات تقنية وأمنية محدودة، بما في ذلك عنوان IP ومعلومات المتصفح، لاكتشاف الاستخدام الآلي المسيء. ولا تقرأ ما تكتبه في النموذج. لمزيد من التفاصيل، راجع");
+  });
+
   test("the country is not listed among the things collected, and the new fields are", () => {
     const list = (t: typeof en) => t.privacy.sections.flatMap((s) => s.list ?? []).join(" | ");
     expect(list(en)).not.toMatch(/country|IP address/i);
