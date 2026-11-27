@@ -155,6 +155,14 @@ export interface HomeContent {
     fDesc: string;
     fDescHelp: string;
     fDescPh: string;
+    fBudget: string;
+    fBudgetHelp: string;
+    fTimeline: string;
+    chooseOne: string;
+    fExistingLink: string;
+    fExistingLinkHelp: string;
+    fExistingLinkPh: string;
+    confidentialIntro: string;
     confidentialTitle: string;
     confidentialItems: string[];
     confidentialNote: string;
@@ -175,6 +183,8 @@ export interface HomeContent {
       consent_required: string;
       invalid_format: string;
       invalid_value: string;
+      invalid_url: string;
+      budget_reload: string;
       invalid: string;
     };
     turnstileFailed: string;
@@ -276,7 +286,8 @@ export interface HomeContent {
     title: string;
     sub: string;
     updated: string;
-    sections: { title: string; body: string; list?: string[] }[];
+    // `note` is a paragraph shown under the section's list.
+    sections: { title: string; body: string; list?: string[]; note?: string }[];
     processorsTitle: string;
     processors: { name: string; role: string }[];
     processorsNote: string;

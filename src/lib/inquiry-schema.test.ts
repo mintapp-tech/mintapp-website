@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { inquirySchema } from "./inquiry-schema";
+import { inquirySchemaFor } from "./inquiry-schema";
+
+// Most tests are about shape; they use the US-dollar request (the default scale).
+const inquirySchema = inquirySchemaFor("USD");
+const fromEgypt = inquirySchemaFor("EGP");
 
 const validBase = {
   name: "Jane Doe",
@@ -72,5 +76,66 @@ describe("inquirySchema — project type", () => {
     const result = inquirySchema.safeParse({ ...validBase, projectType });
     expect(result.success).toBe(false);
     if (!result.success) expect(result.error.issues[0].path).toEqual(["projectType"]);
+  });
+});
+
+describe("inquirySchema — budget, timeline and existing link", () => {
+  test("an older cached form without the three new fields is still accepted", () => {
+    const parsed = inquirySchema.parse(validBase);
+    expect(parsed.budget).toBeUndefined();
+    expect(parsed.timeline).toBeUndefined();
+    expect(parsed.existingUrl).toBeUndefined();
+  });
+
+  test("the range is stored with the currency the SERVER derived for the request", () => {
+    expect(inquirySchema.parse({ ...validBase, budget: "5000_10000", timeline: "within_3_months" })).toMatchObject({ budget: "5000_10000", budgetCurrency: "USD", timeline: "within_3_months" });
+    expect(fromEgypt.parse({ ...validBase, budget: "100000_250000" })).toMatchObject({ budget: "100000_250000", budgetCurrency: "EGP" });
+    expect(fromEgypt.parse({ ...validBase, budget: "not_sure", timeline: "not_sure" })).toMatchObject({ budget: "not_sure", budgetCurrency: "EGP", timeline: "not_sure" });
+  });
+
+  test("a currency sent by the client is ignored: it can neither choose nor unlock the other scale", () => {
+    // Stripped like any unknown field; the derived currency is stored.
+    expect(fromEgypt.parse({ ...validBase, budget: "under_50000", budgetCurrency: "USD" })).toMatchObject({ budget: "under_50000", budgetCurrency: "EGP" });
+    expect(inquirySchema.parse({ ...validBase, budget: "under_2500", budgetCurrency: "EGP" })).toMatchObject({ budget: "under_2500", budgetCurrency: "USD" });
+    // Junk in the field is not even an error: it is simply not read.
+    expect(inquirySchema.safeParse({ ...validBase, budget: "not_sure", budgetCurrency: "GBP" }).success).toBe(true);
+  });
+
+  test.each([
+    ["a dollar range from Egypt", fromEgypt, { budget: "5000_10000" }],
+    ["a dollar range from Egypt, claiming dollars", fromEgypt, { budget: "under_2500", budgetCurrency: "USD" }],
+    ["an older dollar band from Egypt", fromEgypt, { budget: "Under USD 5,000" }],
+    ["an Egyptian range from elsewhere", inquirySchema, { budget: "under_50000" }],
+    ["an Egyptian range from elsewhere, claiming pounds", inquirySchema, { budget: "100000_250000", budgetCurrency: "EGP" }],
+  ])("refuses %s on the budget field, asking for a reload", (_name, schema, fields) => {
+    const r = schema.safeParse({ ...validBase, ...fields });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0]).toMatchObject({ path: ["budget"], message: "budget_reload" });
+  });
+
+  test("older cached forms still submit: no budget at all (the production form), or an older review build's labels", () => {
+    const none = fromEgypt.parse(validBase);
+    expect(none.budget).toBeUndefined();
+    expect(none.budgetCurrency).toBeUndefined();
+    expect(inquirySchema.parse({ ...validBase, budget: "Not sure yet", timeline: "Within 3 months" })).toMatchObject({ budget: "not_sure", budgetCurrency: "USD", timeline: "within_3_months" });
+    expect(fromEgypt.parse({ ...validBase, budget: "Not sure yet" })).toMatchObject({ budget: "not_sure", budgetCurrency: "EGP" });
+    expect(inquirySchema.parse({ ...validBase, timeline: "Later than 6 months" }).timeline).toBe("over_6_months");
+    expect(inquirySchema.parse({ ...validBase, budget: "USD 5,000 - 15,000" })).toMatchObject({ budget: "USD 5,000 - 15,000", budgetCurrency: "USD" });
+  });
+
+  test.each([["budget", "a million"], ["budget", "5,000"], ["budget", "NOT_SURE"], ["timeline", "yesterday"], ["timeline", "toString"], ["budget", 5000]])("rejects %s %j", (key, value) => {
+    const r = inquirySchema.safeParse({ ...validBase, budget: "not_sure", [key]: value });
+    expect(r.success).toBe(false);
+    if (!r.success) expect(r.error.issues[0].path).toEqual([key]);
+  });
+
+  test("the existing link is stored normalized; unsafe links are refused", () => {
+    expect(inquirySchema.parse({ ...validBase, existingUrl: "acme.example.com/app#top" }).existingUrl).toBe("https://acme.example.com/app");
+    expect(inquirySchema.parse({ ...validBase, existingUrl: "  " }).existingUrl).toBeUndefined();
+    for (const bad of ["javascript:alert(1)", "data:text/html,x", "ftp://acme.example.com", "https://user:pass@acme.example.com", "http://localhost:3000", "http://192.168.0.1", "not a url", "x".repeat(301)]) {
+      const r = inquirySchema.safeParse({ ...validBase, existingUrl: bad });
+      expect(r.success, bad).toBe(false);
+      if (!r.success) expect(r.error.issues[0].path[0]).toBe("existingUrl");
+    }
   });
 });

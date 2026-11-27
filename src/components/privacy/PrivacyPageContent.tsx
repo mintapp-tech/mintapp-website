@@ -4,7 +4,7 @@ import { useLanguage } from "@/lib/language-context";
 import { Reveal, RevealGroup, RevealItem } from "@/components/Reveal";
 import { SplitReveal } from "@/components/motion/SplitReveal";
 
-function SectionBlock({ title, body, list }: { title: string; body: string; list?: string[] }) {
+function SectionBlock({ title, body, list, note }: { title: string; body: string; list?: string[]; note?: string }) {
   return (
     <Reveal as="div" className="border-b border-ink/[.08] py-[clamp(22px,3vw,32px)] first:pt-0 last:border-b-0">
       <h2 className="m-0 mb-3 text-[clamp(18px,2vw,22px)] font-semibold tracking-[-0.01em]">{title}</h2>
@@ -19,6 +19,7 @@ function SectionBlock({ title, body, list }: { title: string; body: string; list
           ))}
         </div>
       )}
+      {note && <p className="m-0 mt-4 max-w-[68ch] text-[15.5px] leading-[1.9] text-ink-soft">{note}</p>}
     </Reveal>
   );
 }
@@ -51,7 +52,7 @@ export default function PrivacyPageContent() {
       <section className="mx-auto mt-[clamp(40px,5vw,64px)] max-w-[860px] px-5 sm:px-6">
         <div className="rounded-[24px] border border-ink/[.08] bg-surface px-[clamp(22px,4vw,44px)]">
           {before.map((s) => (
-            <SectionBlock key={s.title} title={s.title} body={s.body} list={s.list} />
+            <SectionBlock key={s.title} title={s.title} body={s.body} list={s.list} note={s.note} />
           ))}
         </div>
 
@@ -86,7 +87,7 @@ export default function PrivacyPageContent() {
 
         <div className="mt-[clamp(20px,2.6vw,28px)] rounded-[24px] border border-ink/[.08] bg-surface px-[clamp(22px,4vw,44px)]">
           {after.map((s) => (
-            <SectionBlock key={s.title} title={s.title} body={s.body} list={s.list} />
+            <SectionBlock key={s.title} title={s.title} body={s.body} list={s.list} note={s.note} />
           ))}
         </div>
       </section>
