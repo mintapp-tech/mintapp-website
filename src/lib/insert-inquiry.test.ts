@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, test, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { insertInquiry } from "./insert-inquiry";
@@ -131,5 +133,24 @@ describe("insertInquiry: project type", () => {
     const result = await insertInquiry(client, { ...inquiryBody, projectType: "mobile_app" });
     expect(result).toEqual({ status: "duplicate", id: "already-there" });
     expect(payloads).toHaveLength(1);
+  });
+
+  test("budget, timeline and the existing link go to columns the table already has, and only when answered", async () => {
+    const { payloads, client } = recordingSupabase([{ error: null }, { error: null }]);
+    await insertInquiry(client, { ...inquiryBody, budget: "100000_250000", budgetCurrency: "EGP", timeline: "within_3_months", existingUrl: "https://acme.example.com/" });
+    await insertInquiry(client, inquiryBody);
+    expect(payloads[0]).toMatchObject({ budget_range: "100000_250000", timeline: "within_3_months", company_url: "https://acme.example.com/" });
+    for (const key of ["budget_range", "timeline", "company_url"]) expect(payloads[1]).not.toHaveProperty(key);
+    // Nothing about where the visitor is: no country, no address.
+    for (const p of payloads) expect(Object.keys(p).filter((k) => /^(ip|ip_address|remote_ip|country|visitor_country|geo)$/i.test(k))).toEqual([]);
+  });
+
+  test("every column written exists in the migrations on this branch, so no new migration is needed", async () => {
+    const { payloads, client } = recordingSupabase([{ error: null }]);
+    await insertInquiry(client, { ...inquiryBody, phone: "+20 100", company: "Acme", projectType: "web_app", utmSource: "s", utmMedium: "m", utmCampaign: "c", budget: "not_sure", budgetCurrency: "EGP", timeline: "asap", existingUrl: "https://acme.example.com/" });
+    const dir = join(process.cwd(), "supabase", "migrations");
+    const sql = readdirSync(dir).map((f) => readFileSync(join(dir, f), "utf8")).join("\n");
+    for (const column of Object.keys(payloads[0])) expect(sql, column).toMatch(new RegExp(`^\\s*(add column if not exists\\s+)?${column}\\s+(text|uuid|boolean|timestamptz)|add column if not exists ${column}\\b`, "m"));
+    expect(Object.keys(payloads[0])).not.toContain("budget_currency");
   });
 });

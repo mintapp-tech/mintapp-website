@@ -191,6 +191,8 @@ describe("internal notification", () => {
         "Phone: +974 1",
         "Company: Acme",
         "Project type: Not provided",
+        "Budget: Not provided",
+        "Timeline: Not provided",
         "Preferred language: English",
         "Submitted: 5 Oct 2026, 13:04 UTC",
         "",
@@ -214,6 +216,32 @@ describe("internal notification", () => {
       expect(e.text, String(value)).toContain("Project type: Not provided");
       expect(e.html, String(value)).not.toContain("<b>x</b>");
     }
+  });
+
+  test("shows the budget and timeline as English labels, never as stored codes, including an older cached form's values", () => {
+    const e = internal({ budget: "5000_10000", timeline: "within_3_months" });
+    expect(e.text).toContain("Budget: USD 5,000–10,000");
+    expect(e.text).toContain("Timeline: Within 3 months");
+    expect(e.html).toContain(">Budget</td>");
+    expect(`${e.text} ${e.html}`).not.toMatch(/5000_10000|within_3_months/);
+    const later = internal({ budget: "not_sure", timeline: "over_6_months" }).text;
+    expect(later).toContain("Budget: Not sure yet");
+    expect(later).toContain("Timeline: Later than 6 months");
+    expect(internal({ budget: "USD 5,000 - 15,000" }).text).toContain("Budget: USD 5,000–15,000");
+    // Egyptian pounds, and a currency named where the range does not say it.
+    const egp = internal({ budget: "250000_500000", budgetCurrency: "EGP" });
+    expect(egp.text).toContain("Budget: EGP 250,000–500,000");
+    expect(`${egp.text} ${egp.html}`).not.toMatch(/250000_500000/);
+    expect(internal({ budget: "not_sure", budgetCurrency: "EGP" }).text).toContain("Budget: Not sure yet (Egyptian pounds)");
+    expect(internal({ budget: "<b>x</b>" }).html).not.toContain("<b>x</b>");
+  });
+
+  test("shows the existing link as plain, escaped text only when one was given", () => {
+    const e = internal({ existingUrl: "https://acme.example.com/a?b=1&c=2" });
+    expect(e.text).toContain("Existing link: https://acme.example.com/a?b=1&c=2");
+    expect(e.html).toContain("https://acme.example.com/a?b=1&amp;c=2");
+    expect(e.html).not.toContain('href="https://acme.example.com');
+    expect(internal({}).text).not.toContain("Existing link");
   });
 
   test("every client-supplied field is escaped, and the description follows its own direction", () => {
